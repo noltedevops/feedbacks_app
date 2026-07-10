@@ -35,8 +35,74 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db():
     logger.info("Initializing database tables...")
+    from sqlalchemy import text
+    
+    # Enable PostGIS extension if using PostgreSQL
+    if engine.url.drivername.startswith("postgresql"):
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+                conn.commit()
+                logger.info("Successfully enabled PostGIS extension.")
+        except Exception as e:
+            logger.error(f"Failed to enable PostGIS extension: {e}")
+            
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables initialized successfully.")
+    
+    # Create PL/pgSQL triggers for bidirectional sync in PostgreSQL
+    if engine.url.drivername.startswith("postgresql"):
+        try:
+            with engine.connect() as conn:
+                # 1. Trigger function for anomalies table (bidirectional coordinates & geom sync)
+                anomalies_trigger_sql = """
+                CREATE OR REPLACE FUNCTION sync_anomaly_geom_and_coordinates()
+                RETURNS TRIGGER AS $$
+                DECLARE
+                    lonlat GEOMETRY;
+                BEGIN
+                    -- Case 1: geom was updated/inserted directly (e.g., from QGIS/ArcGIS Pro)
+                    IF (NEW.geom IS NOT NULL) AND (TG_OP = 'INSERT' OR OLD.geom IS NULL OR NEW.geom IS DISTINCT FROM OLD.geom OR NEW.latitude IS NULL OR NEW.longitude IS NULL) THEN
+                        NEW.easting := ST_X(NEW.geom);
+                        NEW.northing := ST_Y(NEW.geom);
+                        lonlat := ST_Transform(NEW.geom, 4326);
+                        NEW.longitude := ST_X(lonlat);
+                        NEW.latitude := ST_Y(lonlat);
+                    -- Case 2: easting/northing updated directly
+                    ELSIF (NEW.easting IS NOT NULL AND NEW.northing IS NOT NULL) AND 
+                          (TG_OP = 'INSERT' OR OLD.easting IS NULL OR NEW.easting IS DISTINCT FROM OLD.easting OR OLD.northing IS NULL OR NEW.northing IS DISTINCT FROM OLD.northing) THEN
+                        NEW.geom := ST_SetSRID(ST_MakePoint(NEW.easting, NEW.northing), 32632);
+                        lonlat := ST_Transform(NEW.geom, 4326);
+                        NEW.longitude := ST_X(lonlat);
+                        NEW.latitude := ST_Y(lonlat);
+                    -- Case 3: lat/lon updated directly (e.g., from web app Leaflet dragging)
+                    ELSIF (NEW.latitude IS NOT NULL AND NEW.longitude IS NOT NULL) AND 
+                          (TG_OP = 'INSERT' OR OLD.latitude IS NULL OR NEW.latitude IS DISTINCT FROM OLD.latitude OR OLD.longitude IS NULL OR NEW.longitude IS DISTINCT FROM OLD.longitude) THEN
+                        lonlat := ST_SetSRID(ST_MakePoint(NEW.longitude, NEW.latitude), 4326);
+                        NEW.geom := ST_Transform(lonlat, 32632);
+                        NEW.easting := ST_X(NEW.geom);
+                        NEW.northing := ST_Y(NEW.geom);
+                    END IF;
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql;
+
+                DROP TRIGGER IF EXISTS trigger_sync_anomaly_geom_coordinates ON anomalies;
+                CREATE TRIGGER trigger_sync_anomaly_geom_coordinates
+                BEFORE INSERT OR UPDATE ON anomalies
+                FOR EACH ROW
+                EXECUTE FUNCTION sync_anomaly_geom_and_coordinates();
+
+                -- Clean up legacy triggers from prior tables
+                DROP TRIGGER IF EXISTS trigger_sync_point_geom_coordinates ON points;
+                DROP TRIGGER IF EXISTS trigger_sync_feedback_geom ON feedback;
+                DROP TRIGGER IF EXISTS trigger_update_associated_feedback_geom ON points;
+                """
+                conn.execute(text(anomalies_trigger_sql))
+                conn.commit()
+                logger.info("Successfully created/updated PL/pgSQL database triggers for spatial synchronization.")
+        except Exception as e:
+            logger.error(f"Failed to create database triggers: {e}")
 
 def get_db():
     db = SessionLocal()

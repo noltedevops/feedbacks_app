@@ -1,46 +1,65 @@
 from sqlalchemy import Column, String, Float, Boolean, DateTime, Integer, ForeignKey, create_engine
 from sqlalchemy.orm import declarative_base, relationship
+from geoalchemy2 import Geometry
 import datetime
 import uuid
 
 Base = declarative_base()
 
-class Point(Base):
-    __tablename__ = "points"
+class Project(Base):
+    __tablename__ = "projects"
+
+    project_id = Column(String(50), primary_key=True)
+    project_name = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    anomalies = relationship("Anomaly", back_populates="project", cascade="all, delete-orphan")
+
+class Anomaly(Base):
+    __tablename__ = "anomalies"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    vm_nr = Column(Integer, nullable=False, index=True)
+    project_id = Column(String(50), ForeignKey("projects.project_id", ondelete="CASCADE"), nullable=False)
+    instrument = Column(String(50), nullable=False)
+    geom = Column(Geometry(geometry_type='POINT', srid=32632), nullable=True)
     easting = Column(Float, nullable=False)
     northing = Column(Float, nullable=False)
-    latitude = Column(Float, nullable=False)
-    longitude = Column(Float, nullable=False)
-    calculated_depth = Column(Float, nullable=True) # GPR estimate in meters (Tiefe)
-    
-    # Opening geometry attributes (Öffnung)
-    opening_length = Column(Float, nullable=True)   # Länge in meters
-    opening_width = Column(Float, nullable=True)    # Breite in meters
-    opening_depth = Column(Float, nullable=True)    # Tiefe in meters
-    opening_volume = Column(Float, nullable=True)   # m³ volume
-    
-    find_description = Column(String(255), nullable=True) # Fundstück
-    image_id = Column(Integer, nullable=True)             # Bild Nr.
-    remarks = Column(String(255), nullable=True)          # Bemerkung
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    vm_nr = Column(String(50), nullable=True, index=True) # Hyphenated sequential target ID
+    category = Column(String(50), nullable=True)
+    layer = Column(String(255), nullable=True)
+    status = Column(String(50), nullable=True, default='pending') # 'pending', 'investigated'
+    target_id = Column(String(100), unique=True, index=True) # Unique ID combining project ID + coordinates
 
-    feedback_logs = relationship("FeedbackLog", back_populates="point", cascade="all, delete-orphan")
+    # For GPR/excel seeding calculated parameters
+    evaluated_depth = Column(Float, nullable=True)
 
-class FeedbackLog(Base):
+    project = relationship("Project", back_populates="anomalies")
+    feedbacks = relationship("Feedback", back_populates="anomaly", cascade="all, delete-orphan")
+
+class Feedback(Base):
     __tablename__ = "feedback"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    point_id = Column(String(36), ForeignKey("points.id", ondelete="CASCADE"), nullable=False)
+    anomaly_id = Column(String(36), ForeignKey("anomalies.id", ondelete="CASCADE"), nullable=False)
     visited = Column(Boolean, default=True)
-    status = Column(String(50), nullable=False) # 'clear', 'scrap', 'uxo', 'false_alarm' or custom 'other'
-    actual_depth = Column(Float, nullable=True)
-    photos = Column(String, nullable=True) # Serialized JSON array of base64 strings
-    notes = Column(String, nullable=True)
+    visit_date = Column(DateTime, default=datetime.datetime.utcnow)
+    tief = Column(Float, nullable=True)             # actual depth (Tiefe)
+    laenge = Column(Float, nullable=True)           # length (Länge)
+    breite = Column(Float, nullable=True)           # width (Breite)
+    m_cube = Column(Float, nullable=True)           # volume (m³)
+    fundstueck = Column(String(255), nullable=True) # description of findings
     investigator = Column(String(100), nullable=True)
     investigator_username = Column(String(100), nullable=True)
-    logged_at = Column(DateTime, default=datetime.datetime.utcnow)
+    photos = Column(String, nullable=True) # Serialized JSON array of base64 strings
+    notes = Column(String, nullable=True)  # text remarks
+    
+    # New fields
+    target_id = Column(String(100), index=True)
+    sohle_status = Column(String(50), nullable=True)
+    bilder_n = Column(Integer, nullable=True, default=0)
+    other = Column(String(255), nullable=True)
 
-    point = relationship("Point", back_populates="feedback_logs")
+    anomaly = relationship("Anomaly", back_populates="feedbacks")

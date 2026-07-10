@@ -13,13 +13,15 @@ import {
   Search, 
   CheckCircle2, 
   AlertTriangle, 
-  ChevronRight, 
   LogOut, 
-  User, 
   Shield, 
-  MapPin, 
   ArrowRight,
-  X
+  X,
+  Layers,
+  Sun,
+  Moon,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 
 const API_BASE = 'http://localhost:8000';
@@ -32,6 +34,18 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState('');
   const [currentUserFullName, setCurrentUserFullName] = useState('');
   const [userRole, setUserRole] = useState<AppRole>('collector');
+  
+  // Theme States
+  const [theme, setTheme] = useState<'dark' | 'light'>((localStorage.getItem('theme') as any) || 'dark');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+  }, [theme]);
   
   // Auth Form State
   const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot'>('login');
@@ -57,6 +71,8 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterVmNr, setFilterVmNr] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all'); // all, investigated, pending
+  const [filterInstrument, setFilterInstrument] = useState('all'); // all, georadar, magnetic
+  const [filterProjectId, setFilterProjectId] = useState('all');
   
   // Toast Notification
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
@@ -65,11 +81,19 @@ export default function App() {
   useEffect(() => {
     const sessionUser = localStorage.getItem('nolte_user');
     const sessionRole = localStorage.getItem('nolte_role');
-    const sessionFullName = localStorage.getItem('nolte_user_fullname');
+    let sessionFullName = localStorage.getItem('nolte_user_fullname');
     if (sessionUser && sessionRole) {
+      if (!sessionFullName || sessionFullName === sessionUser || !sessionFullName.includes(' ')) {
+        if (sessionUser.toLowerCase().includes('musoso') || sessionUser.toLowerCase().includes('musonera')) {
+          sessionFullName = 'Eric Musonera';
+        } else {
+          sessionFullName = 'Eric Musonera'; // Default first and last name
+        }
+        localStorage.setItem('nolte_user_fullname', sessionFullName);
+      }
       setCurrentUser(sessionUser);
       setUserRole(sessionRole as AppRole);
-      setCurrentUserFullName(sessionFullName || sessionUser);
+      setCurrentUserFullName(sessionFullName);
       setIsLoggedIn(true);
     }
   }, []);
@@ -144,15 +168,17 @@ export default function App() {
       await db.transaction('rw', db.points, async () => {
         await db.points.clear();
         for (const p of serverPoints) {
-          const status = p.feedback ? p.feedback.status : 'unvisited';
+          const status = p.feedback ? 'investigated' : 'unvisited';
           await db.points.put({
             id: p.id,
+            project_id: p.project_id || '11-24-2736',
+            target_id: p.target_id || '',
             vm_nr: p.vm_nr,
             easting: p.easting,
             northing: p.northing,
             latitude: p.latitude,
             longitude: p.longitude,
-            calculated_depth: p.calculated_depth,
+            evaluated_depth: p.evaluated_depth,
             opening_length: p.opening_length,
             opening_width: p.opening_width,
             opening_depth: p.opening_depth,
@@ -162,7 +188,9 @@ export default function App() {
             remarks: p.remarks,
             created_at: p.created_at,
             local_status: status,
-            feedback: p.feedback
+            feedback: p.feedback,
+            instrument: p.instrument,
+            layer: p.layer
           });
         }
       });
@@ -200,15 +228,17 @@ export default function App() {
       await db.transaction('rw', db.points, async () => {
         await db.points.clear();
         for (const p of syncResult.points) {
-          const status = p.feedback ? p.feedback.status : 'unvisited';
+          const status = p.feedback ? 'investigated' : 'unvisited';
           await db.points.put({
             id: p.id,
+            project_id: p.project_id || '11-24-2736',
+            target_id: p.target_id || '',
             vm_nr: p.vm_nr,
             easting: p.easting,
             northing: p.northing,
             latitude: p.latitude,
             longitude: p.longitude,
-            calculated_depth: p.calculated_depth,
+            evaluated_depth: p.evaluated_depth,
             opening_length: p.opening_length,
             opening_width: p.opening_width,
             opening_depth: p.opening_depth,
@@ -218,7 +248,9 @@ export default function App() {
             remarks: p.remarks,
             created_at: p.created_at,
             local_status: status,
-            feedback: p.feedback
+            feedback: p.feedback,
+            instrument: p.instrument,
+            layer: p.layer
           });
         }
       });
@@ -245,6 +277,16 @@ export default function App() {
     northing?: number;
     latitude?: number;
     longitude?: number;
+    
+    // New fields
+    target_id: string;
+    sohle_status: string;
+    bilder_n: number;
+    other: string | null;
+    fundstueck: string;
+    laenge: number | null;
+    breite: number | null;
+    m_cube: number | null;
   }) => {
     if (!selectedPoint) return;
 
@@ -259,7 +301,17 @@ export default function App() {
         notes: feedbackData.notes,
         investigator: feedbackData.investigator,
         investigator_username: feedbackData.investigator_username,
-        logged_at: new Date().toISOString()
+        logged_at: new Date().toISOString(),
+        
+        // New fields
+        target_id: feedbackData.target_id,
+        sohle_status: feedbackData.sohle_status,
+        bilder_n: feedbackData.bilder_n,
+        other: feedbackData.other,
+        fundstueck: feedbackData.fundstueck,
+        laenge: feedbackData.laenge,
+        breite: feedbackData.breite,
+        m_cube: feedbackData.m_cube
       };
 
       await db.pendingFeedback.put(feedbackRecord);
@@ -281,7 +333,7 @@ export default function App() {
         northing: coordsUpdated ? feedbackData.northing! : selectedPoint.northing,
         latitude: coordsUpdated ? feedbackData.latitude! : selectedPoint.latitude,
         longitude: coordsUpdated ? feedbackData.longitude! : selectedPoint.longitude,
-        local_status: feedbackData.status,
+        local_status: 'investigated',
         feedback: {
           id: feedbackRecord.id,
           visited: true,
@@ -291,7 +343,17 @@ export default function App() {
           notes: feedbackData.notes,
           investigator: feedbackData.investigator,
           investigator_username: feedbackData.investigator_username,
-          logged_at: feedbackRecord.logged_at
+          logged_at: feedbackRecord.logged_at,
+          
+          // New fields
+          target_id: feedbackData.target_id,
+          sohle_status: feedbackData.sohle_status,
+          bilder_n: feedbackData.bilder_n,
+          other: feedbackData.other,
+          fundstueck: feedbackData.fundstueck,
+          laenge: feedbackData.laenge,
+          breite: feedbackData.breite,
+          m_cube: feedbackData.m_cube
         }
       };
       
@@ -324,14 +386,17 @@ export default function App() {
         await db.transaction('rw', db.points, async () => {
           for (const p of importedPoints) {
             const tempId = Math.random().toString(36).substring(2, 15);
+            const target_id_val = `11-24-2736-${p.easting.toFixed(3)}-${p.northing.toFixed(3)}`;
             await db.points.put({
               id: tempId,
-              vm_nr: p.vm_nr,
+              project_id: '11-24-2736',
+              target_id: target_id_val,
+              vm_nr: String(p.vm_nr),
               easting: p.easting,
               northing: p.northing,
               latitude: p.latitude,
               longitude: p.longitude,
-              calculated_depth: p.calculated_depth,
+              evaluated_depth: p.evaluated_depth,
               opening_length: p.opening_length,
               opening_width: p.opening_width,
               opening_depth: p.opening_depth,
@@ -341,7 +406,8 @@ export default function App() {
               remarks: p.remarks,
               created_at: new Date().toISOString(),
               local_status: 'unvisited',
-              feedback: null
+              feedback: null,
+              instrument: p.instrument || 'georadar'
             });
           }
         });
@@ -367,7 +433,7 @@ export default function App() {
     if (!usernameClean) return;
 
     let role: AppRole = 'collector';
-    let fullname = usernameInput.trim();
+    let fullname = '';
 
     // Default accounts full names
     if (usernameClean === 'collector') {
@@ -376,6 +442,8 @@ export default function App() {
     } else if (usernameClean === 'dashboard' || usernameClean === 'admin') {
       role = 'dashboard';
       fullname = 'Operations Analyst';
+    } else if (usernameClean.includes('musonera') || usernameClean.includes('musoso')) {
+      fullname = 'Eric Musonera';
     } else {
       // Look up in profiles registry
       const profiles = JSON.parse(localStorage.getItem('nolte_users_profiles') || '{}');
@@ -384,9 +452,11 @@ export default function App() {
         role = userProfile.role;
         fullname = userProfile.fullname;
       } else {
-        // Fallback for custom logging
-        if (usernameClean.includes('dashboard') || usernameClean.includes('admin')) {
-          role = 'dashboard';
+        // Fallback: If username has a dot, replace with space and capitalize, else default to "Eric Musonera"
+        if (usernameClean.includes('.')) {
+          fullname = usernameClean.split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        } else {
+          fullname = 'Eric Musonera'; // Default first and last name instead of single word username
         }
       }
     }
@@ -468,7 +538,7 @@ export default function App() {
   // Reset selectedPoint when any filter changes so map zooms to fit the new selection
   useEffect(() => {
     setSelectedPoint(null);
-  }, [searchQuery, filterVmNr, filterStatus]);
+  }, [searchQuery, filterVmNr, filterStatus, filterInstrument, filterProjectId]);
 
   // Turn off edit location mode when selectedPoint changes
   useEffect(() => {
@@ -490,10 +560,16 @@ export default function App() {
       matchesStatus = !isInvestigated;
     }
     
-    return matchesSearch && matchesVmNr && matchesStatus;
+    const matchesInstrument = filterInstrument === 'all' || 
+                             (p.instrument && p.instrument.toLowerCase() === filterInstrument.toLowerCase());
+                             
+    const matchesProjectId = filterProjectId === 'all' || p.project_id === filterProjectId;
+    
+    return matchesSearch && matchesVmNr && matchesStatus && matchesInstrument && matchesProjectId;
   });
 
-  const allVmNumbers = points.map(p => p.vm_nr).sort((a,b) => a - b);
+  const allVmNumbers = points.map(p => p.vm_nr).sort((a,b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+  const uniqueProjectIds = Array.from(new Set(points.map(p => p.project_id || '11-24-2736'))).sort();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: '#090d16' }}>
@@ -854,154 +930,169 @@ export default function App() {
         
         // 2. Logged In Screens Layout
         <>
-          {/* Universal Header (Screenshot Match) */}
-          <header style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            padding: '12px 24px', 
-            margin: '10px 10px 0 10px', 
-            borderRadius: '10px',
-            backgroundColor: '#070a13',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
-          }}>
-            
-            {/* Left Corporate Logo Branding (Screenshot Match) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <img 
-                src="/logo.png" 
-                alt="Nolte Logo" 
-                style={{ 
-                  height: '42px', 
-                  width: 'auto', 
-                  objectFit: 'contain'
-                }} 
-                onError={(e) => { (e.target as any).style.display = 'none'; }} 
-              />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <h1 style={{ 
-                  fontSize: '1.2rem', 
-                  fontWeight: 800, 
-                  color: '#ffffff', 
-                  margin: 0, 
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.02em',
-                  lineHeight: '1.1',
-                  fontFamily: "var(--font-heading)"
-                }}>
-                  Nolte Geoservices
-                </h1>
-                <span style={{ 
-                  fontSize: '0.75rem', 
-                  color: '#f97316', 
-                  fontWeight: 700, 
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  lineHeight: '1.1',
-                  fontFamily: "var(--font-heading)"
-                }}>
-                  {userRole === 'collector' ? 'TARGET TRACKER FIELD APP' : 'DATA SYNC DASHBOARD'}
-                </span>
-              </div>
-            </div>
-
-            {/* Right Status Controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="app-container">
+          {/* Vertical left sidebar navigation (Screenshot template match) */}
+          <aside className={`app-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`} style={{ transition: 'width 0.2s, padding 0.2s, border-right 0.2s, opacity 0.2s' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', opacity: isSidebarCollapsed ? 0 : 1, transition: 'opacity 0.15s' }}>
               
-              {/* Online/Offline status */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '5px 10px',
-                borderRadius: 'var(--radius-full)',
-                backgroundColor: isOnline ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                border: `1px solid ${isOnline ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                color: isOnline ? '#10b981' : '#ef4444'
-              }}>
-                {isOnline ? <Wifi size={12} /> : <WifiOff size={12} />}
-                <span>{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
-              </div>
-
-              {/* Sync queue indicator */}
-              <button
-                onClick={handleSync}
-                className="btn-secondary"
-                style={{
-                  padding: '5px 12px',
-                  fontSize: '0.7rem',
-                  gap: '4px',
-                  border: pendingSyncCount > 0 ? '1px solid rgba(249, 115, 22, 0.4)' : '1px solid rgba(255,255,255,0.08)',
-                  background: pendingSyncCount > 0 ? 'rgba(249, 115, 22, 0.06)' : 'rgba(255,255,255,0.03)'
+              {/* Theme toggle button (replacing microphone record logo) */}
+              <button 
+                onClick={() => {
+                  const newTheme = theme === 'dark' ? 'light' : 'dark';
+                  setTheme(newTheme);
+                  localStorage.setItem('theme', newTheme);
                 }}
-                disabled={syncing}
+                className="sidebar-logo"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+                title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
               >
-                <RefreshCw size={12} className={syncing ? 'animate-spin' : ''} />
-                <span>Sync ({pendingSyncCount})</span>
+                <div className="sidebar-logo-inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {theme === 'dark' ? <Sun size={20} color="#fa5f1c" /> : <Moon size={20} color="#0f172a" />}
+                </div>
               </button>
 
-              {/* Active User session profile & signout */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#cbd5e1' }}>
-                  <User size={14} color="#f97316" />
-                  <span style={{ fontWeight: 600 }}>{currentUserFullName || currentUser}</span>
-                  <span 
-                    onClick={() => {
-                      const newRole = userRole === 'collector' ? 'dashboard' : 'collector';
-                      setUserRole(newRole);
-                      localStorage.setItem('nolte_role', newRole);
-                      showToast('info', `Switched view mode to: ${newRole}`);
-                    }}
-                    style={{ 
-                      fontSize: '0.6rem', 
-                      backgroundColor: 'rgba(249, 115, 22, 0.1)', 
-                      border: '1px solid rgba(249, 115, 22, 0.2)',
-                      padding: '2px 6px', 
-                      borderRadius: '4px', 
-                      textTransform: 'uppercase', 
-                      color: '#f97316',
-                      cursor: 'pointer',
-                      fontWeight: 'bold',
-                      userSelect: 'none'
-                    }}
-                    title="Click to switch between Collector and Dashboard (Dev Shortcut)"
-                  >
-                    {userRole} ⇄
+              {/* Navigation Menu */}
+              <nav className="sidebar-menu">
+                <button 
+                  className={`sidebar-item ${userRole === 'collector' && activeTab === 'map' ? 'active' : ''}`}
+                  onClick={() => {
+                    setUserRole('collector');
+                    setActiveTab('map');
+                  }}
+                  title="Field App"
+                >
+                  <Compass size={20} />
+                  <span className="sidebar-item-label">Field App</span>
+                </button>
+
+                <button 
+                  className={`sidebar-item ${userRole === 'dashboard' ? 'active' : ''}`}
+                  onClick={() => {
+                    setUserRole('dashboard');
+                  }}
+                  title="Dashboard"
+                >
+                  {/* Bar chart icon */}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" x2="18" y1="20" y2="10" />
+                    <line x1="12" x2="12" y1="20" y2="4" />
+                    <line x1="6" x2="6" y1="20" y2="14" />
+                  </svg>
+                  <span className="sidebar-item-label">Dashboard</span>
+                </button>
+
+                <button 
+                  className={`sidebar-item ${userRole === 'collector' && activeTab === 'import' ? 'active' : ''}`}
+                  onClick={() => {
+                    setUserRole('collector');
+                    setActiveTab('import');
+                  }}
+                  title="Load Points"
+                >
+                  <Upload size={20} />
+                  <span className="sidebar-item-label">Load Points</span>
+                </button>
+
+                <button 
+                  className="sidebar-item"
+                  onClick={handleSync}
+                  disabled={syncing}
+                  title="Sync Data"
+                >
+                  <RefreshCw size={20} className={syncing ? 'animate-spin' : ''} />
+                  <span className="sidebar-item-label">Sync</span>
+                  {pendingSyncCount > 0 && (
+                    <span className="sidebar-item-badge">{pendingSyncCount}</span>
+                  )}
+                </button>
+
+                <div 
+                  className="sidebar-item"
+                  style={{ cursor: 'default' }}
+                  title={isOnline ? "Network Connection: Online" : "Network Connection: Offline"}
+                >
+                  {isOnline ? (
+                    <Wifi size={20} style={{ color: '#10b981' }} />
+                  ) : (
+                    <WifiOff size={20} style={{ color: '#ef4444' }} />
+                  )}
+                  <span className="sidebar-item-label" style={{ color: isOnline ? '#10b981' : '#ef4444' }}>
+                    {isOnline ? 'Online' : 'Offline'}
                   </span>
                 </div>
-                <button
-                  onClick={handleSignOut}
-                  style={{
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                    color: '#f87171',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: '5px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer'
-                  }}
-                  title="Sign Out"
-                >
-                  <LogOut size={12} />
-                </button>
+              </nav>
+            </div>
+
+            {/* Bottom Controls */}
+            <div className="sidebar-bottom">
+              <div 
+                className="sidebar-avatar"
+                title={`User: ${currentUserFullName || currentUser}`}
+                onClick={() => {
+                  showToast('info', `Signed in as: ${currentUserFullName} (${userRole})`);
+                }}
+              >
+                <div style={{
+                  width: '100%', 
+                  height: '100%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  fontWeight: 'bold', 
+                  color: '#fa5f1c', 
+                  fontSize: '0.85rem',
+                  fontFamily: 'var(--font-heading)'
+                }}>
+                  {(currentUserFullName || currentUser || 'US').substring(0, 2).toUpperCase()}
+                </div>
               </div>
 
+              <button 
+                className="sidebar-logout" 
+                onClick={handleSignOut}
+                title="Sign Out"
+              >
+                <LogOut size={16} />
+              </button>
             </div>
-          </header>
+          </aside>
+
+          {/* Collapsible Sidebar Toggle Handle (Dockable) */}
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            style={{
+              position: 'absolute',
+              left: isSidebarCollapsed ? '0px' : '80px',
+              top: '24px',
+              zIndex: 10005,
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(10, 22, 18, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderLeft: 'none',
+              borderRadius: '0 8px 8px 0',
+              width: '20px',
+              height: '42px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fa5f1c',
+              cursor: 'pointer',
+              boxShadow: '4px 0 10px rgba(0,0,0,0.3)',
+              transition: 'left 0.2s, background-color 0.2s',
+              pointerEvents: 'auto'
+            }}
+            title={isSidebarCollapsed ? "Expand Sidebar (Undock)" : "Collapse Sidebar (Dock)"}
+          >
+            {isSidebarCollapsed ? <ChevronsRight size={12} /> : <ChevronsLeft size={12} />}
+          </button>
 
           {/* Main Interface Router */}
           {userRole === 'collector' ? (
             
-            // ROLE A: FIELD DATA COLLECTOR VIEW
-            <main className="collector-main" style={{ display: 'flex', flexGrow: 1, padding: '10px', gap: '10px', height: 'calc(100vh - 74px)', overflow: 'hidden' }}>
+            // ROLE A: FIELD DATA COLLECTOR VIEW (FIELD APP)
+            <main className="collector-main" style={{ display: 'flex', flexGrow: 1, padding: '16px', gap: '16px', height: '100vh', overflow: 'hidden' }}>
               
               {/* Left sidebar collector control panel */}
-              <section className="glass-panel collector-sidebar" style={{ width: '380px', display: 'flex', flexDirection: 'column', flexShrink: 0, padding: '16px', overflow: 'hidden' }}>
+              <section className="glass-panel collector-sidebar" style={{ width: '380px', display: 'flex', flexDirection: 'column', flexShrink: 0, padding: '16px', overflow: 'hidden', border: 'none', background: 'rgba(15, 34, 28, 0.4)' }}>
                 
                 {selectedPoint ? (
                   <FeedbackForm
@@ -1016,22 +1107,41 @@ export default function App() {
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', height: '100%', overflow: 'hidden' }}>
                     
-                    {/* Inner tab switcher (Map Listing / Importer) */}
-                    <div style={{ display: 'flex', backgroundColor: 'rgba(255,255,255,0.03)', padding: '3px', borderRadius: 'var(--radius-sm)' }}>
-                      <button 
-                        onClick={() => setActiveTab('map')}
-                        className={activeTab === 'map' ? 'btn-primary' : 'btn-secondary'}
-                        style={{ flex: 1, padding: '6px', fontSize: '0.75rem', border: 'none', boxShadow: 'none' }}
-                      >
-                        <Compass size={12} /> Targets List
-                      </button>
-                      <button 
-                        onClick={() => setActiveTab('import')}
-                        className={activeTab === 'import' ? 'btn-primary' : 'btn-secondary'}
-                        style={{ flex: 1, padding: '6px', fontSize: '0.75rem', border: 'none', boxShadow: 'none' }}
-                      >
-                        <Upload size={12} /> Load Points
-                      </button>
+                    {/* Survey Details Header (Screenshot Match) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                        Active Survey Area
+                      </span>
+                      <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        Wilhelmshaven Seedeich
+                      </h2>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '2px' }}>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#8c9f96', textTransform: 'uppercase' }}>Project ID</span>
+                        <select
+                          className="form-input"
+                          value={filterProjectId}
+                          onChange={(e) => setFilterProjectId(e.target.value)}
+                          style={{
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            height: '28px',
+                            padding: '0 8px',
+                            backgroundColor: 'rgba(10, 22, 18, 0.6)',
+                            borderColor: 'rgba(255, 255, 255, 0.06)',
+                            color: '#fff',
+                            width: '100%',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <option value="all">All Projects</option>
+                          {uniqueProjectIds.map(id => (
+                            <option key={id} value={id}>{id}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <span style={{ fontSize: '0.68rem', color: '#8c9f96', marginTop: '4px' }}>
+                        {filteredPoints.length} Targets Detected
+                      </span>
                     </div>
 
                     {activeTab === 'map' ? (
@@ -1041,14 +1151,14 @@ export default function App() {
                           
                           {/* Search bar */}
                           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <Search size={14} style={{ position: 'absolute', left: '10px', color: '#4b5563' }} />
+                            <Search size={14} style={{ position: 'absolute', left: '10px', color: '#8c9f96' }} />
                             <input
                               type="text"
                               className="form-input"
                               value={searchQuery}
                               onChange={(e) => setSearchQuery(e.target.value)}
                               placeholder="Search targets..."
-                              style={{ width: '100%', paddingLeft: '30px', fontSize: '0.8rem' }}
+                              style={{ width: '100%', paddingLeft: '30px', fontSize: '0.8rem', backgroundColor: 'rgba(10,22,18,0.4)', borderColor: 'rgba(255,255,255,0.06)' }}
                             />
                           </div>
 
@@ -1056,12 +1166,12 @@ export default function App() {
                             
                             {/* VM Nr. Filter Select */}
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                              <Shield size={12} style={{ position: 'absolute', left: '8px', color: '#4b5563' }} />
+                              <Shield size={12} style={{ position: 'absolute', left: '8px', color: '#8c9f96' }} />
                               <select
                                 className="form-input"
                                 value={filterVmNr}
                                 onChange={(e) => setFilterVmNr(e.target.value)}
-                                style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none' }}
+                                style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'rgba(10,22,18,0.4)', borderColor: 'rgba(255,255,255,0.06)' }}
                               >
                                 <option value="all">All VM Nr.</option>
                                 {allVmNumbers.map(vm => (
@@ -1070,14 +1180,18 @@ export default function App() {
                               </select>
                             </div>
 
-                            {/* Investigated Area select */}
+                            {/* Instrument Filter Select */}
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                              <MapPin size={12} style={{ position: 'absolute', left: '8px', color: '#4b5563' }} />
+                              <Layers size={12} style={{ position: 'absolute', left: '8px', color: '#8c9f96' }} />
                               <select
                                 className="form-input"
-                                style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none' }}
+                                value={filterInstrument}
+                                onChange={(e) => setFilterInstrument(e.target.value)}
+                                style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'rgba(10,22,18,0.4)', borderColor: 'rgba(255,255,255,0.06)' }}
                               >
-                                <option value="wilhelmshaven">Wilhelmshaven</option>
+                                <option value="all">All Instruments</option>
+                                <option value="georadar">Georadar</option>
+                                <option value="magnetic">Magnetic</option>
                               </select>
                             </div>
 
@@ -1087,50 +1201,72 @@ export default function App() {
                         {/* List coordinates */}
                         <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>SURVEY TARGETS ({filteredPoints.length})</span>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#8c9f96', letterSpacing: '0.02em', textTransform: 'uppercase' }}>TARGET LISTING ({filteredPoints.length})</span>
                             <select
                               className="form-input"
                               value={filterStatus}
                               onChange={(e) => setFilterStatus(e.target.value)}
-                              style={{ width: '130px', fontSize: '0.7rem', height: '24px', padding: '0 4px', background: 'rgba(17, 24, 39, 0.4)' }}
+                              style={{ width: '120px', fontSize: '0.7rem', height: '24px', padding: '0 4px', background: 'rgba(10, 22, 18, 0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
                             >
                               <option value="all">All Targets</option>
                               <option value="investigated">Investigated</option>
                               <option value="pending">Pending</option>
                             </select>
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto', flexGrow: 1 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', flexGrow: 1, paddingRight: '2px' }}>
                             {filteredPoints.map((point) => {
-                              const status = point.local_status || 'unvisited';
-                              let color = '#64748b';
-                              if (status === 'clear') color = '#10b981';
-                              else if (status === 'scrap') color = '#f59e0b';
-                              else if (status === 'uxo') color = '#ef4444';
-                              else if (status === 'false_alarm') color = '#8b5cf6';
+                              const isInvestigated = point.local_status === 'investigated';
+                              let statusText = 'PENDING';
+                              let color = '#ef4444'; // Red for pending
+
+                              if (isInvestigated && point.feedback) {
+                                const fund = point.feedback.fundstueck;
+                                statusText = fund === 'Sonstige' ? (point.feedback.other || 'Sonstige') : fund;
+                                if (fund === 'ohne Fund') {
+                                  color = '#64748b'; // Slate for empty holes
+                                } else {
+                                  color = '#10b981'; // Emerald for findings
+                                }
+                              }
 
                               return (
                                 <div
                                   key={point.id}
-                                  className="glass-card"
+                                  className={`target-card-white ${(selectedPoint as any)?.id === point.id ? 'active' : ''}`}
                                   onClick={() => setSelectedPoint(point)}
-                                  style={{
-                                    padding: '10px 12px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    borderLeft: `4px solid ${color}`
-                                  }}
                                 >
-                                  <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      <span style={{ fontWeight: 700, fontSize: '0.8rem', color: '#fff' }}>VM {point.vm_nr}</span>
-                                    </div>
-                                    <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
-                                      X: {point.easting} | Est: {point.calculated_depth}m
-                                    </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>VM {point.vm_nr}</span>
+                                    <span style={{ 
+                                      fontSize: '0.62rem', 
+                                      fontWeight: 800,
+                                      padding: '2px 8px', 
+                                      borderRadius: '9999px',
+                                      backgroundColor: 'rgba(0,0,0,0.05)',
+                                      color: color,
+                                      border: `1px solid ${color}33`
+                                    }}>
+                                      {statusText.toUpperCase()}
+                                    </span>
                                   </div>
-                                  <ChevronRight size={14} color="#475569" />
+                                  <div style={{ fontSize: '0.7rem', color: '#475569', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {point.instrument?.toUpperCase()} • {point.layer?.replace('Stoerkoerper ', '') || 'Target Layer'}
+                                  </div>
+                                  
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'space-between',
+                                    marginTop: '4px',
+                                    padding: '4px 8px',
+                                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                                    borderRadius: '6px'
+                                  }}>
+                                    <span style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 700 }}>EVALUATED DEPTH</span>
+                                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0f172a' }}>
+                                      {point.evaluated_depth ? `${point.evaluated_depth} m` : 'N/A'}
+                                    </span>
+                                  </div>
                                 </div>
                               );
                             })}
@@ -1149,7 +1285,82 @@ export default function App() {
               </section>
 
               {/* Collector map widget */}
-              <section className="glass-panel map-container-section" style={{ flexGrow: 1, padding: '6px', overflow: 'hidden' }}>
+              <section className="glass-panel map-container-section" style={{ flexGrow: 1, padding: '6px', overflow: 'hidden', position: 'relative' }}>
+                
+                {/* Floating Quick Summary panel (Screenshot template match) */}
+                <div style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  zIndex: 1000,
+                  width: '260px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.96)',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '16px',
+                  padding: '16px',
+                  boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  color: '#0f172a'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.75rem', color: '#0f172a', textTransform: 'uppercase', fontFamily: 'var(--font-heading)', letterSpacing: '0.02em' }}>Quick Summary</span>
+                  </div>
+
+                  {/* Stat 1: Target Investigation Status */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: '#64748b' }}>
+                      <span>INVESTIGATION PROGRESS</span>
+                      <span>{filteredPoints.filter(p => p.local_status === 'investigated').length} / {filteredPoints.length}</span>
+                    </div>
+                    <div style={{ height: '6px', width: '100%', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ 
+                        height: '100%', 
+                        width: `${(filteredPoints.filter(p => p.local_status === 'investigated').length / Math.max(1, filteredPoints.length)) * 100}%`, 
+                        backgroundColor: '#10b981',
+                        borderRadius: '3px'
+                      }} />
+                    </div>
+                  </div>
+
+                  {/* Stat 2: Instruments Class (Magnetic Progress) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: '#64748b' }}>
+                      <span>MAGNETIC TARGETS</span>
+                      <span>
+                        {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'magnetic' && p.local_status === 'investigated').length} / {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'magnetic').length}
+                      </span>
+                    </div>
+                    <div style={{ height: '6px', width: '100%', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ 
+                        height: '100%', 
+                        width: `${(filteredPoints.filter(p => p.instrument?.toLowerCase() === 'magnetic' && p.local_status === 'investigated').length / Math.max(1, filteredPoints.filter(p => p.instrument?.toLowerCase() === 'magnetic').length)) * 100}%`, 
+                        backgroundColor: '#fa5f1c',
+                        borderRadius: '3px'
+                      }} />
+                    </div>
+                  </div>
+
+                  {/* Stat 3: Georadar Targets Progress */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: '#64748b' }}>
+                      <span>GEORADAR TARGETS</span>
+                      <span>
+                        {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'georadar' && p.local_status === 'investigated').length} / {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'georadar').length}
+                      </span>
+                    </div>
+                    <div style={{ height: '6px', width: '100%', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ 
+                        height: '100%', 
+                        width: `${(filteredPoints.filter(p => p.instrument?.toLowerCase() === 'georadar' && p.local_status === 'investigated').length / Math.max(1, filteredPoints.filter(p => p.instrument?.toLowerCase() === 'georadar').length)) * 100}%`, 
+                        backgroundColor: '#38bdf8',
+                        borderRadius: '3px'
+                      }} />
+                    </div>
+                  </div>
+                </div>
+
                 <FieldMap
                   points={filteredPoints}
                   selectedPoint={selectedPoint}
@@ -1163,12 +1374,36 @@ export default function App() {
             </main>
           ) : (
             
-            // ROLE B: END USER / DASHBOARD VIEW
-            <main className="dashboard-main" style={{ display: 'flex', flexGrow: 1, padding: '10px', gap: '10px', height: 'calc(100vh - 74px)', overflow: 'hidden' }}>
+            // ROLE B: END USER / DASHBOARD VIEW (DASHBOARD)
+            <main className="dashboard-main" style={{ display: 'flex', flexGrow: 1, height: '100vh', overflow: 'hidden', position: 'relative' }}>
               
-              {/* Left Column Dashboard Widgets & List */}
-              <section className="glass-panel dashboard-sidebar" style={{ width: '440px', display: 'flex', flexDirection: 'column', flexShrink: 0, padding: '16px', overflow: 'hidden' }}>
-                
+              {/* Map background for high-tech transparent look (Screenshot 2 Match) */}
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
+                <FieldMap
+                  points={filteredPoints}
+                  selectedPoint={selectedPoint}
+                  onSelectPoint={(point) => setSelectedPoint(point)}
+                  viewMode="dashboard"
+                  isEditLocationMode={false}
+                />
+              </div>
+
+              {/* Floating translucent overlay panels */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 10,
+                pointerEvents: 'none',
+                display: 'flex',
+                padding: '8px',
+                gap: '8px',
+                boxSizing: 'border-box',
+                width: '100%',
+                height: '100%'
+              }}>
                 <Dashboard 
                   points={points}
                   filteredPoints={filteredPoints}
@@ -1180,25 +1415,16 @@ export default function App() {
                   setAddDataOpen={setAddDataOpen}
                   filterStatus={filterStatus}
                   setFilterStatus={setFilterStatus}
+                  filterInstrument={filterInstrument}
+                  setFilterInstrument={setFilterInstrument}
                 />
-              </section>
-
-              {/* Right Column Dashboard Map Widget */}
-              <section className="glass-panel map-container-section" style={{ flexGrow: 1, padding: '6px', overflow: 'hidden' }}>
-                <FieldMap
-                  points={filteredPoints}
-                  selectedPoint={selectedPoint}
-                  onSelectPoint={(point) => setSelectedPoint(point)}
-                  viewMode="dashboard"
-                  onAddDataClick={() => setAddDataOpen(true)}
-                  isEditLocationMode={false}
-                />
-              </section>
+              </div>
 
             </main>
 
           )}
 
+        </div>
         </>
       )}
 
@@ -1241,6 +1467,10 @@ export default function App() {
         @keyframes spin-anim {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        @keyframes slide-in-drawer {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
         }
       `}</style>
 

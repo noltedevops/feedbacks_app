@@ -62,7 +62,6 @@ export const ImportExport: React.FC<ImportExportProps> = ({ onImportSuccess, onS
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
     
     // Find column matches for GPR columns
-    const vmIdx = headers.findIndex(h => h.includes('vm') || h.includes('nr') || h.includes('target'));
     const eastIdx = headers.findIndex(h => h.includes('x') || h.includes('east'));
     const northIdx = headers.findIndex(h => h.includes('y') || h.includes('north'));
     const depthIdx = headers.findIndex(h => h.includes('depth') || h.includes('tiefe'));
@@ -77,26 +76,35 @@ export const ImportExport: React.FC<ImportExportProps> = ({ onImportSuccess, onS
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].split(',').map(c => c.trim());
       
-      const easting = parseFloat(cols[eastIdx]);
-      const northing = parseFloat(cols[northIdx]);
+      let easting = parseFloat(cols[eastIdx]);
+      let northing = parseFloat(cols[northIdx]);
       
       if (isNaN(easting) || isNaN(northing)) continue;
 
-      const vm_nr = vmIdx !== -1 && cols[vmIdx] ? parseInt(cols[vmIdx]) : 1000 + i;
-      const calculated_depth = depthIdx !== -1 && cols[depthIdx] ? parseFloat(cols[depthIdx]) : null;
+      // Correct coordinate offset for any points missing the leading 4 in Easting
+      if (easting > 0 && easting < 100000) {
+        easting += 397000.0;
+        northing -= 21000.0;
+      }
+
+      const vm_nr_val = `2736-${i + 1}`;
+      const evaluated_depth = depthIdx !== -1 && cols[depthIdx] ? parseFloat(cols[depthIdx]) : null;
       const find_description = findIdx !== -1 && cols[findIdx] ? cols[findIdx] : 'Imported Item';
       const remarks = remarksIdx !== -1 && cols[remarksIdx] ? cols[remarksIdx] : '---';
 
       // Convert coordinates via JS converter on-the-fly!
       const [latitude, longitude] = utm32nToLatLonJS(easting, northing);
+      const target_id_val = `11-24-2736-${easting.toFixed(3)}-${northing.toFixed(3)}`;
 
       points.push({
-        vm_nr,
+        project_id: '11-24-2736',
+        target_id: target_id_val,
+        vm_nr: vm_nr_val,
         easting,
         northing,
         latitude,
         longitude,
-        calculated_depth: isNaN(calculated_depth as any) ? null : calculated_depth,
+        evaluated_depth: isNaN(evaluated_depth as any) ? null : evaluated_depth,
         opening_length: 1.0,  // default values
         opening_width: 1.0,
         opening_depth: 0.5,
