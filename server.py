@@ -7,6 +7,7 @@ from pydantic import BaseModel
 import datetime
 import os
 import json
+import uuid
 
 from database import init_db, get_db, utm32n_to_latlon
 import models
@@ -178,7 +179,7 @@ def import_points(points_list: List[PointCreate], db: Session = Depends(get_db))
         target_id_val = f"11-24-2736-{p_data.easting:.3f}-{p_data.northing:.3f}"
         
         db_anomaly = models.Anomaly(
-            id=f"pt-uuid-vm-{vm_nr_val}",
+            id=str(uuid.uuid5(uuid.NAMESPACE_DNS, target_id_val)),
             project_id='11-24-2736',
             instrument='georadar',
             easting=p_data.easting,
@@ -388,7 +389,7 @@ def seed_mock_data(db: Session = Depends(get_db)):
         target_id_val = f"11-24-2736-{r['x']:.3f}-{r['y']:.3f}"
         
         p = models.Anomaly(
-            id=f"pt-uuid-vm-{vm_nr_val}",
+            id=str(uuid.uuid5(uuid.NAMESPACE_DNS, target_id_val)),
             project_id='11-24-2736',
             instrument='georadar',
             easting=r["x"],
@@ -408,13 +409,18 @@ def seed_mock_data(db: Session = Depends(get_db)):
     db.commit()
     
     # Pre-populate 4 investigated targets to show Green markers and display mock data
+    uuid_1 = str(uuid.uuid5(uuid.NAMESPACE_DNS, "11-24-2736-442972.981-5937097.795"))
+    uuid_4 = str(uuid.uuid5(uuid.NAMESPACE_DNS, "11-24-2736-442974.440-5937090.100"))
+    uuid_8 = str(uuid.uuid5(uuid.NAMESPACE_DNS, "11-24-2736-442982.135-5937060.746"))
+    uuid_28 = str(uuid.uuid5(uuid.NAMESPACE_DNS, "11-24-2736-443470.349-5935866.705"))
+
     # Target 1 (VM 2736-1) - Investigated: Clear
-    anomaly_1 = db.query(models.Anomaly).filter(models.Anomaly.id == "pt-uuid-vm-2736-1").first()
+    anomaly_1 = db.query(models.Anomaly).filter(models.Anomaly.id == uuid_1).first()
     if anomaly_1:
         anomaly_1.status = "investigated"
     db.add(models.Feedback(
         id="fb-uuid-161",
-        anomaly_id="pt-uuid-vm-2736-1",
+        anomaly_id=uuid_1,
         visited=True,
         tief=1.20,
         photos=json.dumps([]),
@@ -433,12 +439,12 @@ def seed_mock_data(db: Session = Depends(get_db)):
     ))
     
     # Target 4 (VM 2736-4) - Investigated: Scrap Metal
-    anomaly_4 = db.query(models.Anomaly).filter(models.Anomaly.id == "pt-uuid-vm-2736-4").first()
+    anomaly_4 = db.query(models.Anomaly).filter(models.Anomaly.id == uuid_4).first()
     if anomaly_4:
         anomaly_4.status = "investigated"
     db.add(models.Feedback(
         id="fb-uuid-1519",
-        anomaly_id="pt-uuid-vm-2736-4",
+        anomaly_id=uuid_4,
         visited=True,
         tief=0.55,
         photos=json.dumps([]),
@@ -457,12 +463,12 @@ def seed_mock_data(db: Session = Depends(get_db)):
     ))
     
     # Target 8 (VM 2736-8) - Investigated: False Alarm
-    anomaly_8 = db.query(models.Anomaly).filter(models.Anomaly.id == "pt-uuid-vm-2736-8").first()
+    anomaly_8 = db.query(models.Anomaly).filter(models.Anomaly.id == uuid_8).first()
     if anomaly_8:
         anomaly_8.status = "investigated"
     db.add(models.Feedback(
         id="fb-uuid-473",
-        anomaly_id="pt-uuid-vm-2736-8",
+        anomaly_id=uuid_8,
         visited=True,
         tief=0.35,
         notes="Excavation aborted due to intersection with active utility (Kunststoffleitung). Signal caused by surrounding mineralization.",
@@ -480,12 +486,12 @@ def seed_mock_data(db: Session = Depends(get_db)):
     ))
     
     # Target 28 (VM 2736-28) - Investigated: UXO / Mine
-    anomaly_28 = db.query(models.Anomaly).filter(models.Anomaly.id == "pt-uuid-vm-2736-28").first()
+    anomaly_28 = db.query(models.Anomaly).filter(models.Anomaly.id == uuid_28).first()
     if anomaly_28:
         anomaly_28.status = "investigated"
     db.add(models.Feedback(
         id="fb-uuid-1178",
-        anomaly_id="pt-uuid-vm-2736-28",
+        anomaly_id=uuid_28,
         visited=True,
         tief=1.05,
         notes="PMN-2 landmine variant detected in close proximity to Seedeich boundary. Area secured and flagged for demolition.",
