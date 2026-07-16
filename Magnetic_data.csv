@@ -1,0 +1,2431 @@
+snippet,Nummer,Rechtswert,Hochwert,Tiefe [m],layer
+"Depth: 1,50 m
+Magnetic Moment: 321,096 Am²",1,443466.619,5935900.099,1.5,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 173,202 Am²",2,443414.242,5935984.45,1.6,Stoerkoerper Magnetik Nord
+"Depth: 1,60 m
+Magnetic Moment: 214,405 Am²",3,443071.611,5936809.951,1.6,Stoerkoerper Magnetik Nord
+"Depth: 0,70 m
+Magnetic Moment: 31,294 Am²",4,443091.326,5936719.642,0.7,Stoerkoerper Magnetik Nord
+"Depth: 1,70 m
+Magnetic Moment: 194,792 Am²",5,443057.29,5936858.058,1.7,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 47,721 Am²",6,443445.782,5935950.883,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,65 m
+Magnetic Moment: 210,139 Am²",7,443023.592,5936974.476,1.7,Stoerkoerper Magnetik Nord
+"Depth: 1,90 m
+Magnetic Moment: 160,703 Am²",8,443027.249,5936954.238,1.9,Stoerkoerper Magnetik Nord
+"Depth: 1,90 m
+Magnetic Moment: 259,471 Am²",9,443204.142,5936364.049,1.9,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 35,839 Am²",10,443455.623,5935912.727,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 21,496 Am²",11,443738.753,5935453.779,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 39,727 Am²",12,443454.285,5935913.743,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,70 m
+Magnetic Moment: 85,051 Am²",13,443052.446,5936879.359,1.7,Stoerkoerper Magnetik Nord
+"Depth: 2,40 m
+Magnetic Moment: 167,391 Am²",14,443824.312,5935264.163,2.4,Stoerkoerper Magnetik Nord
+"Depth: 1,65 m
+Magnetic Moment: 57,795 Am²",15,443174.185,5936400.396,1.7,Stoerkoerper Magnetik Nord
+"Depth: 2,40 m
+Magnetic Moment: 253,547 Am²",16,443302.74,5936165.529,2.4,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 23,087 Am²",17,443623.328,5935641.253,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,90 m
+Magnetic Moment: 84,476 Am²",18,443646.636,5935600.637,1.9,Stoerkoerper Magnetik Nord
+"Depth: 1,95 m
+Magnetic Moment: 136,527 Am²",19,443463.939,5935901.731,2,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 24,964 Am²",20,443833.256,5935297.397,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 17,806 Am²",21,443256.491,5936252.306,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 3,628 Am²",22,443148.773,5936486.574,0.6,Stoerkoerper Magnetik Nord
+"Depth: 1,85 m
+Magnetic Moment: 54,513 Am²",23,443106.45,5936696.968,1.9,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 8,050 Am²",24,443105.848,5936734.414,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 17,619 Am²",25,443093.077,5936732.367,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 1,439 Am²",26,443708.041,5935510.58,0.5,Stoerkoerper Magnetik Nord
+"Depth: 1,80 m
+Magnetic Moment: 54,811 Am²",27,443643.785,5935608.818,1.8,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 19,903 Am²",28,443470.763,5935866.26,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,45 m
+Magnetic Moment: 15,227 Am²",29,443009.581,5937015.032,1.5,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 3,510 Am²",30,443134.317,5936628.005,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 4,993 Am²",31,443095.132,5936732.793,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,65 m
+Magnetic Moment: 22,570 Am²",32,443281.375,5936222.318,1.7,Stoerkoerper Magnetik Nord
+"Depth: 2,75 m
+Magnetic Moment: 89,529 Am²",33,443054.559,5936821.901,2.8,Stoerkoerper Magnetik Nord
+"Depth: 1,70 m
+Magnetic Moment: 30,816 Am²",34,443052.16,5936863.767,1.7,Stoerkoerper Magnetik Nord
+"Depth: 1,70 m
+Magnetic Moment: 16,325 Am²",35,443674.665,5935557.764,1.7,Stoerkoerper Magnetik Nord
+"Depth: 1,75 m
+Magnetic Moment: 26,123 Am²",36,443799.235,5935357.535,1.8,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 6,256 Am²",37,443071.713,5936772.511,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 7,116 Am²",38,443190.139,5936371.864,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 7,675 Am²",39,443750.374,5935439.045,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,50 m
+Magnetic Moment: 15,380 Am²",40,443599.769,5935677.524,1.5,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 2,914 Am²",41,443760.357,5935249.582,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 5,200 Am²",42,443054.684,5936865.837,1,Stoerkoerper Magnetik Nord
+"Depth: 2,90 m
+Magnetic Moment: 129,233 Am²",43,443248.486,5936264.248,2.9,Stoerkoerper Magnetik Nord
+"Depth: 0,35 m
+Magnetic Moment: 0,304 Am²",44,443471.125,5935917.44,0.4,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 4,697 Am²",45,443132.876,5936603.63,0.9,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 5,474 Am²",46,443649.678,5935604.199,1,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 2,154 Am²",47,443646.882,5935558.446,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 7,050 Am²",48,443647.016,5935603.181,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,763 Am²",49,443691.38,5935559.414,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 0,636 Am²",50,443607.383,5935687.28,0.7,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 8,667 Am²",51,443712.443,5935502.429,1.6,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 3,058 Am²",52,443025.555,5936896.126,1,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 3,597 Am²",53,443031.369,5936972.784,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,40 m
+Magnetic Moment: 4,451 Am²",54,443635.778,5935637.356,1.4,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 3,683 Am²",55,443097.833,5936691.173,1,Stoerkoerper Magnetik Nord
+"Depth: 2,10 m
+Magnetic Moment: 41,182 Am²",56,443228.264,5936303.778,2.1,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 2,496 Am²",57,443644.09,5935550.732,1,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 4,973 Am²",58,443124.269,5936648.819,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 2,722 Am²",59,443270.955,5936191.152,0.9,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 3,432 Am²",60,443196.199,5936393.785,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,80 m
+Magnetic Moment: 11,340 Am²",61,443016.322,5936947.571,1.8,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 4,778 Am²",62,443067.908,5936780.354,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 5,751 Am²",63,443558.483,5935706.959,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 5,009 Am²",64,442991.511,5937079.878,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,65 m
+Magnetic Moment: 10,260 Am²",65,443012.236,5936965.315,1.7,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 3,431 Am²",66,442984.176,5937051.674,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 1,125 Am²",67,443632.379,5935599.707,0.7,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 0,765 Am²",68,443631.203,5935572.43,0.7,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 10,417 Am²",69,443196.003,5936356.448,1.6,Stoerkoerper Magnetik Nord
+"Depth: 2,15 m
+Magnetic Moment: 18,039 Am²",70,443263.748,5936202.934,2.2,Stoerkoerper Magnetik Nord
+"Depth: 1,70 m
+Magnetic Moment: 8,223 Am²",71,443105.748,5936688.379,1.7,Stoerkoerper Magnetik Nord
+"Depth: 1,70 m
+Magnetic Moment: 12,084 Am²",72,443116.74,5936646.21,1.7,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 6,893 Am²",73,443641.244,5935555.115,1.6,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 0,723 Am²",74,443714.169,5935517.204,0.6,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 3,310 Am²",75,443096.945,5936742.368,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 2,865 Am²",76,443080.867,5936752.107,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 2,535 Am²",77,443654.585,5935613.338,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 0,435 Am²",78,443666.26,5935590.605,0.6,Stoerkoerper Magnetik Nord
+"Depth: 1,40 m
+Magnetic Moment: 3,672 Am²",79,443635.034,5935629.467,1.4,Stoerkoerper Magnetik Nord
+"Depth: 2,65 m
+Magnetic Moment: 30,190 Am²",80,443041.368,5936906.034,2.7,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 1,018 Am²",81,443627.581,5935608.112,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 3,948 Am²",82,443743.263,5935442.129,1.4,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,417 Am²",83,443604.22,5935702.863,0.5,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 1,205 Am²",84,443610.408,5935693.592,1,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 4,163 Am²",85,443120.773,5936598.826,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 9,002 Am²",86,443825.966,5935310.53,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,70 m
+Magnetic Moment: 0,700 Am²",87,443662.651,5935606.444,0.7,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 2,488 Am²",88,443801.073,5935364.961,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,55 m
+Magnetic Moment: 0,477 Am²",89,443632.309,5935635.698,0.6,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 1,883 Am²",90,443144.117,5936611.443,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,10 m
+Magnetic Moment: 0,059 Am²",91,443826.418,5935264.738,0.1,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 1,978 Am²",92,443762.547,5935374.319,0.8,Stoerkoerper Magnetik Nord
+"Depth: 2,30 m
+Magnetic Moment: 18,464 Am²",93,443567.3,5935758.838,2.3,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 1,834 Am²",94,443749.516,5935450.952,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,60 m
+Magnetic Moment: 3,461 Am²",95,443654.716,5935615.936,1.6,Stoerkoerper Magnetik Nord
+"Depth: 1,75 m
+Magnetic Moment: 3,755 Am²",96,443122.73,5936649.687,1.8,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 1,933 Am²",97,443094.015,5936697.916,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,75 m
+Magnetic Moment: 10,248 Am²",98,443059.81,5936838.833,1.8,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 0,845 Am²",99,443097.009,5936693.282,0.8,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 0,741 Am²",100,443747.435,5935448.227,0.9,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,167 Am²",101,443630.336,5935637.92,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,508 Am²",102,443067.099,5936775.415,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 0,909 Am²",103,443641.404,5935639.688,0.9,Stoerkoerper Magnetik Nord
+"Depth: 0,40 m
+Magnetic Moment: 0,109 Am²",104,443361.319,5936094.1,0.4,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 0,750 Am²",105,443643.016,5935565.39,0.8,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,576 Am²",106,443454.649,5935914.938,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 0,712 Am²",107,443828.901,5935321.941,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 2,587 Am²",108,443024.189,5936995.213,1.4,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 0,635 Am²",109,443028.829,5936965.216,0.9,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 1,090 Am²",110,443005.074,5936959.952,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,60 m
+Magnetic Moment: 4,831 Am²",111,443078.901,5936754.93,1.6,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,991 Am²",112,443126.34,5936650.644,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,65 m
+Magnetic Moment: 4,628 Am²",113,443215.677,5936375.658,1.7,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,503 Am²",114,443796.76,5935367.912,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,70 m
+Magnetic Moment: 3,325 Am²",115,443737.42,5935455.095,1.7,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 2,166 Am²",116,443064.793,5936875.213,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,50 m
+Magnetic Moment: 3,773 Am²",117,443642.223,5935637.129,1.5,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 0,653 Am²",118,443660.224,5935599.975,1,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 2,106 Am²",119,443654.528,5935545.809,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,45 m
+Magnetic Moment: 0,155 Am²",120,443725.925,5935480.375,0.5,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 1,584 Am²",121,443412.787,5936013.259,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 0,571 Am²",122,443765.068,5935434.721,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 5,096 Am²",123,443709.187,5935527.011,1.6,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 0,916 Am²",124,443674.057,5935586.363,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 1,213 Am²",125,443808.112,5935301.396,1,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 1,132 Am²",126,443632.675,5935574.261,1,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,287 Am²",127,443633.431,5935637.534,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,399 Am²",128,443640.781,5935637.746,0.8,Stoerkoerper Magnetik Nord
+"Depth: 0,35 m
+Magnetic Moment: 0,069 Am²",129,443672.923,5935583.478,0.4,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 0,801 Am²",130,443638.871,5935569.889,0.9,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 0,701 Am²",131,443628.39,5935583.76,0.8,Stoerkoerper Magnetik Nord
+"Depth: 2,15 m
+Magnetic Moment: 11,120 Am²",132,443250.045,5936277.576,2.2,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 1,228 Am²",133,443529.003,5935799.933,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 2,587 Am²",134,443651.811,5935602.874,1.6,Stoerkoerper Magnetik Nord
+"Depth: 1,60 m
+Magnetic Moment: 4,940 Am²",135,443793.598,5935358.502,1.6,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 0,919 Am²",136,443156.06,5936577.76,0.9,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 0,419 Am²",137,443538.117,5935805.523,0.7,Stoerkoerper Magnetik Nord
+"Depth: 1,70 m
+Magnetic Moment: 3,734 Am²",138,443081.543,5936750.15,1.7,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,474 Am²",139,443790.462,5935338.596,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 0,421 Am²",140,443374.711,5936047.754,0.6,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 0,725 Am²",141,443705.811,5935503.808,1,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 1,900 Am²",142,443674.104,5935531.679,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,353 Am²",143,443822.276,5935323.87,0.8,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 0,481 Am²",144,443056.43,5936899.056,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 2,148 Am²",145,443745.187,5935444.205,1.6,Stoerkoerper Magnetik Nord
+"Depth: 1,85 m
+Magnetic Moment: 6,693 Am²",146,443652.195,5935609.868,1.9,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 1,402 Am²",147,443270.01,5936216.655,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 1,515 Am²",148,443205.484,5936392.724,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 1,172 Am²",149,443638.299,5935634.976,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,45 m
+Magnetic Moment: 1,849 Am²",150,443792.719,5935389.504,1.5,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,430 Am²",151,443630.496,5935580.186,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 1,179 Am²",152,443662.502,5935593.999,1,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 1,833 Am²",153,443121.464,5936648.353,1.6,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 0,497 Am²",154,443011.026,5937018.863,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 1,019 Am²",155,443643.044,5935634.72,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,40 m
+Magnetic Moment: 0,092 Am²",156,443706.248,5935531.995,0.4,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,357 Am²",157,443830.605,5935322.321,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 1,224 Am²",158,443417.452,5935989.56,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,45 m
+Magnetic Moment: 0,111 Am²",159,443629.876,5935637.026,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 0,524 Am²",160,443005.41,5937029.977,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 1,441 Am²",161,442972.981,5937097.795,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 1,717 Am²",162,443807.207,5935313.503,1.4,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,124 Am²",163,443710.975,5935509.245,0.5,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 0,921 Am²",164,443404.744,5936017.804,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,45 m
+Magnetic Moment: 0,096 Am²",165,443641.621,5935632.737,0.5,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 0,666 Am²",166,443661.629,5935583.663,1,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 0,968 Am²",167,443267.304,5936249.528,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,55 m
+Magnetic Moment: 0,200 Am²",168,443796.938,5935366.06,0.6,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 0,159 Am²",169,443723.297,5935486.354,0.7,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 0,547 Am²",170,442991.185,5937031.697,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 1,191 Am²",171,443345.621,5936114.832,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,80 m
+Magnetic Moment: 2,695 Am²",172,443189.952,5936444.045,1.8,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 0,711 Am²",173,443577.694,5935712.527,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,95 m
+Magnetic Moment: 3,972 Am²",174,443793.035,5935390.799,2,Stoerkoerper Magnetik Nord
+"Depth: 0,25 m
+Magnetic Moment: 0,034 Am²",175,443639.898,5935639.106,0.2,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,237 Am²",176,443830.598,5935330.069,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 1,036 Am²",177,443108.152,5936739.035,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 1,597 Am²",178,443753.681,5935255.66,1,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 0,394 Am²",179,443768.379,5935247.437,0.9,Stoerkoerper Magnetik Nord
+"Depth: 2,55 m
+Magnetic Moment: 209,936 Am²",180,443824.362,5935264.163,2.6,Stoerkoerper Magnetik Nord
+"Depth: 2,55 m
+Magnetic Moment: 208,161 Am²",181,443824.362,5935264.163,2.6,Stoerkoerper Magnetik Nord
+"Depth: 1,47 m
+Magnetic Moment: 9,021 Am²",182,443822.383,5935261.687,1.5,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 26,433 Am²",183,443827.782,5935265.921,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 1,743 Am²",184,443814.534,5935286.723,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 2,213 Am²",185,443841.789,5935297.845,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 7,441 Am²",186,443826.139,5935308.328,0.7,Stoerkoerper Magnetik Nord
+"Depth: 0,40 m
+Magnetic Moment: 0,765 Am²",187,443830.143,5935308.73,0.4,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 5,036 Am²",188,443829.952,5935309.532,0.6,Stoerkoerper Magnetik Nord
+"Depth: 0,45 m
+Magnetic Moment: 0,106 Am²",189,443832.405,5935313.952,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,45 m
+Magnetic Moment: 0,122 Am²",190,443828.91,5935318.492,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,70 m
+Magnetic Moment: 0,488 Am²",191,443823.599,5935321.655,0.7,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 0,659 Am²",192,443821.606,5935330.526,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 0,127 Am²",193,443824.465,5935339.739,0.6,Stoerkoerper Magnetik Nord
+"Depth: 0,45 m
+Magnetic Moment: 0,196 Am²",194,443820.755,5935338.834,0.5,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 0,958 Am²",195,443797.841,5935362.151,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,386 Am²",196,443808.921,5935364.917,0.8,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 4,724 Am²",197,443779.481,5935385.963,1,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 0,528 Am²",198,443783.651,5935387.762,0.9,Stoerkoerper Magnetik Nord
+"Depth: 2,15 m
+Magnetic Moment: 9,041 Am²",199,443783.683,5935398.809,2.2,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 4,626 Am²",200,443758.833,5935393.957,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 5,510 Am²",201,443783.829,5935406.855,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 0,505 Am²",202,443744.019,5935404.981,1,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 1,243 Am²",203,443745.006,5935416.516,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 39,998 Am²",204,443737.226,5935430.555,1.4,Stoerkoerper Magnetik Nord
+"Depth: 2,25 m
+Magnetic Moment: 45,092 Am²",205,443751.088,5935456.981,2.3,Stoerkoerper Magnetik Nord
+"Depth: 0,55 m
+Magnetic Moment: 0,121 Am²",206,443733.143,5935456.946,0.6,Stoerkoerper Magnetik Nord
+"Depth: 0,40 m
+Magnetic Moment: 0,109 Am²",207,443739.78,5935472.762,0.4,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 5,064 Am²",208,443730.891,5935477.666,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,97 m
+Magnetic Moment: 5,307 Am²",209,443717.616,5935487.772,1,Stoerkoerper Magnetik Nord
+"Depth: 0,99 m
+Magnetic Moment: 43,553 Am²",210,443709.155,5935474.127,1,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 1,207 Am²",211,443699.79,5935489.335,0.9,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 1,968 Am²",212,443706.732,5935505.597,1,Stoerkoerper Magnetik Nord
+"Depth: 0,40 m
+Magnetic Moment: 0,095 Am²",213,443721.747,5935507.217,0.4,Stoerkoerper Magnetik Nord
+"Depth: 0,45 m
+Magnetic Moment: 0,149 Am²",214,443710.479,5935513.8,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 0,910 Am²",215,443717.061,5935516.62,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 0,997 Am²",216,443715.806,5935520.334,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 2,300 Am²",217,443711.75,5935519.783,0.7,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 5,961 Am²",218,443704.333,5935513.923,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,14 m
+Magnetic Moment: 12,788 Am²",219,443701.875,5935513.203,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,75 m
+Magnetic Moment: 7,559 Am²",220,443690.307,5935494.746,1.8,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 1,631 Am²",221,443689.24,5935497.408,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 0,249 Am²",222,443686.787,5935501.286,0.7,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,433 Am²",223,443684.581,5935504.962,0.8,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 1,130 Am²",224,443703.321,5935533.829,1,Stoerkoerper Magnetik Nord
+"Depth: 1,70 m
+Magnetic Moment: 6,526 Am²",225,443705.328,5935534.505,1.7,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 6,615 Am²",226,443692.61,5935528.509,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 4,507 Am²",227,443674.117,5935532.828,1.6,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 0,380 Am²",228,443688.699,5935540.002,0.7,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,109 Am²",229,443679.078,5935550.564,0.5,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 3,279 Am²",230,443666.116,5935578.511,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 0,833 Am²",231,443675.377,5935583.898,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 0,887 Am²",232,443670.02,5935591.51,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 0,556 Am²",233,443667.966,5935591.085,0.6,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 2,110 Am²",234,443667.294,5935593.492,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 1,165 Am²",235,443667.999,5935598.032,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 0,632 Am²",236,443661.698,5935597.858,0.7,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 6,309 Am²",237,443653.96,5935594.451,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 1,452 Am²",238,443649.648,5935593.353,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 1,455 Am²",239,443657.761,5935607.152,1.4,Stoerkoerper Magnetik Nord
+"Depth: 1,45 m
+Magnetic Moment: 1,755 Am²",240,443657.288,5935609.457,1.5,Stoerkoerper Magnetik Nord
+"Depth: 0,55 m
+Magnetic Moment: 0,207 Am²",241,443655.058,5935611.033,0.6,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 1,235 Am²",242,443658.401,5935614.692,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,60 m
+Magnetic Moment: 4,512 Am²",243,443656.838,5935613.611,1.6,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 1,291 Am²",244,443651.857,5935606.723,1,Stoerkoerper Magnetik Nord
+"Depth: 0,70 m
+Magnetic Moment: 4,162 Am²",245,443660.496,5935534.891,0.7,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 0,556 Am²",246,443660.165,5935536.444,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 1,262 Am²",247,443657.606,5935535.625,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 46,296 Am²",248,443654.61,5935531.762,1.4,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 5,326 Am²",249,443656.19,5935538.441,0.7,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 2,676 Am²",250,443652.512,5935535.986,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 10,418 Am²",251,443657.835,5935542.27,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 1,054 Am²",252,443654.006,5935543.916,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,60 m
+Magnetic Moment: 3,051 Am²",253,443644.834,5935558.621,1.6,Stoerkoerper Magnetik Nord
+"Depth: 1,40 m
+Magnetic Moment: 3,614 Am²",254,443640.224,5935557.676,1.4,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 4,558 Am²",255,443639.264,5935560.937,0.6,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 28,438 Am²",256,443639.26,5935564.786,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 0,398 Am²",257,443642.104,5935568.6,0.9,Stoerkoerper Magnetik Nord
+"Depth: 2,35 m
+Magnetic Moment: 29,903 Am²",258,443636.668,5935569.615,2.4,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 4,592 Am²",259,443635.557,5935572.827,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 20,616 Am²",260,443635.608,5935577.076,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 0,428 Am²",261,443634.107,5935581.142,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 3,536 Am²",262,443629.516,5935585.946,1,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 0,389 Am²",263,443625.057,5935585.099,0.7,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 0,592 Am²",264,443627.243,5935588.222,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 5,579 Am²",265,443620.98,5935591.146,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 6,625 Am²",266,443637.892,5935592.594,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 0,907 Am²",267,443635.056,5935593.627,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 1,723 Am²",268,443635.187,5935596.225,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 6,734 Am²",269,443633.965,5935598.589,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 1,670 Am²",270,443636.688,5935625.698,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,40 m
+Magnetic Moment: 6,460 Am²",271,443634.2,5935630.776,1.4,Stoerkoerper Magnetik Nord
+"Depth: 0,55 m
+Magnetic Moment: 1,808 Am²",272,443633.333,5935633.536,0.6,Stoerkoerper Magnetik Nord
+"Depth: 0,40 m
+Magnetic Moment: 0,086 Am²",273,443642.405,5935635.627,0.4,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 0,325 Am²",274,443640.043,5935634.555,0.6,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 0,828 Am²",275,443638.724,5935637.07,0.8,Stoerkoerper Magnetik Nord
+"Depth: 0,45 m
+Magnetic Moment: 0,134 Am²",276,443637.476,5935637.185,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,70 m
+Magnetic Moment: 0,251 Am²",277,443639.546,5935643.159,0.7,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 0,499 Am²",278,443637.175,5935641.338,0.8,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 1,108 Am²",279,443631.705,5935635.355,0.8,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,170 Am²",280,443628.797,5935634.59,0.5,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 3,402 Am²",281,443627.825,5935636.901,1.4,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 0,462 Am²",282,443632.651,5935639.192,0.8,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 0,246 Am²",283,443629.508,5935639.73,0.6,Stoerkoerper Magnetik Nord
+"Depth: 0,70 m
+Magnetic Moment: 0,320 Am²",284,443632.425,5935641.195,0.7,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 0,212 Am²",285,443633.535,5935642.081,0.6,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 0,578 Am²",286,443631.21,5935644.058,1,Stoerkoerper Magnetik Nord
+"Depth: 0,62 m
+Magnetic Moment: 0,172 Am²",287,443633.258,5935643.984,0.6,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 47,405 Am²",288,443622.214,5935644.166,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 46,436 Am²",289,443614.954,5935655.699,1,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 2,090 Am²",290,443620.36,5935618.745,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,40 m
+Magnetic Moment: 13,286 Am²",291,443621.63,5935620.43,1.4,Stoerkoerper Magnetik Nord
+"Depth: 0,30 m
+Magnetic Moment: 0,068 Am²",292,443629.538,5935663.173,0.3,Stoerkoerper Magnetik Nord
+"Depth: 0,70 m
+Magnetic Moment: 0,173 Am²",293,443618.513,5935681.699,0.7,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 0,777 Am²",294,443608.224,5935686.52,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 6,423 Am²",295,443600.296,5935709.108,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 1,000 Am²",296,443572.403,5935700.644,0.8,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 3,071 Am²",297,443574.447,5935721.114,0.8,Stoerkoerper Magnetik Nord
+"Depth: 0,70 m
+Magnetic Moment: 0,269 Am²",298,443578.949,5935725.559,0.7,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 0,165 Am²",299,443557.614,5935722.115,0.7,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 0,527 Am²",300,443553.913,5935726.108,0.7,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 2,052 Am²",301,443570.229,5935732.011,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,89 m
+Magnetic Moment: 184,987 Am²",302,443544.557,5935771.356,1.9,Stoerkoerper Magnetik Nord
+"Depth: 1,40 m
+Magnetic Moment: 14,112 Am²",303,443541.135,5935777.845,1.4,Stoerkoerper Magnetik Nord
+"Depth: 0,35 m
+Magnetic Moment: 0,070 Am²",304,443537.674,5935807.459,0.4,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 2,155 Am²",305,443524.414,5935817.483,1.4,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 112,442 Am²",306,443518.627,5935814.253,1.6,Stoerkoerper Magnetik Nord
+"Depth: 1,80 m
+Magnetic Moment: 17,731 Am²",307,443503.856,5935837.223,1.8,Stoerkoerper Magnetik Nord
+"Depth: 1,60 m
+Magnetic Moment: 11,618 Am²",308,443502.634,5935835.388,1.6,Stoerkoerper Magnetik Nord
+"Depth: 0,35 m
+Magnetic Moment: 0,034 Am²",309,443514.447,5935845.094,0.4,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 151,501 Am²",310,443492.885,5935856.098,1.6,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 0,305 Am²",311,443504.555,5935866.456,,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 0,338 Am²",312,443488.888,5935872.991,1,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 2,092 Am²",313,443489.454,5935882.682,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,217 Am²",314,443485.899,5935840.387,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 0,457 Am²",315,443487.852,5935861.607,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,45 m
+Magnetic Moment: 1,560 Am²",316,443481.507,5935895.323,1.5,Stoerkoerper Magnetik Nord
+"Depth: 1,50 m
+Magnetic Moment: 5,138 Am²",317,443480.232,5935897.337,1.5,Stoerkoerper Magnetik Nord
+"Depth: 1,85 m
+Magnetic Moment: 4,903 Am²",318,443462.951,5935906.891,1.9,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,090 Am²",319,443474.292,5935910.605,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 5,305 Am²",320,443454.047,5935914.745,1,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 2,747 Am²",321,443452.344,5935918.614,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,40 m
+Magnetic Moment: 4,264 Am²",322,443451.527,5935921.373,1.4,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 0,475 Am²",323,443439.539,5935938.811,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 80,879 Am²",324,443439.973,5935941.655,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,40 m
+Magnetic Moment: 9,615 Am²",325,443448.036,5935951.306,1.4,Stoerkoerper Magnetik Nord
+"Depth: 1,17 m
+Magnetic Moment: 7,044 Am²",326,443431.783,5935954.849,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 0,592 Am²",327,443423.716,5935986.686,1,Stoerkoerper Magnetik Nord
+"Depth: 2,15 m
+Magnetic Moment: 40,759 Am²",328,443394.946,5936042.814,2.2,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 1,682 Am²",329,443372.466,5936060.727,1.2,Stoerkoerper Magnetik Nord
+"Depth: 2,25 m
+Magnetic Moment: 7,019 Am²",330,443368.769,5936073.417,2.3,Stoerkoerper Magnetik Nord
+"Depth: 1,45 m
+Magnetic Moment: 1,347 Am²",331,443366.251,5936067.649,1.5,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 3,006 Am²",332,443360.52,5936069.117,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 0,899 Am²",333,443354.686,5936087.032,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 0,901 Am²",334,443337.118,5936080.943,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,80 m
+Magnetic Moment: 2,231 Am²",335,443346.962,5936097.371,1.8,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,173 Am²",336,443330.276,5936093.971,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 0,785 Am²",337,443345.16,5936092.944,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 0,166 Am²",338,443343.813,5936109.955,0.7,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 0,692 Am²",339,443342.791,5936128.961,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 0,919 Am²",340,443307.652,5936179.266,1,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 1,102 Am²",341,443294.149,5936195.373,1,Stoerkoerper Magnetik Nord
+"Depth: 1,40 m
+Magnetic Moment: 123,366 Am²",342,443282.725,5936205.607,1.4,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 1,484 Am²",343,443258.656,5936211.792,1,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,433 Am²",344,443283.486,5936219.094,0.8,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 0,475 Am²",345,443274.288,5936231.6,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 11,658 Am²",346,443262.761,5936233.287,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 1,753 Am²",347,443269.318,5936234.008,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 5,242 Am²",348,443267.589,5936235.679,1.4,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 2,164 Am²",349,443248.079,5936230.213,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 1,557 Am²",350,443251.748,5936227.72,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 4,368 Am²",351,443244.292,5936239.556,1.4,Stoerkoerper Magnetik Nord
+"Depth: 1,50 m
+Magnetic Moment: 11,971 Am²",352,443240.487,5936234.853,1.5,Stoerkoerper Magnetik Nord
+"Depth: 1,50 m
+Magnetic Moment: 4,330 Am²",353,443241.428,5936238.291,1.5,Stoerkoerper Magnetik Nord
+"Depth: 2,50 m
+Magnetic Moment: 8,245 Am²",354,443259.473,5936238.375,2.5,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 8,890 Am²",355,443266.587,5936252.236,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,405 Am²",356,443259.384,5936276.914,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,65 m
+Magnetic Moment: 2,170 Am²",357,443248.983,5936280.788,1.7,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 0,565 Am²",358,443243.122,5936308.949,1,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 66,232 Am²",359,443215.221,5936308.233,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,55 m
+Magnetic Moment: 0,209 Am²",360,443241.253,5936315.72,0.6,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 19,214 Am²",361,443224.713,5936320.316,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 0,136 Am²",362,443229.249,5936340.206,0.7,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 1,154 Am²",363,443215.89,5936334.917,1.4,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 11,727 Am²",364,443218.401,5936331.688,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 0,101 Am²",365,443219.599,5936339.921,0.6,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 1,311 Am²",366,443202.068,5936336.932,1,Stoerkoerper Magnetik Nord
+"Depth: 2,00 m
+Magnetic Moment: 7,240 Am²",367,443208.169,5936374.798,2,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 2,751 Am²",368,443207.472,5936400.148,1.1,Stoerkoerper Magnetik Nord
+"Depth: 2,00 m
+Magnetic Moment: 6,250 Am²",369,443200.493,5936414.228,2,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 0,460 Am²",370,443203.765,5936407.84,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 23,394 Am²",371,443193.162,5936407.267,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,70 m
+Magnetic Moment: 5,408 Am²",372,443189.813,5936419.854,1.7,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,774 Am²",373,443159.075,5936453.561,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 0,387 Am²",374,443182.671,5936470.524,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 1,125 Am²",375,443176.41,5936490.393,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 38,393 Am²",376,443169.753,5936489.673,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 7,720 Am²",377,443149.318,5936486.168,1.3,Stoerkoerper Magnetik Nord
+"Depth: 3,00 m
+Magnetic Moment: 210,817 Am²",378,443158.654,5936522.945,3,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 0,688 Am²",379,443150.332,5936545.938,0.9,Stoerkoerper Magnetik Nord
+"Depth: 0,45 m
+Magnetic Moment: 0,136 Am²",380,443152.899,5936568.401,0.5,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 0,836 Am²",381,443139.289,5936600.654,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 2,097 Am²",382,443136.29,5936596.491,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 69,374 Am²",383,443119.611,5936635.479,1.4,Stoerkoerper Magnetik Nord
+"Depth: 0,45 m
+Magnetic Moment: 0,154 Am²",384,443132.454,5936651.92,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,45 m
+Magnetic Moment: 0,080 Am²",385,443123.291,5936667.325,0.5,Stoerkoerper Magnetik Nord
+"Depth: 2,85 m
+Magnetic Moment: 65,544 Am²",386,443116.828,5936661.904,2.9,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 5,354 Am²",387,443113.62,5936661.193,1,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 2,196 Am²",388,443123.969,5936678.064,1,Stoerkoerper Magnetik Nord
+"Depth: 0,40 m
+Magnetic Moment: 0,124 Am²",389,443097.868,5936677.326,0.4,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 4,218 Am²",390,443092.141,5936674.945,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 11,314 Am²",391,443097.207,5936684.782,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 37,256 Am²",392,443115.886,5936691.807,1.6,Stoerkoerper Magnetik Nord
+"Depth: 0,35 m
+Magnetic Moment: 0,278 Am²",393,443104.397,5936692.494,0.4,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 4,308 Am²",394,443107.562,5936693.856,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 7,656 Am²",395,443096.2,5936696.691,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 4,838 Am²",396,443104.6,5936709.486,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 20,774 Am²",397,443094.458,5936705.709,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 3,655 Am²",398,443093.559,5936705.769,1.6,Stoerkoerper Magnetik Nord
+"Depth: 0,70 m
+Magnetic Moment: 3,860 Am²",399,443095.114,5936702.052,0.7,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 1,813 Am²",400,443093.224,5936698.675,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 3,622 Am²",401,443118.816,5936711.166,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 0,596 Am²",402,443105.98,5936720.417,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 3,753 Am²",403,443091.339,5936720.741,0.6,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 1,687 Am²",404,443097.087,5936724.922,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 7,697 Am²",405,443095.127,5936724.045,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 4,986 Am²",406,443098.241,5936725.308,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,255 Am²",407,443088.601,5936734.27,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 9,782 Am²",408,443095.998,5936736.17,1,Stoerkoerper Magnetik Nord
+"Depth: 0,80 m
+Magnetic Moment: 0,259 Am²",409,443105.076,5936740.971,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 4,890 Am²",410,443090.224,5936740.399,1,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 7,413 Am²",411,443093.084,5936741.315,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 3,877 Am²",412,443093.204,5936747.211,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 8,081 Am²",413,443090.985,5936749.687,1.4,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 2,571 Am²",414,443087.502,5936751.078,1,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 3,904 Am²",415,443087.374,5936748.681,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,60 m
+Magnetic Moment: 6,157 Am²",416,443077.971,5936756.591,1.6,Stoerkoerper Magnetik Nord
+"Depth: 1,90 m
+Magnetic Moment: 59,653 Am²",417,443077.667,5936760.443,1.9,Stoerkoerper Magnetik Nord
+"Depth: 0,55 m
+Magnetic Moment: 0,137 Am²",418,443091.852,5936776.269,0.6,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 0,409 Am²",419,443092.09,5936783.614,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 6,364 Am²",420,443082.85,5936775.827,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 5,267 Am²",421,443079.337,5936774.669,1,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 14,238 Am²",422,443063.568,5936772.708,1,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 1,285 Am²",423,443058.669,5936781.014,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,40 m
+Magnetic Moment: 3,581 Am²",424,443056.289,5936786.791,1.4,Stoerkoerper Magnetik Nord
+"Depth: 0,94 m
+Magnetic Moment: 1,385 Am²",425,443059.418,5936785.154,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 1,821 Am²",426,443087.803,5936788.764,1.4,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 7,569 Am²",427,443076.509,5936797.396,1.1,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 2,766 Am²",428,443072.947,5936796.289,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,00 m
+Magnetic Moment: 8,008 Am²",429,443071.858,5936801.35,1,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,197 Am²",430,443085.685,5936812.332,0.5,Stoerkoerper Magnetik Nord
+"Depth: 2,30 m
+Magnetic Moment: 28,807 Am²",431,443066.849,5936813.057,2.3,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 1,584 Am²",432,443051.917,5936809.986,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 33,069 Am²",433,443067.728,5936823.843,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,17 m
+Magnetic Moment: 19,008 Am²",434,443075.616,5936822.999,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 1,449 Am²",435,443063.766,5936847.833,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,10 m
+Magnetic Moment: 13,857 Am²",436,443066.104,5936846.906,1.1,Stoerkoerper Magnetik Nord
+"Depth: 2,50 m
+Magnetic Moment: 9,492 Am²",437,443058.695,5936854.342,2.5,Stoerkoerper Magnetik Nord
+"Depth: 1,85 m
+Magnetic Moment: 29,616 Am²",438,443051.981,5936865.569,1.9,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 27,453 Am²",439,443052.732,5936861.461,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 21,806 Am²",440,443052.514,5936872.461,1.3,Stoerkoerper Magnetik Nord
+"Depth: 2,05 m
+Magnetic Moment: 51,327 Am²",441,443038.62,5936868.478,2.1,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 1,424 Am²",442,443061.231,5936882.503,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,50 m
+Magnetic Moment: 3,251 Am²",443,443046.048,5936891.882,1.5,Stoerkoerper Magnetik Nord
+"Depth: 0,65 m
+Magnetic Moment: 0,177 Am²",444,443057.407,5936897.145,0.7,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,238 Am²",445,443024.902,5936891.685,0.5,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 37,242 Am²",446,443029.829,5936902.473,1.4,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 1,236 Am²",447,443021.693,5936903.47,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,90 m
+Magnetic Moment: 1,764 Am²",448,443055.821,5936915.008,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 2,093 Am²",449,443040.335,5936928.34,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 14,839 Am²",450,443049.152,5936934.183,0.9,Stoerkoerper Magnetik Nord
+"Depth: 1,45 m
+Magnetic Moment: 32,692 Am²",451,443030.589,5936932.555,1.5,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 2,116 Am²",452,443041.166,5936956.021,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,45 m
+Magnetic Moment: 0,058 Am²",453,443038.091,5936962.206,0.5,Stoerkoerper Magnetik Nord
+"Depth: 2,25 m
+Magnetic Moment: 128,591 Am²",454,443023.191,5936957.686,2.3,Stoerkoerper Magnetik Nord
+"Depth: 0,60 m
+Magnetic Moment: 0,755 Am²",455,443035.032,5936973.94,0.6,Stoerkoerper Magnetik Nord
+"Depth: 0,75 m
+Magnetic Moment: 1,352 Am²",456,443028.754,5936971.415,0.8,Stoerkoerper Magnetik Nord
+"Depth: 1,05 m
+Magnetic Moment: 2,305 Am²",457,443024.143,5936970.421,1.1,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 4,449 Am²",458,443009.499,5936966.397,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,85 m
+Magnetic Moment: 105,880 Am²",459,443006.851,5936983.174,1.9,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,125 Am²",460,443024.024,5936989.716,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,85 m
+Magnetic Moment: 1,347 Am²",461,443007.779,5937014.853,0.9,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,088 Am²",462,443012.488,5937028.293,0.5,Stoerkoerper Magnetik Nord
+"Depth: 0,50 m
+Magnetic Moment: 0,071 Am²",463,443011.766,5937026.452,0.5,Stoerkoerper Magnetik Nord
+"Depth: 1,30 m
+Magnetic Moment: 18,585 Am²",464,443001.448,5937033.023,1.3,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 1,167 Am²",465,443005.389,5937044.923,1,Stoerkoerper Magnetik Nord
+"Depth: 1,70 m
+Magnetic Moment: 15,658 Am²",466,442989.058,5937041.919,1.7,Stoerkoerper Magnetik Nord
+"Depth: 1,35 m
+Magnetic Moment: 184,620 Am²",467,442986.147,5937045.103,1.4,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 3,245 Am²",468,442978.57,5937046.843,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 1,586 Am²",469,443002.213,5937055.208,1.2,Stoerkoerper Magnetik Nord
+"Depth: 0,35 m
+Magnetic Moment: 0,071 Am²",470,443001.889,5937057.411,0.4,Stoerkoerper Magnetik Nord
+"Depth: 1,50 m
+Magnetic Moment: 137,113 Am²",471,442998.893,5937049.249,1.5,Stoerkoerper Magnetik Nord
+"Depth: 0,55 m
+Magnetic Moment: 0,195 Am²",472,442976.323,5937055.417,0.6,Stoerkoerper Magnetik Nord
+"Depth: 0,95 m
+Magnetic Moment: 2,421 Am²",473,442982.135,5937060.746,1,Stoerkoerper Magnetik Nord
+"Depth: 1,15 m
+Magnetic Moment: 3,370 Am²",474,442970.026,5937076.386,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,45 m
+Magnetic Moment: 2,483 Am²",475,442976.134,5937085.61,1.5,Stoerkoerper Magnetik Nord
+"Depth: 1,20 m
+Magnetic Moment: 20,064 Am²",476,442985.922,5937084.844,1.2,Stoerkoerper Magnetik Nord
+"Depth: 1,25 m
+Magnetic Moment: 2,516 Am²",477,442966.876,5937088.87,1.3,Stoerkoerper Magnetik Nord
+"Depth: 1,55 m
+Magnetic Moment: 32,035 Am²",478,442983.067,5937096.874,1.6,Stoerkoerper Magnetik Nord
+"Depth: 2,00 m
+Magnetic Moment: 60,226 Am²",479,442972.426,5937093.203,2,Stoerkoerper Magnetik Nord
+,,,,,Stoerkoerper Magnetik Nord Restflaeche
+,1171,443631.208,5935621.645,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1172,443631.894,5935620.537,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1173,443030.383,5936932.724,1.4,Stoerkoerper Magnetik Nord Restflaeche
+,1174,443229.388,5936284.525,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1175,443638.309,5935592.819,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,1176,443633.151,5935604.527,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1177,443634.386,5935599.114,1,Stoerkoerper Magnetik Nord Restflaeche
+,1178,443470.349,5935866.705,1,Stoerkoerper Magnetik Nord Restflaeche
+,1179,442986.173,5937084.76,1,Stoerkoerper Magnetik Nord Restflaeche
+,1180,443628.634,5935615.428,1.2,Stoerkoerper Magnetik Nord Restflaeche
+,1181,443820.932,5935311.959,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1182,443023.179,5936957.153,1.7,Stoerkoerper Magnetik Nord Restflaeche
+,1183,443001.496,5936966.361,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1184,443621.545,5935620.362,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1185,443065.155,5936793.847,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1186,442980.793,5937032.24,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1187,443666.828,5935549.289,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1188,443628.753,5935621.175,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1189,443554.666,5935728.733,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1190,443234.614,5936282.613,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1191,443022.811,5936959.807,1.8,Stoerkoerper Magnetik Nord Restflaeche
+,1192,443755.398,5935253.413,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1193,443015.863,5936968.138,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1194,443402.232,5935992.736,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1195,443626.921,5935614.299,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,1196,442999.959,5936967.379,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1197,443051.484,5936862.541,1.8,Stoerkoerper Magnetik Nord Restflaeche
+,1198,443626.746,5935624.748,2,Stoerkoerper Magnetik Nord Restflaeche
+,1199,443097.458,5936690.84,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1200,443019.672,5936968.992,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1201,443627.869,5935626.684,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1202,442964.733,5937089.216,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1203,443052.122,5936861.534,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1204,443020.828,5936965.329,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1205,443594.776,5935668.069,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1206,443127.322,5936605.356,1.4,Stoerkoerper Magnetik Nord Restflaeche
+,1207,442982.718,5937026.019,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1208,443626.14,5935615.858,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1209,442981.253,5937033.035,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1210,443625.568,5935622.363,2.5,Stoerkoerper Magnetik Nord Restflaeche
+,1211,443010.409,5936988.497,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1212,443623.661,5935625.885,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,1213,443347.957,5936080.861,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1214,443052.405,5936860.131,1.2,Stoerkoerper Magnetik Nord Restflaeche
+,1215,442991.542,5936994.922,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1216,443100.155,5936678.211,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1217,443627.132,5935611.097,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1218,442983.692,5937065.496,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1219,442975.528,5937051.648,1,Stoerkoerper Magnetik Nord Restflaeche
+,1220,443562.561,5935720.141,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1221,443026.215,5936943.621,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1222,443159.435,5936478.208,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1223,443781.337,5935265.648,1,Stoerkoerper Magnetik Nord Restflaeche
+,1224,443694.069,5935253.6,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1225,443022.369,5936943.817,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1226,443570.689,5935714.395,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1227,443624.382,5935615.179,1,Stoerkoerper Magnetik Nord Restflaeche
+,1228,442976.895,5937044.783,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1229,443625.798,5935629.058,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,1230,443568.483,5935713.771,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1231,443625.996,5935612.211,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1232,443550.712,5935744.926,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1233,443055.458,5936785.566,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1234,443625.899,5935612.462,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1235,443238.337,5936259.625,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1236,442981.509,5937033.531,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1237,443082.435,5936755.201,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1238,443065.707,5936814.835,1.4,Stoerkoerper Magnetik Nord Restflaeche
+,1239,443572.177,5935700.931,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1240,443812.382,5935307.613,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1241,443393.825,5936012.681,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1242,443667.937,5935550.075,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1243,443160.536,5936478.245,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1244,443047.611,5936806.404,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1245,443625.522,5935618.565,2.5,Stoerkoerper Magnetik Nord Restflaeche
+,1246,443144.042,5936524.18,1,Stoerkoerper Magnetik Nord Restflaeche
+,1247,443626.677,5935619.001,1,Stoerkoerper Magnetik Nord Restflaeche
+,1248,443054.464,5936852.608,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1249,443575.813,5935699.788,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1250,443815.111,5935301.732,1.4,Stoerkoerper Magnetik Nord Restflaeche
+,1251,443558.346,5935722.94,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1252,443636.112,5935597.194,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1253,443556.43,5935725.763,1.3,Stoerkoerper Magnetik Nord Restflaeche
+,1254,443203.895,5936346.913,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1255,443214.688,5936317.442,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1256,443641.415,5935589.232,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1257,443686.562,5935527.608,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1258,443817.441,5935300.154,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1259,443228.736,5936284.283,1.9,Stoerkoerper Magnetik Nord Restflaeche
+,1260,443723.937,5935468.177,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1261,443800.186,5935286.815,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1262,443693.676,5935250.005,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1263,443250.226,5936242.387,1,Stoerkoerper Magnetik Nord Restflaeche
+,1264,443730.954,5935453.147,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1265,443683.229,5935241.683,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1266,443642.413,5935593.219,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1267,443116.065,5936646.13,1.1,Stoerkoerper Magnetik Nord Restflaeche
+,1268,442992.777,5936989.559,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1269,443064.425,5936812.151,2.2,Stoerkoerper Magnetik Nord Restflaeche
+,1270,443098.327,5936692.429,0.1,Stoerkoerper Magnetik Nord Restflaeche
+,1271,443624.419,5935618.228,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1272,443772.588,5935273.801,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1273,443235.637,5936267.955,1,Stoerkoerper Magnetik Nord Restflaeche
+,1274,443624.459,5935617.428,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1275,443058.862,5936810.968,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1276,443105.181,5936663.855,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1277,443626.055,5935617.109,0.1,Stoerkoerper Magnetik Nord Restflaeche
+,1278,443717.817,5935470.5,1.1,Stoerkoerper Magnetik Nord Restflaeche
+,1279,443214.695,5936318.042,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1280,443630.468,5935610.008,0.1,Stoerkoerper Magnetik Nord Restflaeche
+,1281,443636.121,5935602.042,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1282,443133.861,5936571.288,2,Stoerkoerper Magnetik Nord Restflaeche
+,1283,443775.167,5935263.773,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1284,443493.615,5935831.186,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1285,443711.002,5935252.646,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1286,443415.978,5935971.877,1.2,Stoerkoerper Magnetik Nord Restflaeche
+,1287,443432.992,5935944.33,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1288,443145.784,5936519.36,1.3,Stoerkoerper Magnetik Nord Restflaeche
+,1289,443635.456,5935600.801,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1290,443629.989,5935607.614,3.4,Stoerkoerper Magnetik Nord Restflaeche
+,1291,443795.607,5935267.626,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1292,443633.485,5935603.173,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,1293,443637.165,5935601.58,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1294,442993.404,5936991.801,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1295,443054.914,5936786.023,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1296,442986.932,5937010.623,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1297,443025.849,5936942.226,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1298,443215.598,5936305.785,2.2,Stoerkoerper Magnetik Nord Restflaeche
+,1299,443822.165,5935289.8,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1300,443245.143,5936243.698,1.8,Stoerkoerper Magnetik Nord Restflaeche
+,1301,443216.006,5936306.48,1.2,Stoerkoerper Magnetik Nord Restflaeche
+,1302,443727.436,5935447.391,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1303,443056.951,5936780.85,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1304,443119.318,5936613.1,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1305,443633.615,5935601.472,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1306,443728.327,5935459.177,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1307,443249.501,5936240.297,1,Stoerkoerper Magnetik Nord Restflaeche
+,1308,443057.404,5936781.144,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1309,443679.117,5935240.633,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1310,442987.855,5937008.413,1,Stoerkoerper Magnetik Nord Restflaeche
+,1311,443162.443,5936474.773,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1312,443728.375,5935450.679,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1313,443247.902,5936244.465,1.1,Stoerkoerper Magnetik Nord Restflaeche
+,1314,443818.907,5935297.387,1.2,Stoerkoerper Magnetik Nord Restflaeche
+,1315,443635.196,5935604.103,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1316,443019.498,5936971.143,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1317,443247.258,5936236.625,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1318,443632.393,5935603.786,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1319,443250.109,5936240.989,2.8,Stoerkoerper Magnetik Nord Restflaeche
+,1320,443024.317,5936931.247,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1321,443019.04,5936970.449,1.2,Stoerkoerper Magnetik Nord Restflaeche
+,1322,443632.224,5935602.189,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1323,443682.228,5935537.208,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1324,443424.555,5935945.182,2.3,Stoerkoerper Magnetik Nord Restflaeche
+,1325,443630.209,5935609.211,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1326,443488.203,5935838.349,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1327,443249.91,5936245.19,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1328,443275.329,5936201.648,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1329,442973.077,5937097.264,1.6,Stoerkoerper Magnetik Nord Restflaeche
+,1330,443634.627,5935602.56,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1331,443572.735,5935705.723,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1332,443146.324,5936518.554,1,Stoerkoerper Magnetik Nord Restflaeche
+,1333,443246.283,5936238.686,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,1334,443032.042,5936904.362,1.8,Stoerkoerper Magnetik Nord Restflaeche
+,1335,443057.436,5936779.644,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1336,443277.268,5936184.08,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1337,443101.883,5936688.887,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1338,443624.803,5935621.072,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,1339,443623.357,5935621.39,1.7,Stoerkoerper Magnetik Nord Restflaeche
+,1340,443247.437,5936243.221,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1341,443380.399,5936014.391,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,1342,443110.585,5936643.496,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1343,443644.052,5935584.052,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1344,443640.408,5935588.645,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1345,443790.272,5935327.022,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1346,443177.002,5936438.359,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1347,443064.954,5936793.75,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1348,443622.423,5935622.701,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1349,443578.213,5935699.859,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1350,443118.472,5936634.254,1.1,Stoerkoerper Magnetik Nord Restflaeche
+,1351,442980.141,5937036.197,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1352,443774.697,5935257.93,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1353,443020.577,5936902.851,1,Stoerkoerper Magnetik Nord Restflaeche
+,1354,443394.713,5936015.919,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1355,443616.903,5935629.265,1.3,Stoerkoerper Magnetik Nord Restflaeche
+,1356,443481.334,5935857.476,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1357,443229.016,5936282.68,2.6,Stoerkoerper Magnetik Nord Restflaeche
+,1358,443788.924,5935264.707,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1359,443015.018,5936968.498,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,1360,443100.081,5936680.311,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1361,443556.354,5935727.763,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1362,443119.546,5936632.142,1.7,Stoerkoerper Magnetik Nord Restflaeche
+,1363,443056.388,5936783.906,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1364,443194.745,5936381.653,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1365,443383.341,5936009.608,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1366,443250.085,5936238.94,1.9,Stoerkoerper Magnetik Nord Restflaeche
+,1367,443097.972,5936704.53,1,Stoerkoerper Magnetik Nord Restflaeche
+,1368,443008.572,5936981.222,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1369,443207.792,5936346.716,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1370,443640.276,5935590.096,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1371,443014.718,5936922.715,1,Stoerkoerper Magnetik Nord Restflaeche
+,1372,443143.665,5936526.034,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1373,443035.052,5936896.929,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1374,443253.455,5936240.749,3.4,Stoerkoerper Magnetik Nord Restflaeche
+,1375,443062.338,5936800.729,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1376,443185.507,5936397.419,1.7,Stoerkoerper Magnetik Nord Restflaeche
+,1377,443078.866,5936761.842,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1378,443117.871,5936638.31,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1379,443621.792,5935624.308,1.2,Stoerkoerper Magnetik Nord Restflaeche
+,1380,443251.325,5936238.176,1.5,Stoerkoerper Magnetik Nord Restflaeche
+,1381,443082.64,5936751.4,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1382,443252.033,5936238.867,2.5,Stoerkoerper Magnetik Nord Restflaeche
+,1383,443360.214,5936048.474,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1384,443032.189,5936908.26,2.1,Stoerkoerper Magnetik Nord Restflaeche
+,1385,443247.359,5936236.724,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1386,443014.124,5936923.222,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1387,443401.341,5935980.9,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1388,443333.754,5936092.778,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1389,443137.619,5936567.844,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1390,443375.441,5936026.098,0,Stoerkoerper Magnetik Nord Restflaeche
+,1391,443813.381,5935278.409,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1392,443454.341,5935911.484,1.7,Stoerkoerper Magnetik Nord Restflaeche
+,1393,443028.314,5936935.248,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1394,443056.074,5936782.71,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1395,443251.125,5936233.979,1.7,Stoerkoerper Magnetik Nord Restflaeche
+,1396,443245.019,5936241.65,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1397,443393.472,5935995.79,0.1,Stoerkoerper Magnetik Nord Restflaeche
+,1398,443620.551,5935624.972,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1399,442961.614,5937095.902,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1400,443116.41,5936637.328,1.5,Stoerkoerper Magnetik Nord Restflaeche
+,1401,443334.44,5936091.621,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1402,443056.418,5936782.206,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1403,443574.187,5935701.806,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1404,443201.125,5936365.941,1.4,Stoerkoerper Magnetik Nord Restflaeche
+,1405,443640.674,5935594.14,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1406,443032.332,5936903.509,1.2,Stoerkoerper Magnetik Nord Restflaeche
+,1407,443052.412,5936856.532,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1408,443035.923,5936898.668,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1409,443405.389,5935980.851,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1410,443330.226,5936094.47,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1411,443019.696,5936966.792,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1412,443177.601,5936438.352,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1413,443024.138,5936953.793,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1414,443679.57,5935536.44,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1415,443106.087,5936660.195,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,1416,443760.569,5935405.156,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1417,443063.086,5936800.52,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1418,442986.683,5937052.314,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1419,443425.437,5935943.771,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1420,443058.594,5936780.33,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1421,443732.236,5935443.335,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1422,443053.552,5936855.768,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1423,443542.429,5935750.324,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1424,442980.973,5937030.589,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1425,443198.971,5936357.269,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1426,443461.353,5935900.153,2.1,Stoerkoerper Magnetik Nord Restflaeche
+,1427,443116.842,5936640.072,2.3,Stoerkoerper Magnetik Nord Restflaeche
+,1428,443537.375,5935758.182,1.2,Stoerkoerper Magnetik Nord Restflaeche
+,1429,443024.716,5936951.986,2.5,Stoerkoerper Magnetik Nord Restflaeche
+,1430,443400.633,5935988.556,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1431,443804.893,5935275.012,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1432,443488.667,5935847.84,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1433,443389.749,5936002.133,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1434,443250.009,5936245.089,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,1435,443689.981,5935508.473,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1436,443004.118,5936959.931,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1437,443067.713,5936782.12,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1438,443255.116,5936241.629,2.4,Stoerkoerper Magnetik Nord Restflaeche
+,1439,443702.212,5935503.078,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1440,443589.961,5935675.025,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1441,443082.558,5936757.099,1.3,Stoerkoerper Magnetik Nord Restflaeche
+,1442,443271.969,5936200.739,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1443,443189.411,5936381.177,1.7,Stoerkoerper Magnetik Nord Restflaeche
+,1444,443000.266,5936968.025,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1445,442981.283,5937031.385,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1446,443549.462,5935736.593,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,1447,443800.746,5935287.658,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1448,443101.891,5936685.338,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1449,443651.086,5935587.067,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1450,442986.095,5937069.965,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1451,443097.076,5936708.989,6.5,Stoerkoerper Magnetik Nord Restflaeche
+,1452,443161.18,5936469.44,2.2,Stoerkoerper Magnetik Nord Restflaeche
+,1453,443556.92,5935724.957,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1454,443762.562,5935271.372,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1455,443001.257,5937017.199,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1456,443070.689,5936784.334,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1457,443622.133,5935619.405,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1458,443325.315,5936118.472,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1459,443074.295,5936768.245,1.1,Stoerkoerper Magnetik Nord Restflaeche
+,1460,443064.165,5936794.659,1.4,Stoerkoerper Magnetik Nord Restflaeche
+,1461,443578.733,5935693.204,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1462,443204.251,5936359.905,2.1,Stoerkoerper Magnetik Nord Restflaeche
+,1463,443298.022,5936147.441,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1464,443000.638,5936969.87,1.1,Stoerkoerper Magnetik Nord Restflaeche
+,1465,443250.557,5936236.685,1.1,Stoerkoerper Magnetik Nord Restflaeche
+,1466,443617.677,5935627.056,1.1,Stoerkoerper Magnetik Nord Restflaeche
+,1467,443074.493,5936768.143,1.1,Stoerkoerper Magnetik Nord Restflaeche
+,1468,443102.373,5936692.23,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1469,443580.528,5935701.23,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1470,443553.963,5935732.59,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1471,443269.255,5936207.769,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1472,443055.492,5936825.854,2,Stoerkoerper Magnetik Nord Restflaeche
+,1473,443707.121,5935249.944,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1474,443730.432,5935255.612,1.4,Stoerkoerper Magnetik Nord Restflaeche
+,1475,443750.414,5935265.103,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1476,443770.207,5935271.18,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1477,443802.51,5935288.837,0.7,Stoerkoerper Magnetik Nord Restflaeche
+,1478,443802.926,5935290.231,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,1479,443815.555,5935305.425,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1480,443823.501,5935309.428,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1481,443818.482,5935286.945,9.7,Stoerkoerper Magnetik Nord Restflaeche
+,1482,443817.111,5935285.162,1.2,Stoerkoerper Magnetik Nord Restflaeche
+,1483,443805.563,5935276.704,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1484,443807.254,5935275.984,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1485,443778.907,5935362.998,1.2,Stoerkoerper Magnetik Nord Restflaeche
+,1486,443775.863,5935367.533,1.4,Stoerkoerper Magnetik Nord Restflaeche
+,1487,443776.078,5935368.83,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1488,443783.552,5935366.841,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1489,443765.044,5935399.004,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1490,443737.029,5935430.381,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1491,443709.265,5935474.352,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1492,443706.545,5935480.882,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1493,443697.068,5935495.092,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1494,443674.281,5935533.054,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1495,443640.301,5935592.195,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1496,443642.189,5935595.421,0.2,Stoerkoerper Magnetik Nord Restflaeche
+,1497,443637.043,5935595.633,0.8,Stoerkoerper Magnetik Nord Restflaeche
+,1498,443638.803,5935596.512,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1499,443634.56,5935596.912,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1500,443638.561,5935599.054,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1501,443640.029,5935598.646,0,Stoerkoerper Magnetik Nord Restflaeche
+,1502,443640.928,5935602.734,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1503,443639.649,5935604.499,1,Stoerkoerper Magnetik Nord Restflaeche
+,1504,443641.098,5935604.432,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1505,443641.012,5935605.582,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1506,443641.83,5935602.973,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1507,443643.268,5935601.956,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1508,443628.9,5935625.122,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1509,443394.189,5936013.876,1.1,Stoerkoerper Magnetik Nord Restflaeche
+,1510,443119.989,5936635.735,1.1,Stoerkoerper Magnetik Nord Restflaeche
+,1511,443105.615,5936658.351,0.3,Stoerkoerper Magnetik Nord Restflaeche
+,1512,442999.862,5936971.829,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1513,443007.282,5936981.987,1.8,Stoerkoerper Magnetik Nord Restflaeche
+,1514,442980.596,5937094.874,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1515,442976.024,5937092.93,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1516,442977.243,5937094.565,0.5,Stoerkoerper Magnetik Nord Restflaeche
+,1517,442975.895,5937094.731,0.6,Stoerkoerper Magnetik Nord Restflaeche
+,1518,442973.039,5937094.115,1.1,Stoerkoerper Magnetik Nord Restflaeche
+,1519,442974.44,5937090.1,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1520,442969.831,5937076.759,0.4,Stoerkoerper Magnetik Nord Restflaeche
+,1521,442980.747,5937070.03,0.9,Stoerkoerper Magnetik Nord Restflaeche
+,480,443718.174,5935142.428,0.8,Stoerkoerper Magnetik Sued 1
+,481,443731.68,5935105.477,0.5,Stoerkoerper Magnetik Sued 1
+,482,443719.363,5935066.036,0.5,Stoerkoerper Magnetik Sued 1
+,483,443778.809,5935205.587,0.6,Stoerkoerper Magnetik Sued 1
+,484,443742.088,5935156.738,0.5,Stoerkoerper Magnetik Sued 1
+,485,443723.331,5935185.104,0.7,Stoerkoerper Magnetik Sued 1
+,486,443715.327,5935142.611,0.4,Stoerkoerper Magnetik Sued 1
+,487,443784.279,5935211.62,0.3,Stoerkoerper Magnetik Sued 1
+,488,443733.638,5935097.856,0.2,Stoerkoerper Magnetik Sued 1
+,489,443704.833,5935037.917,0.7,Stoerkoerper Magnetik Sued 1
+,490,443749.16,5935213.338,0.8,Stoerkoerper Magnetik Sued 1
+,491,443724.713,5935204.632,0.4,Stoerkoerper Magnetik Sued 1
+,492,443744.172,5935126.073,0.2,Stoerkoerper Magnetik Sued 1
+,493,443726.767,5935062.298,0.3,Stoerkoerper Magnetik Sued 1
+,494,443724.005,5935057.033,0.3,Stoerkoerper Magnetik Sued 1
+,495,443698.599,5935173.402,0.4,Stoerkoerper Magnetik Sued 1
+,496,443719.332,5935189.3,0.6,Stoerkoerper Magnetik Sued 1
+,497,443746.672,5935147.187,0.4,Stoerkoerper Magnetik Sued 1
+,498,443717.386,5935101.449,1,Stoerkoerper Magnetik Sued 1
+,499,443748.619,5935125.97,0.3,Stoerkoerper Magnetik Sued 1
+,500,443761.076,5935223.393,0.7,Stoerkoerper Magnetik Sued 1
+,501,443781.187,5935216.355,0.3,Stoerkoerper Magnetik Sued 1
+,502,443819.786,5935234.04,0.3,Stoerkoerper Magnetik Sued 1
+,503,443736.41,5935171.052,0.6,Stoerkoerper Magnetik Sued 1
+,504,443731.956,5935074.083,0.2,Stoerkoerper Magnetik Sued 1
+,505,443710.922,5935137.865,2.4,Stoerkoerper Magnetik Sued 1
+,506,443786.884,5935216.287,0.3,Stoerkoerper Magnetik Sued 1
+,507,443735.887,5935206.898,0.4,Stoerkoerper Magnetik Sued 1
+,508,443707.586,5935147.352,0.5,Stoerkoerper Magnetik Sued 1
+,509,443722.632,5935055.05,0.4,Stoerkoerper Magnetik Sued 1
+,510,443780.796,5935217.16,0.3,Stoerkoerper Magnetik Sued 1
+,511,443695.243,5935189.637,0.8,Stoerkoerper Magnetik Sued 1
+,512,443734.318,5935058.41,0.3,Stoerkoerper Magnetik Sued 1
+,513,443718.011,5935082.597,0.7,Stoerkoerper Magnetik Sued 1
+,514,443720.702,5935102.859,1.4,Stoerkoerper Magnetik Sued 1
+,515,443720.025,5935188.742,0.9,Stoerkoerper Magnetik Sued 1
+,516,443711.88,5935071.473,0.9,Stoerkoerper Magnetik Sued 1
+,517,443768.681,5935194.611,0.6,Stoerkoerper Magnetik Sued 1
+,518,443722.226,5935180.468,0.4,Stoerkoerper Magnetik Sued 1
+,519,443713.367,5935066.207,1.1,Stoerkoerper Magnetik Sued 1
+,520,443757.067,5935218.342,0.6,Stoerkoerper Magnetik Sued 1
+,521,443711.906,5935048.43,0.4,Stoerkoerper Magnetik Sued 1
+,522,443742.071,5935134.345,0.5,Stoerkoerper Magnetik Sued 1
+,523,443705.34,5935046.958,1.2,Stoerkoerper Magnetik Sued 1
+,524,443728.158,5935204.241,0.5,Stoerkoerper Magnetik Sued 1
+,525,443713.547,5935089.698,1.1,Stoerkoerper Magnetik Sued 1
+,526,443724.475,5935050.329,0.5,Stoerkoerper Magnetik Sued 1
+,527,443759.445,5935191.322,0.9,Stoerkoerper Magnetik Sued 1
+,528,443723.417,5935179.754,0.4,Stoerkoerper Magnetik Sued 1
+,529,443750.953,5935137.239,0.4,Stoerkoerper Magnetik Sued 1
+,530,443764.876,5935185.659,2.2,Stoerkoerper Magnetik Sued 1
+,531,443707.689,5935072.073,0.8,Stoerkoerper Magnetik Sued 1
+,532,443740.948,5935069.427,0.2,Stoerkoerper Magnetik Sued 1
+,533,443710.498,5935051.945,0.5,Stoerkoerper Magnetik Sued 1
+,534,443770.462,5935205.636,0.5,Stoerkoerper Magnetik Sued 1
+,535,443812.172,5935224.284,0.2,Stoerkoerper Magnetik Sued 1
+,536,443767.591,5935203.821,0.2,Stoerkoerper Magnetik Sued 1
+,537,443721.214,5935049.318,0.4,Stoerkoerper Magnetik Sued 1
+,538,443708.039,5935042.727,1.3,Stoerkoerper Magnetik Sued 1
+,539,443752.001,5935176.921,0.4,Stoerkoerper Magnetik Sued 1
+,540,443761.069,5935193.402,1,Stoerkoerper Magnetik Sued 1
+,541,443688.709,5935169.821,0.4,Stoerkoerper Magnetik Sued 1
+,542,443781.775,5935215.399,0.4,Stoerkoerper Magnetik Sued 1
+,543,443727.476,5935050.493,0.4,Stoerkoerper Magnetik Sued 1
+,544,443722.629,5935071.645,0.3,Stoerkoerper Magnetik Sued 1
+,545,443721.163,5935053.468,0.4,Stoerkoerper Magnetik Sued 1
+,546,443725.221,5935196.878,0.5,Stoerkoerper Magnetik Sued 1
+,547,443735.269,5935215.527,0.3,Stoerkoerper Magnetik Sued 1
+,548,443721.174,5935087.908,1.1,Stoerkoerper Magnetik Sued 1
+,549,443719.729,5935142.909,0.8,Stoerkoerper Magnetik Sued 1
+,550,443716.846,5935190.379,0.2,Stoerkoerper Magnetik Sued 1
+,551,443710.961,5935065.586,0.2,Stoerkoerper Magnetik Sued 1
+,552,443708.951,5935144.437,0.5,Stoerkoerper Magnetik Sued 1
+,553,443703.917,5935162.492,0.3,Stoerkoerper Magnetik Sued 1
+,554,443720.65,5935064.971,0.3,Stoerkoerper Magnetik Sued 1
+,555,443724.699,5935102.761,1.1,Stoerkoerper Magnetik Sued 1
+,556,443737.158,5935070.172,0.4,Stoerkoerper Magnetik Sued 1
+,557,443709.623,5935192.465,0.5,Stoerkoerper Magnetik Sued 1
+,558,443709.221,5935041.264,0.9,Stoerkoerper Magnetik Sued 1
+,559,443708.547,5935051.769,0.7,Stoerkoerper Magnetik Sued 1
+,560,443710.593,5935118.625,0.3,Stoerkoerper Magnetik Sued 1
+,561,443719.082,5935126.371,0.6,Stoerkoerper Magnetik Sued 1
+,562,443737.137,5935215.33,0.6,Stoerkoerper Magnetik Sued 1
+,563,443748.717,5935130.017,0.6,Stoerkoerper Magnetik Sued 1
+,564,443729.819,5935205.221,0.3,Stoerkoerper Magnetik Sued 1
+,565,443700.91,5935145.032,1.2,Stoerkoerper Magnetik Sued 1
+,566,443727.493,5935089.682,0.6,Stoerkoerper Magnetik Sued 1
+,567,443702.791,5935042.74,0.1,Stoerkoerper Magnetik Sued 1
+,568,443712.582,5935105.205,1.4,Stoerkoerper Magnetik Sued 1
+,569,443717.956,5935077.999,0.3,Stoerkoerper Magnetik Sued 1
+,570,443777.521,5935210.751,0.2,Stoerkoerper Magnetik Sued 1
+,571,443702.164,5935162.163,0.9,Stoerkoerper Magnetik Sued 1
+,572,443744.918,5935129.963,0.6,Stoerkoerper Magnetik Sued 1
+,573,443735.042,5935198.91,0.5,Stoerkoerper Magnetik Sued 1
+,574,443710.291,5935122.677,0.6,Stoerkoerper Magnetik Sued 1
+,575,443739.27,5935117.433,0.3,Stoerkoerper Magnetik Sued 1
+,576,443703.139,5935147.555,0.9,Stoerkoerper Magnetik Sued 1
+,577,443796.866,5935227.565,0.4,Stoerkoerper Magnetik Sued 1
+,578,443745.781,5935198.282,0.5,Stoerkoerper Magnetik Sued 1
+,579,443761.482,5935202.894,0.3,Stoerkoerper Magnetik Sued 1
+,580,443721.813,5935074.454,0.9,Stoerkoerper Magnetik Sued 1
+,581,443770.197,5935225.384,0.9,Stoerkoerper Magnetik Sued 1
+,582,443771.983,5935203.269,0.9,Stoerkoerper Magnetik Sued 1
+,583,443717.042,5935139.692,0.1,Stoerkoerper Magnetik Sued 1
+,584,443745.46,5935099.915,0.3,Stoerkoerper Magnetik Sued 1
+,585,443719.734,5935092.923,0.6,Stoerkoerper Magnetik Sued 1
+,586,443737.457,5935141.498,0.4,Stoerkoerper Magnetik Sued 1
+,587,443785.709,5935226.748,0.4,Stoerkoerper Magnetik Sued 1
+,588,443724.727,5935067.321,0.4,Stoerkoerper Magnetik Sued 1
+,589,443765.405,5935192.3,0.3,Stoerkoerper Magnetik Sued 1
+,590,443687.975,5935183.725,0.3,Stoerkoerper Magnetik Sued 1
+,591,443719.066,5935108.177,0.4,Stoerkoerper Magnetik Sued 1
+,592,443753.743,5935182.642,0.4,Stoerkoerper Magnetik Sued 1
+,593,443738.705,5935065.805,0.7,Stoerkoerper Magnetik Sued 1
+,594,443726.035,5935059.608,0.4,Stoerkoerper Magnetik Sued 1
+,595,443737.927,5935055.068,0.3,Stoerkoerper Magnetik Sued 1
+,596,443714.422,5935133.775,0.6,Stoerkoerper Magnetik Sued 1
+,597,443713.132,5935109.397,1,Stoerkoerper Magnetik Sued 1
+,598,443725.306,5935061.316,0.3,Stoerkoerper Magnetik Sued 1
+,599,443738.247,5935136.49,0.3,Stoerkoerper Magnetik Sued 1
+,600,443725.775,5935050.364,0.4,Stoerkoerper Magnetik Sued 1
+,601,443749.806,5935099.713,0.3,Stoerkoerper Magnetik Sued 1
+,602,443749.008,5935175.401,0.7,Stoerkoerper Magnetik Sued 1
+,603,443716.062,5935049.08,0.4,Stoerkoerper Magnetik Sued 1
+,604,443724.134,5935080.425,0.7,Stoerkoerper Magnetik Sued 1
+,605,443714.619,5935095.783,1.1,Stoerkoerper Magnetik Sued 1
+,606,443719.452,5935211.942,0.9,Stoerkoerper Magnetik Sued 1
+,607,443707.17,5935053.734,0.3,Stoerkoerper Magnetik Sued 1
+,608,443746.995,5935144.883,0.2,Stoerkoerper Magnetik Sued 1
+,609,443705.093,5935051.36,0.6,Stoerkoerper Magnetik Sued 1
+,610,443714.252,5935211.804,0.8,Stoerkoerper Magnetik Sued 1
+,611,443709.478,5935071.202,0.5,Stoerkoerper Magnetik Sued 1
+,612,443704.85,5935060.36,0.4,Stoerkoerper Magnetik Sued 1
+,613,443734.304,5935174.676,0.6,Stoerkoerper Magnetik Sued 1
+,614,443733.786,5935143.791,0.5,Stoerkoerper Magnetik Sued 1
+,615,443723.87,5935054.085,0.4,Stoerkoerper Magnetik Sued 1
+,616,443712.539,5935114.203,0.5,Stoerkoerper Magnetik Sued 1
+,617,443714.368,5935041.152,0.2,Stoerkoerper Magnetik Sued 1
+,618,443706.527,5935188.553,0.4,Stoerkoerper Magnetik Sued 1
+,619,443788.496,5935217.318,0.3,Stoerkoerper Magnetik Sued 1
+,620,443809.466,5935227.915,0.1,Stoerkoerper Magnetik Sued 1
+,621,443713.224,5935058.411,0.3,Stoerkoerper Magnetik Sued 1
+,622,443707.205,5935056.633,0.8,Stoerkoerper Magnetik Sued 1
+,623,443760.567,5935180.611,0.4,Stoerkoerper Magnetik Sued 1
+,624,443748.246,5935207.95,0.3,Stoerkoerper Magnetik Sued 1
+,625,443748.753,5935195.998,0.4,Stoerkoerper Magnetik Sued 1
+,626,443727.431,5935088.683,1.1,Stoerkoerper Magnetik Sued 1
+,627,443712.884,5935189.327,0.2,Stoerkoerper Magnetik Sued 1
+,628,443743.751,5935120.179,0.2,Stoerkoerper Magnetik Sued 1
+,629,443713.507,5935182.871,0.7,Stoerkoerper Magnetik Sued 1
+,630,443734.007,5935107.849,0.3,Stoerkoerper Magnetik Sued 1
+,631,443737.476,5935210.178,0.3,Stoerkoerper Magnetik Sued 1
+,632,443713.326,5935188.672,0.9,Stoerkoerper Magnetik Sued 1
+,633,443716.715,5935074.465,0.9,Stoerkoerper Magnetik Sued 1
+,634,443808.177,5935228.78,0.4,Stoerkoerper Magnetik Sued 1
+,635,443738.952,5935136.882,0.6,Stoerkoerper Magnetik Sued 1
+,636,443759.726,5935219.11,0.3,Stoerkoerper Magnetik Sued 1
+,637,443717.82,5935045.56,0.1,Stoerkoerper Magnetik Sued 1
+,638,443746.164,5935075.114,0.3,Stoerkoerper Magnetik Sued 1
+,639,443741.747,5935077.765,0.4,Stoerkoerper Magnetik Sued 1
+,640,443738.277,5935080.256,0.7,Stoerkoerper Magnetik Sued 1
+,641,443736.955,5935057.328,0.8,Stoerkoerper Magnetik Sued 1
+,642,443735.179,5935052.125,0.3,Stoerkoerper Magnetik Sued 1
+,643,443733.492,5935060.369,0.7,Stoerkoerper Magnetik Sued 1
+,644,443729.654,5935061.314,0.3,Stoerkoerper Magnetik Sued 1
+,645,443732.488,5935059.981,0.4,Stoerkoerper Magnetik Sued 1
+,646,443738.945,5935060.804,0.2,Stoerkoerper Magnetik Sued 1
+,647,443735.634,5935063.992,0.4,Stoerkoerper Magnetik Sued 1
+,648,443735.463,5935066.394,0.4,Stoerkoerper Magnetik Sued 1
+,649,443746.548,5935078.008,0.6,Stoerkoerper Magnetik Sued 1
+,650,443737.948,5935077.811,0.5,Stoerkoerper Magnetik Sued 1
+,651,443734.385,5935089.15,0.9,Stoerkoerper Magnetik Sued 1
+,652,443737.874,5935096.706,0.7,Stoerkoerper Magnetik Sued 1
+,653,443736.021,5935104.876,0.3,Stoerkoerper Magnetik Sued 1
+,654,443740.273,5935126.119,0.4,Stoerkoerper Magnetik Sued 1
+,655,443740.869,5935134.16,0.7,Stoerkoerper Magnetik Sued 1
+,656,443744.17,5935134.32,0.3,Stoerkoerper Magnetik Sued 1
+,657,443746.334,5935143.942,0.3,Stoerkoerper Magnetik Sued 1
+,658,443742.743,5935144.634,0.4,Stoerkoerper Magnetik Sued 1
+,659,443742.725,5935147.334,0.4,Stoerkoerper Magnetik Sued 1
+,660,443745.381,5935156.299,0.4,Stoerkoerper Magnetik Sued 1
+,661,443743.106,5935162.525,0.3,Stoerkoerper Magnetik Sued 1
+,662,443738.976,5935164.073,0.3,Stoerkoerper Magnetik Sued 1
+,663,443739.444,5935169.766,0.4,Stoerkoerper Magnetik Sued 1
+,664,443736.939,5935169.296,0.2,Stoerkoerper Magnetik Sued 1
+,665,443740.827,5935168.4,0,Stoerkoerper Magnetik Sued 1
+,666,443743.977,5935173.052,0.1,Stoerkoerper Magnetik Sued 1
+,667,443740.652,5935183.098,0.3,Stoerkoerper Magnetik Sued 1
+,668,443737.622,5935184.734,0.6,Stoerkoerper Magnetik Sued 1
+,669,443760.252,5935179.415,0.4,Stoerkoerper Magnetik Sued 1
+,670,443776.595,5935204.363,0.6,Stoerkoerper Magnetik Sued 1
+,671,443775.473,5935206.676,1.3,Stoerkoerper Magnetik Sued 1
+,672,443780.646,5935212.963,0.2,Stoerkoerper Magnetik Sued 1
+,673,443782.645,5935212.889,0.2,Stoerkoerper Magnetik Sued 1
+,674,443794.42,5935215.248,0.5,Stoerkoerper Magnetik Sued 1
+,675,443790.805,5935218.14,0.2,Stoerkoerper Magnetik Sued 1
+,676,443797.43,5935220.411,0.1,Stoerkoerper Magnetik Sued 1
+,677,443800.678,5935220.322,0.2,Stoerkoerper Magnetik Sued 1
+,678,443814.295,5935217.91,0.5,Stoerkoerper Magnetik Sued 1
+,679,443764.879,5935206.902,0.1,Stoerkoerper Magnetik Sued 1
+,680,443799.123,5935224.089,0.2,Stoerkoerper Magnetik Sued 1
+,681,443813.035,5935225.373,0.2,Stoerkoerper Magnetik Sued 1
+,682,443812.061,5935227.584,0,Stoerkoerper Magnetik Sued 1
+,683,443820.77,5935228.48,0.1,Stoerkoerper Magnetik Sued 1
+,684,443819.073,5935224.502,1.2,Stoerkoerper Magnetik Sued 1
+,685,443818.962,5935232.001,0,Stoerkoerper Magnetik Sued 1
+,686,443804.466,5935227.775,0.3,Stoerkoerper Magnetik Sued 1
+,687,443797.452,5935226.409,0.5,Stoerkoerper Magnetik Sued 1
+,688,443775.124,5935223.525,1.6,Stoerkoerper Magnetik Sued 1
+,689,443749.512,5935209.335,0.9,Stoerkoerper Magnetik Sued 1
+,690,443731.481,5935218.847,1,Stoerkoerper Magnetik Sued 1
+,691,443736.589,5935211.238,0.3,Stoerkoerper Magnetik Sued 1
+,692,443732.027,5935210.143,0.5,Stoerkoerper Magnetik Sued 1
+,693,443731.1,5935207.855,0.9,Stoerkoerper Magnetik Sued 1
+,694,443725.628,5935210.119,0.7,Stoerkoerper Magnetik Sued 1
+,695,443733.004,5935204.083,0.4,Stoerkoerper Magnetik Sued 1
+,696,443729.205,5935199.829,0.2,Stoerkoerper Magnetik Sued 1
+,697,443727.871,5935201.145,0.7,Stoerkoerper Magnetik Sued 1
+,698,443713.096,5935207.119,0.4,Stoerkoerper Magnetik Sued 1
+,699,443690.432,5935192.743,0.6,Stoerkoerper Magnetik Sued 1
+,700,443694.464,5935191.396,0.7,Stoerkoerper Magnetik Sued 1
+,701,443693.74,5935180.908,0.5,Stoerkoerper Magnetik Sued 1
+,702,443702.032,5935172.061,0.3,Stoerkoerper Magnetik Sued 1
+,703,443691.911,5935165.884,0.7,Stoerkoerper Magnetik Sued 1
+,704,443697.917,5935170.761,0.3,Stoerkoerper Magnetik Sued 1
+,705,443709.925,5935167.519,0.7,Stoerkoerper Magnetik Sued 1
+,706,443706.358,5935166.011,0.7,Stoerkoerper Magnetik Sued 1
+,707,443697.918,5935162.413,0.8,Stoerkoerper Magnetik Sued 1
+,708,443719.641,5935131.263,0.1,Stoerkoerper Magnetik Sued 1
+,709,443717.954,5935128.184,0.8,Stoerkoerper Magnetik Sued 1
+,710,443720.756,5935124.202,0.4,Stoerkoerper Magnetik Sued 1
+,711,443717.362,5935107.847,0.7,Stoerkoerper Magnetik Sued 1
+,712,443712.874,5935100.303,0.8,Stoerkoerper Magnetik Sued 1
+,713,443712.902,5935085.907,1.1,Stoerkoerper Magnetik Sued 1
+,714,443714.267,5935082.991,0.8,Stoerkoerper Magnetik Sued 1
+,715,443718.173,5935087.793,5.6,Stoerkoerper Magnetik Sued 1
+,716,443721.903,5935082.001,0.5,Stoerkoerper Magnetik Sued 1
+,717,443727.491,5935076.936,0.3,Stoerkoerper Magnetik Sued 1
+,718,443726.257,5935074.051,0.7,Stoerkoerper Magnetik Sued 1
+,719,443706.705,5935069.185,0.9,Stoerkoerper Magnetik Sued 1
+,720,443714.844,5935072.687,0.3,Stoerkoerper Magnetik Sued 1
+,721,443710.342,5935068.242,0.1,Stoerkoerper Magnetik Sued 1
+,722,443714.438,5935067.994,0.7,Stoerkoerper Magnetik Sued 1
+,723,443715.625,5935062.731,0.8,Stoerkoerper Magnetik Sued 1
+,724,443719.262,5935061.688,0.2,Stoerkoerper Magnetik Sued 1
+,725,443715.369,5935057.985,0.5,Stoerkoerper Magnetik Sued 1
+,726,443708.459,5935061.167,0.4,Stoerkoerper Magnetik Sued 1
+,727,443710.765,5935061.739,0.2,Stoerkoerper Magnetik Sued 1
+,728,443717.296,5935056.163,1.4,Stoerkoerper Magnetik Sued 1
+,729,443721.795,5935060.358,0.5,Stoerkoerper Magnetik Sued 1
+,730,443708.769,5935045.268,0.4,Stoerkoerper Magnetik Sued 1
+,731,443699.471,5935049.377,0.4,Stoerkoerper Magnetik Sued 1
+,732,443699.807,5935044.025,0.5,Stoerkoerper Magnetik Sued 1
+,733,443730.293,5935144.283,0.5,Stoerkoerper Magnetik Sued 1
+,734,443720.79,5935152.244,0.2,Stoerkoerper Magnetik Sued 1
+,735,443708.683,5935172.332,0.5,Stoerkoerper Magnetik Sued 1
+,736,443716.822,5935175.834,0.5,Stoerkoerper Magnetik Sued 1
+,737,443711.664,5935183.393,0.4,Stoerkoerper Magnetik Sued 1
+,738,443740.089,5935177.806,0.6,Stoerkoerper Magnetik Sued 1
+,739,443729.851,5935069.41,1,Stoerkoerper Magnetik Sued 1
+,740,443730.339,5935072.653,1.3,Stoerkoerper Magnetik Sued 1
+,741,443733.581,5935067.866,0.6,Stoerkoerper Magnetik Sued 1
+"Depth: 0,65 m
+Magnetic Moment: 10,975 Am²",742,46567.273,5956640.673,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 10,783 Am²",743,46563.98,5956506.031,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 4,258 Am²",744,46595.328,5956736.281,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 12,655 Am²",745,46567.231,5956528.219,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 4,546 Am²",746,46548.956,5956639.171,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 3,685 Am²",747,46559.028,5956576.179,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 1,836 Am²",748,46566.446,5956634.712,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 1,429 Am²",749,46574.506,5956568.09,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 3,822 Am²",750,46573.123,5956626.718,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 1,417 Am²",751,46553.532,5956633.393,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 1,103 Am²",752,46592.454,5956559.509,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 3,805 Am²",753,46582.105,5956587.34,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 1,612 Am²",754,46552.439,5956636.67,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,815 Am²",755,46557.677,5956555.419,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,472 Am²",756,46555.552,5956571.985,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 1,173 Am²",757,46549.741,5956593.638,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 1,357 Am²",758,46556.454,5956600.591,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 1,10 m
+Magnetic Moment: 4,930 Am²",759,46551.699,5956626.925,1.1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,258 Am²",760,46607.512,5956654.404,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 1,731 Am²",761,46564.025,5956620.6,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 1,55 m
+Magnetic Moment: 28,913 Am²",762,46571.481,5956634.729,1.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,986 Am²",763,46557.592,5956614.979,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,95 m
+Magnetic Moment: 5,056 Am²",764,46609.383,5956627.393,1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,85 m
+Magnetic Moment: 3,590 Am²",765,46575.279,5956547.426,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,277 Am²",766,46595.099,5956703.074,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 2,241 Am²",767,46554.968,5956587.294,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 2,679 Am²",768,46547.178,5956638.487,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,456 Am²",769,46590.792,5956556.901,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,217 Am²",770,46551.936,5956633.547,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,25 m
+Magnetic Moment: 0,226 Am²",771,46574.734,5956500.109,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,615 Am²",772,46557.833,5956562.25,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,15 m
+Magnetic Moment: 0,074 Am²",773,46601.298,5956535.901,0.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 1,554 Am²",774,46573.182,5956592.934,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 1,356 Am²",775,46572.487,5956640.975,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,645 Am²",776,46557.284,5956549.265,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 1,887 Am²",777,46568.941,5956637.089,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 1,05 m
+Magnetic Moment: 3,786 Am²",778,46607.864,5956609.065,1.1,Stoerkoerper Magnetik Sued 2
+"Depth: 1,20 m
+Magnetic Moment: 4,541 Am²",779,46606.141,5956617.285,1.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,20 m
+Magnetic Moment: 0,060 Am²",780,46600.522,5956530.993,0.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 1,369 Am²",781,46574.214,5956555.684,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,339 Am²",782,46553.643,5956546.496,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 1,185 Am²",783,46569.175,5956619.196,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 1,053 Am²",784,46595.313,5956659.962,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,173 Am²",785,46591.116,5956564.421,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 1,05 m
+Magnetic Moment: 3,310 Am²",786,46572.461,5956510.447,1.1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 1,193 Am²",787,46561.565,5956560.228,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,983 Am²",788,46565.849,5956643.126,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,279 Am²",789,46591.629,5956586.923,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 1,60 m
+Magnetic Moment: 6,769 Am²",790,46578.229,5956550.866,1.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,289 Am²",791,46575.107,5956565.968,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,442 Am²",792,46579.539,5956567.553,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,445 Am²",793,46544.675,5956590.705,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,232 Am²",794,46573.89,5956588.285,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,544 Am²",795,46550.192,5956633.212,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 1,35 m
+Magnetic Moment: 4,279 Am²",796,46600.556,5956625.124,1.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,138 Am²",797,46551.041,5956614.907,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,724 Am²",798,46565.555,5956586.422,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,465 Am²",799,46542.39,5956607.689,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,693 Am²",800,46579.353,5956582.824,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,704 Am²",801,46613.833,5956552.057,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 1,643 Am²",802,46601.239,5956535.806,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,744 Am²",803,46546.726,5956582.754,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,601 Am²",804,46594.768,5956589.187,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,155 Am²",805,46570.562,5956546.019,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,357 Am²",806,46552.902,5956566.955,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 1,35 m
+Magnetic Moment: 5,636 Am²",807,46582.22,5956560.397,1.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,85 m
+Magnetic Moment: 1,703 Am²",808,46588.39,5956573.192,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,139 Am²",809,46577.591,5956555.207,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,086 Am²",810,46578.339,5956574.414,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,273 Am²",811,46555.416,5956635.174,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,90 m
+Magnetic Moment: 0,971 Am²",812,46557.526,5956639.299,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,197 Am²",813,46597.996,5956585.603,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 1,55 m
+Magnetic Moment: 4,477 Am²",814,46609.615,5956635.525,1.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,127 Am²",815,46548.091,5956613.028,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,453 Am²",816,46556.109,5956612.656,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,112 Am²",817,46599.287,5956683.892,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,235 Am²",818,46579.001,5956580.744,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 0,682 Am²",819,46569.156,5956627.856,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,272 Am²",820,46556.476,5956531.523,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,236 Am²",821,46578.237,5956582.73,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,404 Am²",822,46589.186,5956584.038,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,124 Am²",823,46624.046,5956730.179,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,05 m
+Magnetic Moment: 0,019 Am²",824,46617.989,5956737.308,0.1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,113 Am²",825,46538.713,5956614.437,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,263 Am²",826,46582.905,5956594.059,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,204 Am²",827,46561.249,5956593.433,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,215 Am²",828,46592.197,5956673.553,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,328 Am²",829,46554.09,5956636.561,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,253 Am²",830,46584.353,5956551.734,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,598 Am²",831,46553.344,5956548.085,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,082 Am²",832,46578.019,5956540.365,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,450 Am²",833,46554.383,5956635.425,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,481 Am²",834,46575.119,5956552.022,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,238 Am²",835,46622.933,5956737.938,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 1,00 m
+Magnetic Moment: 1,276 Am²",836,46582.732,5956557.881,1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,207 Am²",837,46566.824,5956536.514,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,188 Am²",838,46548.609,5956610.058,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,143 Am²",839,46559.147,5956588.35,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,90 m
+Magnetic Moment: 1,103 Am²",840,46568.987,5956606.831,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,114 Am²",841,46552.463,5956614.518,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,241 Am²",842,46581.417,5956721.41,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,055 Am²",843,46590.972,5956561.364,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,189 Am²",844,46559.08,5956562.13,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,410 Am²",845,46570.019,5956602.402,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,151 Am²",846,46580.249,5956519.158,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,25 m
+Magnetic Moment: 0,039 Am²",847,46568.903,5956536.665,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,193 Am²",848,46550.262,5956619.865,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,135 Am²",849,46557.653,5956629.672,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,100 Am²",850,46568.002,5956581.001,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,202 Am²",851,46549.551,5956583.337,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,104 Am²",852,46567.169,5956615.111,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,202 Am²",853,46580.421,5956533.438,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,100 Am²",854,46599.495,5956593.312,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,90 m
+Magnetic Moment: 0,840 Am²",855,46552.22,5956634.929,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,240 Am²",856,46560.911,5956518.56,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 1,15 m
+Magnetic Moment: 2,101 Am²",857,46607.65,5956657.915,1.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,584 Am²",858,46570.167,5956604.451,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,128 Am²",859,46564.102,5956570.857,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,159 Am²",860,46576.981,5956512.427,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,25 m
+Magnetic Moment: 0,067 Am²",861,46566.165,5956501.038,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,20 m
+Magnetic Moment: 0,032 Am²",862,46593.349,5956576.589,0.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 0,483 Am²",863,46603.225,5956624.615,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,95 m
+Magnetic Moment: 0,821 Am²",864,46559.457,5956571.759,1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,166 Am²",865,46561.633,5956606.786,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,083 Am²",866,46566.809,5956523.326,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,95 m
+Magnetic Moment: 0,843 Am²",867,46567.678,5956610.481,1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,140 Am²",868,46572.337,5956614.41,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,90 m
+Magnetic Moment: 1,234 Am²",869,46569.792,5956519.816,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 1,15 m
+Magnetic Moment: 1,267 Am²",870,46568.969,5956638.949,1.2,Stoerkoerper Magnetik Sued 2
+"Depth: 1,75 m
+Magnetic Moment: 6,672 Am²",871,46550.612,5956568.787,1.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,075 Am²",872,46595.86,5956673.954,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,189 Am²",873,46590.632,5956734.464,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,462 Am²",874,46609.386,5956639.927,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,145 Am²",875,46590.83,5956587.504,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,95 m
+Magnetic Moment: 1,129 Am²",876,46540.573,5956624.829,1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,158 Am²",877,46578.141,5956577.051,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,068 Am²",878,46598.898,5956679.349,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 0,530 Am²",879,46573.756,5956518.124,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,125 Am²",880,46570.471,5956583.632,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,067 Am²",881,46598.546,5956586.607,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,90 m
+Magnetic Moment: 0,444 Am²",882,46581.091,5956571.632,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,176 Am²",883,46615.526,5956634.702,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,208 Am²",884,46575.613,5956614.446,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,101 Am²",885,46555.035,5956608.833,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,204 Am²",886,46573.718,5956537.006,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,95 m
+Magnetic Moment: 0,697 Am²",887,46601.742,5956660.851,1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 0,583 Am²",888,46563.9,5956584.921,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 0,528 Am²",889,46570.489,5956557.252,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,304 Am²",890,46555.501,5956605.315,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 0,254 Am²",891,46586.049,5956603.672,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,90 m
+Magnetic Moment: 0,993 Am²",892,46608.562,5956659.538,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 0,780 Am²",893,46552.273,5956628.179,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,105 Am²",894,46552.934,5956631.89,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,284 Am²",895,46555.88,5956630.599,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,089 Am²",896,46553.534,5956605.807,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,175 Am²",897,46582.836,5956592.303,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 1,15 m
+Magnetic Moment: 1,089 Am²",898,46555.472,5956636.276,1.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,065 Am²",899,46562.426,5956563.417,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,180 Am²",900,46559.566,5956582.269,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,074 Am²",901,46540.512,5956623.677,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,048 Am²",902,46599.407,5956697.12,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,125 Am²",903,46574.427,5956570.916,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 1,15 m
+Magnetic Moment: 1,117 Am²",904,46578.872,5956561.174,1.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,153 Am²",905,46556.957,5956578.192,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,197 Am²",906,46554.803,5956562.14,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,294 Am²",907,46563.604,5956640.726,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,370 Am²",908,46572.938,5956598.747,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,069 Am²",909,46553.059,5956610.786,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,187 Am²",910,46567.181,5956571.465,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,167 Am²",911,46570.962,5956597.579,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,154 Am²",912,46582.622,5956581.753,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 1,50 m
+Magnetic Moment: 2,225 Am²",913,46604.929,5956738.117,1.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,241 Am²",914,46579.198,5956535.369,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,193 Am²",915,46572.115,5956561.575,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,25 m
+Magnetic Moment: 0,030 Am²",916,46581.933,5956501.679,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 1,75 m
+Magnetic Moment: 3,583 Am²",917,46551.323,5956570.934,1.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,070 Am²",918,46550.194,5956577.486,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,065 Am²",919,46548.17,5956623.742,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,312 Am²",920,46571.683,5956513.341,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,046 Am²",921,46562.183,5956514.007,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,167 Am²",922,46550.14,5956617.562,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 1,90 m
+Magnetic Moment: 5,738 Am²",923,46561.744,5956594.392,1.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,030 Am²",924,46550.87,5956636.066,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,172 Am²",925,46571.953,5956602.617,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,086 Am²",926,46564.169,5956614.797,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,107 Am²",927,46573.421,5956698.574,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,116 Am²",928,46578.794,5956514.517,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,036 Am²",929,46598.301,5956699.744,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,048 Am²",930,46613.978,5956727.577,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,90 m
+Magnetic Moment: 0,786 Am²",931,46542.675,5956595.529,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,290 Am²",932,46571.545,5956609.855,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,034 Am²",933,46569.261,5956623.215,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,263 Am²",934,46561.118,5956610.309,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,25 m
+Magnetic Moment: 0,033 Am²",935,46613.362,5956634.71,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,146 Am²",936,46570.282,5956631.17,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,311 Am²",937,46631.731,5956722.187,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,136 Am²",938,46577.479,5956601.983,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,169 Am²",939,46576.051,5956595.023,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 1,25 m
+Magnetic Moment: 1,393 Am²",940,46587.014,5956614.704,1.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,142 Am²",941,46555.633,5956641.597,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,098 Am²",942,46564.841,5956646.244,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,089 Am²",943,46571.941,5956586.862,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 1,85 m
+Magnetic Moment: 4,636 Am²",944,46563.104,5956593.354,1.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,043 Am²",945,46597.673,5956653.643,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,107 Am²",946,46553.569,5956613.455,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,119 Am²",947,46557.617,5956528.745,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,115 Am²",948,46554.297,5956552.222,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,128 Am²",949,46591.911,5956693.515,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 0,291 Am²",950,46626.71,5956722.32,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,051 Am²",951,46574.01,5956501.991,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,048 Am²",952,46541.692,5956618.176,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,337 Am²",953,46588.629,5956677.271,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,260 Am²",954,46571.898,5956611.432,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 1,20 m
+Magnetic Moment: 0,865 Am²",955,46595.459,5956695.337,1.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,069 Am²",956,46588.946,5956682.626,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,20 m
+Magnetic Moment: 0,017 Am²",957,46573.657,5956565.554,0.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,239 Am²",958,46573.116,5956603.713,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,076 Am²",959,46573.968,5956634.942,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,092 Am²",960,46548.944,5956578.614,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,051 Am²",961,46549.21,5956613.675,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 1,05 m
+Magnetic Moment: 0,646 Am²",962,46584.678,5956584.273,1.1,Stoerkoerper Magnetik Sued 2
+"Depth: 1,85 m
+Magnetic Moment: 6,692 Am²",963,46600.018,5956530.991,1.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,178 Am²",964,46580.787,5956556.509,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 1,00 m
+Magnetic Moment: 0,641 Am²",965,46558.991,5956596.117,1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,249 Am²",966,46545.284,5956617.326,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,90 m
+Magnetic Moment: 0,481 Am²",967,46556.187,5956640.033,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,274 Am²",968,46606.728,5956568.651,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,261 Am²",969,46544.449,5956628.481,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 1,30 m
+Magnetic Moment: 1,150 Am²",970,46562.256,5956645.538,1.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,050 Am²",971,46549.497,5956569.751,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,310 Am²",972,46570.875,5956525.299,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 3,30 m
+Magnetic Moment: 21,869 Am²",973,46561.35,5956592.92,3.3,Stoerkoerper Magnetik Sued 2
+"Depth: 1,20 m
+Magnetic Moment: 1,333 Am²",974,46607.304,5956640.782,1.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,033 Am²",975,46554.028,5956584.868,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,076 Am²",976,46586.268,5956609.591,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,040 Am²",977,46596.842,5956662.231,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,074 Am²",978,46590.363,5956569.125,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 1,00 m
+Magnetic Moment: 0,536 Am²",979,46565.656,5956599.45,1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,032 Am²",980,46589.635,5956665.797,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,041 Am²",981,46558.707,5956572.334,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,061 Am²",982,46559.308,5956580.633,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 1,00 m
+Magnetic Moment: 0,558 Am²",983,46561.464,5956630.563,1,Stoerkoerper Magnetik Sued 2
+"Depth: 1,55 m
+Magnetic Moment: 2,940 Am²",984,46602.126,5956738.287,1.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,354 Am²",985,46556.693,5956542.627,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,15 m
+Magnetic Moment: 0,014 Am²",986,46545.678,5956609.938,0.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,175 Am²",987,46566.315,5956608.347,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,049 Am²",988,46547.622,5956615.993,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,035 Am²",989,46585.159,5956553.821,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 1,05 m
+Magnetic Moment: 0,443 Am²",990,46581.994,5956566.913,1.1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,025 Am²",991,46625.491,5956717.001,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,120 Am²",992,46597.891,5956713.728,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,191 Am²",993,46585.817,5956571.578,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,032 Am²",994,46586.167,5956549.143,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,90 m
+Magnetic Moment: 0,314 Am²",995,46611.893,5956720.58,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,103 Am²",996,46545.059,5956587.899,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,071 Am²",997,46576.919,5956531.058,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 1,20 m
+Magnetic Moment: 1,506 Am²",998,46561.799,5956592.876,1.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,038 Am²",999,46546.922,5956574.883,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,90 m
+Magnetic Moment: 0,332 Am²",1000,46570.244,5956593.268,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,030 Am²",1001,46555.739,5956548.911,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,052 Am²",1002,46562.366,5956624.787,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,049 Am²",1003,46539.57,5956619.137,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,10 m
+Magnetic Moment: 0,012 Am²",1004,46549.969,5956609.02,0.1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,067 Am²",1005,46559.252,5956533.168,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,051 Am²",1006,46558.751,5956524.86,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 1,05 m
+Magnetic Moment: 0,442 Am²",1007,46573.318,5956567.248,1.1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,25 m
+Magnetic Moment: 0,019 Am²",1008,46580.376,5956543.913,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,138 Am²",1009,46612.452,5956721.684,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,150 Am²",1010,46601.919,5956599.118,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,054 Am²",1011,46554.761,5956610.168,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,171 Am²",1012,46561.364,5956590.452,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 1,10 m
+Magnetic Moment: 0,484 Am²",1013,46576.149,5956607.498,1.1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,124 Am²",1014,46559.08,5956553.27,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,090 Am²",1015,46548.593,5956634.373,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,030 Am²",1016,46561.115,5956578.495,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,063 Am²",1017,46589.403,5956593.582,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,068 Am²",1018,46564.261,5956590.222,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,066 Am²",1019,46557.308,5956577.654,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,127 Am²",1020,46580.255,5956554.647,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,053 Am²",1021,46553.345,5956564.244,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,034 Am²",1022,46589.311,5956683.799,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 1,35 m
+Magnetic Moment: 1,354 Am²",1023,46579.203,5956541.157,1.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,049 Am²",1024,46551.005,5956631.724,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,087 Am²",1025,46618.948,5956724.832,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,248 Am²",1026,46586.075,5956588.316,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,050 Am²",1027,46555.635,5956608.272,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,041 Am²",1028,46589.009,5956575.951,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,85 m
+Magnetic Moment: 0,289 Am²",1029,46573.537,5956498.664,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,031 Am²",1030,46606.665,5956637.824,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,157 Am²",1031,46569.133,5956631.785,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,091 Am²",1032,46560.049,5956601.855,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,279 Am²",1033,46558.689,5956628.414,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 1,35 m
+Magnetic Moment: 1,450 Am²",1034,46559.432,5956607.452,1.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,05 m
+Magnetic Moment: 0,006 Am²",1035,46607.244,5956567.745,0.1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,245 Am²",1036,46549.73,5956635.723,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,066 Am²",1037,46586.189,5956582.717,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 1,60 m
+Magnetic Moment: 2,199 Am²",1038,46571.274,5956622.164,1.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 0,247 Am²",1039,46587.577,5956543.419,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,192 Am²",1040,46553.177,5956630.759,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,230 Am²",1041,46599.623,5956653.505,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,040 Am²",1042,46544.077,5956614.724,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,126 Am²",1043,46566.527,5956573.039,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,053 Am²",1044,46608.495,5956643.738,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,25 m
+Magnetic Moment: 0,020 Am²",1045,46602.409,5956717.771,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,024 Am²",1046,46558.516,5956540.136,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,014 Am²",1047,46548.577,5956618.065,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,100 Am²",1048,46539.641,5956633.426,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,031 Am²",1049,46587.683,5956595.057,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,85 m
+Magnetic Moment: 0,262 Am²",1050,46556.029,5956581.604,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,089 Am²",1051,46619.841,5956726.256,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,109 Am²",1052,46560.411,5956550.373,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,024 Am²",1053,46555.397,5956546.931,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,068 Am²",1054,46557.963,5956617.259,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,134 Am²",1055,46591.472,5956593.634,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,051 Am²",1056,46581.093,5956578.427,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,081 Am²",1057,46562.541,5956590.136,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,090 Am²",1058,46561.914,5956613.857,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,017 Am²",1059,46551.617,5956594.816,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,042 Am²",1060,46570.816,5956599.707,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,117 Am²",1061,46543.676,5956604.846,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,147 Am²",1062,46543.872,5956602.713,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,00 m
+Magnetic Moment: 0,011 Am²",1063,46570.419,5956514.319,0.1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,052 Am²",1064,46554.933,5956561.926,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,022 Am²",1065,46544.802,5956625.88,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,288 Am²",1066,46543.574,5956587.64,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,046 Am²",1067,46586.715,5956604.312,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,080 Am²",1068,46558.444,5956536.266,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,038 Am²",1069,46560.317,5956536.891,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 1,20 m
+Magnetic Moment: 0,620 Am²",1070,46560.219,5956555.677,1.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,109 Am²",1071,46558.836,5956569.503,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,15 m
+Magnetic Moment: 0,005 Am²",1072,46626.847,5956715.41,0.2,Stoerkoerper Magnetik Sued 2
+"Depth: 1,45 m
+Magnetic Moment: 0,978 Am²",1073,46549.872,5956635.106,1.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,114 Am²",1074,46550.694,5956602.457,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,058 Am²",1075,46563.019,5956603.934,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,043 Am²",1076,46573.343,5956707.139,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,036 Am²",1077,46585.44,5956566.63,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,071 Am²",1078,46567.591,5956583.004,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,088 Am²",1079,46566.375,5956611.06,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,085 Am²",1080,46568.396,5956601.753,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 0,099 Am²",1081,46557.148,5956583.811,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 1,10 m
+Magnetic Moment: 0,425 Am²",1082,46597.302,5956599.262,1.1,Stoerkoerper Magnetik Sued 2
+"Depth: 2,05 m
+Magnetic Moment: 3,768 Am²",1083,46595.484,5956598.683,2.1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,046 Am²",1084,46562.726,5956613.929,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,90 m
+Magnetic Moment: 0,248 Am²",1085,46551.596,5956581.579,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 1,20 m
+Magnetic Moment: 0,612 Am²",1086,46555.918,5956632.558,1.2,Stoerkoerper Magnetik Sued 2
+"Depth: 1,20 m
+Magnetic Moment: 1,424 Am²",1087,46577.688,5956497.86,1.2,Stoerkoerper Magnetik Sued 2
+"Depth: 1,45 m
+Magnetic Moment: 8,764 Am²",1088,46577.426,5956504.531,1.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,132 Am²",1089,46569.8,5956511.56,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,147 Am²",1090,46574.321,5956516.157,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,056 Am²",1091,46578.711,5956521.472,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 4,15 m
+Magnetic Moment: 148,103 Am²",1092,46583.647,5956512.638,4.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,033 Am²",1093,46589.23,5956505.303,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,95 m
+Magnetic Moment: 0,761 Am²",1094,46586.541,5956732.242,1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,026 Am²",1095,46609.057,5956726.14,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,220 Am²",1096,46614.339,5956734.439,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,316 Am²",1097,46592.303,5956674.65,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 5,489 Am²",1098,46588.894,5956671.154,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,159 Am²",1099,46600.504,5956668.874,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,367 Am²",1100,46613.519,5956659.26,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,015 Am²",1101,46603.329,5956654.355,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,42 m
+Magnetic Moment: 0,049 Am²",1102,46608.049,5956649.016,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 1,00 m
+Magnetic Moment: 0,286 Am²",1103,46600.219,5956645.091,1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 1,112 Am²",1104,46611.697,5956629.988,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,078 Am²",1105,46616.343,5956625.965,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,90 m
+Magnetic Moment: 0,627 Am²",1106,46612.664,5956613.937,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,048 Am²",1107,46608.71,5956604.805,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,306 Am²",1108,46607.765,5956602.832,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 1,40 m
+Magnetic Moment: 0,940 Am²",1109,46600.103,5956603.774,1.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,437 Am²",1110,46592.943,5956602.603,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,178 Am²",1111,46595.964,5956604.174,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,390 Am²",1112,46605.302,5956592.448,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,114 Am²",1113,46587.214,5956571.443,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 2,792 Am²",1114,46586.212,5956559.508,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,147 Am²",1115,46586.553,5956557.311,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,029 Am²",1116,46586.688,5956551.408,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,10 m
+Magnetic Moment: 0,014 Am²",1117,46582.9,5956525.748,0.1,Stoerkoerper Magnetik Sued 2
+"Depth: 1,20 m
+Magnetic Moment: 11,404 Am²",1118,46580.98,5956525.682,1.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,05 m
+Magnetic Moment: 0,017 Am²",1119,46572.565,5956515.169,0.1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 1,290 Am²",1120,46552.431,5956549.583,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,025 Am²",1121,46558.58,5956564.242,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,102 Am²",1122,46564.469,5956565.284,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 2,843 Am²",1123,46548.564,5956568.431,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,028 Am²",1124,46552.207,5956574.875,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,85 m
+Magnetic Moment: 0,366 Am²",1125,46565.762,5956569.287,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,85 m
+Magnetic Moment: 0,642 Am²",1126,46546.999,5956590.782,0.9,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,183 Am²",1127,46550.741,5956597.217,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 3,00 m
+Magnetic Moment: 36,123 Am²",1128,46554.366,5956597.219,3,Stoerkoerper Magnetik Sued 2
+"Depth: 1,65 m
+Magnetic Moment: 2,310 Am²",1129,46552.968,5956599.418,1.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 0,299 Am²",1130,46551.657,5956603.572,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,103 Am²",1131,46564.141,5956608.255,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,75 m
+Magnetic Moment: 0,859 Am²",1132,46578.123,5956607.609,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 1,15 m
+Magnetic Moment: 2,107 Am²",1133,46577.35,5956615.235,1.2,Stoerkoerper Magnetik Sued 2
+"Depth: 1,10 m
+Magnetic Moment: 1,035 Am²",1134,46574.2,5956623.795,1.1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,118 Am²",1135,46573.406,5956633.285,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 1,104 Am²",1136,46572.546,5956635.331,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 2,924 Am²",1137,46570.082,5956634.311,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,265 Am²",1138,46565.602,5956636.405,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,837 Am²",1139,46560.125,5956631.296,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,80 m
+Magnetic Moment: 0,554 Am²",1140,46561.16,5956628.981,0.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,064 Am²",1141,46559.408,5956640.024,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,086 Am²",1142,46563.716,5956644.49,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 3,158 Am²",1143,46560.902,5956645.064,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,059 Am²",1144,46557.519,5956641.314,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,255 Am²",1145,46558.604,5956638.994,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,224 Am²",1146,46557.003,5956635.977,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,037 Am²",1147,46547.952,5956633.479,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,085 Am²",1148,46546.31,5956632.631,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 1,75 m
+Magnetic Moment: 7,766 Am²",1149,46544.844,5956634.132,1.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,60 m
+Magnetic Moment: 1,295 Am²",1150,46544.193,5956630.52,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,25 m
+Magnetic Moment: 0,034 Am²",1151,46565.328,5956628.88,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,070 Am²",1152,46564.869,5956626.206,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,035 Am²",1153,46564.47,5956624.684,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 1,75 m
+Magnetic Moment: 2,454 Am²",1154,46555.316,5956626.324,1.8,Stoerkoerper Magnetik Sued 2
+"Depth: 0,15 m
+Magnetic Moment: 0,007 Am²",1155,46585.162,5956608.036,0.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,333 Am²",1156,46582.668,5956588.997,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,70 m
+Magnetic Moment: 0,261 Am²",1157,46584.171,5956585.278,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,95 m
+Magnetic Moment: 0,503 Am²",1158,46578.594,5956578.618,1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,65 m
+Magnetic Moment: 0,174 Am²",1159,46577.176,5956576.44,0.7,Stoerkoerper Magnetik Sued 2
+"Depth: 0,55 m
+Magnetic Moment: 0,520 Am²",1160,46574.18,5956568.876,0.6,Stoerkoerper Magnetik Sued 2
+"Depth: 0,35 m
+Magnetic Moment: 0,027 Am²",1161,46585.701,5956564.642,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,023 Am²",1162,46572.115,5956549.594,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,024 Am²",1163,46567.261,5956541.556,0.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,50 m
+Magnetic Moment: 0,086 Am²",1164,46573.171,5956534.994,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,15 m
+Magnetic Moment: 0,013 Am²",1165,46587.019,5956530.39,0.2,Stoerkoerper Magnetik Sued 2
+"Depth: 0,45 m
+Magnetic Moment: 0,068 Am²",1166,46572.923,5956519.917,0.5,Stoerkoerper Magnetik Sued 2
+"Depth: 0,05 m
+Magnetic Moment: 0,003 Am²",1167,46569.928,5956516.531,0.1,Stoerkoerper Magnetik Sued 2
+"Depth: 0,40 m
+Magnetic Moment: 0,060 Am²",1168,46588.665,5956511.952,0.4,Stoerkoerper Magnetik Sued 2
+"Depth: 1,30 m
+Magnetic Moment: 1,281 Am²",1169,46603.489,5956591.919,1.3,Stoerkoerper Magnetik Sued 2
+"Depth: 0,30 m
+Magnetic Moment: 0,030 Am²",1170,46571.092,5956558.805,0.3,Stoerkoerper Magnetik Sued 2
