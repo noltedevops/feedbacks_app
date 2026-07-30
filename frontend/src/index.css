@@ -623,6 +623,118 @@ body.light-theme .filter-pill.active {
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
 }
 
+/* Modern Segmented Language Switch (EN / DE) */
+.lang-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 3px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.lang-switch:hover {
+  border-color: rgba(245, 130, 32, 0.45);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* Sliding highlight pill */
+.lang-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  height: calc(100% - 6px);
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #f58220 0%, #ea6a00 100%);
+  box-shadow: 0 4px 14px rgba(245, 130, 32, 0.45);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  width: 42px;
+}
+
+.lang-switch[data-lang="DE"] .lang-switch-thumb {
+  transform: translateX(42px);
+}
+
+.lang-switch-option {
+  position: relative;
+  z-index: 1;
+  width: 42px;
+  padding: 5px 0;
+  border: none;
+  background: none;
+  border-radius: 9999px;
+  font-family: var(--font-heading);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.lang-switch-option:hover {
+  color: #ffffff;
+}
+
+.lang-switch-option.active {
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* Compact variant for the 80px app sidebar */
+.lang-switch-compact {
+  padding: 2px;
+  gap: 0;
+}
+
+.lang-switch-compact .lang-switch-thumb {
+  top: 2px;
+  left: 2px;
+  width: 28px;
+  height: calc(100% - 4px);
+}
+
+.lang-switch-compact[data-lang="DE"] .lang-switch-thumb {
+  transform: translateX(28px);
+}
+
+.lang-switch-compact .lang-switch-option {
+  width: 28px;
+  padding: 4px 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+}
+
+body.light-theme .lang-switch {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: none;
+}
+
+body.light-theme .lang-switch:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(245, 130, 32, 0.5);
+}
+
+body.light-theme .lang-switch-option {
+  color: #64748b;
+}
+
+body.light-theme .lang-switch-option:hover {
+  color: #0f172a;
+}
+
+body.light-theme .lang-switch-option.active {
+  color: #ffffff;
+}
+
 /* Collapsible Sidebar States */
 .app-sidebar.collapsed {
   width: 0px !important;

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Upload, Database, RefreshCw, Check, AlertCircle } from 'lucide-react';
+import { makeT, type AppLang } from '../i18n';
 
 interface ImportExportProps {
+  lang: AppLang;
   onImportSuccess: (points: any[]) => void;
   onSeedRequest: () => Promise<void>;
   isOnline: boolean;
@@ -49,7 +51,8 @@ export function utm32nToLatLonJS(easting: number, northing: number): [number, nu
   return [lat * 180.0 / Math.PI, lon * 180.0 / Math.PI];
 }
 
-export const ImportExport: React.FC<ImportExportProps> = ({ onImportSuccess, onSeedRequest, isOnline }) => {
+export const ImportExport: React.FC<ImportExportProps> = ({ lang, onImportSuccess, onSeedRequest, isOnline }) => {
+  const t = makeT(lang);
   const [csvText, setCsvText] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -172,10 +175,10 @@ export const ImportExport: React.FC<ImportExportProps> = ({ onImportSuccess, onS
       {/* Seeding Section */}
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <h3 style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Database size={16} color="hsl(var(--primary))" /> Seedeich Seeding (Wilhelmshaven)
+          <Database size={16} color="hsl(var(--primary))" /> {t('Seedeich Seeding (Wilhelmshaven)')}
         </h3>
         <p style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: '1.4' }}>
-          Load the exact 29 survey target points transcribed from the Wilhelmshaven Excel table. Converts Germany UTM coordinates to coordinates mapped on the Seedeich dyke.
+          {t('Load the exact 29 survey target points transcribed from the Wilhelmshaven Excel table. Converts Germany UTM coordinates to coordinates mapped on the Seedeich dyke.')}
         </p>
         <button
           onClick={handleSeed}
@@ -184,21 +187,21 @@ export const ImportExport: React.FC<ImportExportProps> = ({ onImportSuccess, onS
           disabled={loading || !isOnline}
         >
           {loading ? <RefreshCw className="animate-spin" size={16} /> : <Database size={16} />}
-          {isOnline ? 'Seed Wilhelmshaven Targets' : 'Seed Targets (Requires Online)'}
+          {isOnline ? t('Seed Wilhelmshaven Targets') : t('Seed Targets (Requires Online)')}
         </button>
       </div>
 
       {/* CSV upload */}
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <h3 style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Upload size={16} color="hsl(var(--primary))" /> Upload GPR Coordinate File
+          <Upload size={16} color="hsl(var(--primary))" /> {t('Upload GPR Coordinate File')}
         </h3>
         <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
-          Choose a CSV file with coordinate columns X and Y (Germany UTM).
+          {t('Choose a CSV file with coordinate columns X and Y (Germany UTM).')}
         </p>
         <label className="btn-secondary" style={{ width: '100%', cursor: 'pointer', gap: '8px', justifyContent: 'center' }}>
           <Upload size={16} />
-          Choose CSV File
+          {t('Choose CSV File')}
           <input
             type="file"
             accept=".csv"
@@ -210,7 +213,7 @@ export const ImportExport: React.FC<ImportExportProps> = ({ onImportSuccess, onS
 
       {/* Manual Paste */}
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <h3 style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600 }}>Paste CSV Coordinates</h3>
+        <h3 style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600 }}>{t('Paste CSV Coordinates')}</h3>
         <form onSubmit={handleTextImport} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <textarea
             rows={4}
@@ -221,7 +224,7 @@ export const ImportExport: React.FC<ImportExportProps> = ({ onImportSuccess, onS
             style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
           />
           <button type="submit" className="btn-primary" style={{ width: '100%' }}>
-            Parse and Load Points
+            {t('Parse and Load Points')}
           </button>
         </form>
       </div>

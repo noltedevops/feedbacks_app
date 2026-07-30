@@ -1,5 +1,6 @@
 import React from 'react';
 import { type LocalPoint } from '../db/indexedDb';
+import { makeT, type AppLang } from '../i18n';
 import { 
   CheckCircle2, 
   Database,
@@ -20,6 +21,7 @@ import {
 } from 'recharts';
 
 interface DashboardProps {
+  lang: AppLang;
   points: LocalPoint[];
   filteredPoints: LocalPoint[];
   selectedPoint: LocalPoint | null;
@@ -34,8 +36,9 @@ interface DashboardProps {
   setFilterInstrument: (instrument: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ 
-  points, 
+export const Dashboard: React.FC<DashboardProps> = ({
+  lang,
+  points,
   filteredPoints,
   selectedPoint, 
   onSelectPoint, 
@@ -48,7 +51,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   filterInstrument,
   setFilterInstrument
 }) => {
-  
+  const t = makeT(lang);
+
   // Filter points based on selected instrument for dashboard metrics
   const dashboardPoints = points.filter(p => 
     filterInstrument === 'all' || 
@@ -166,9 +170,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const meanDepthError = validDepthPairs > 0 ? (totalDiff / validDepthPairs).toFixed(2) : '0.00';
   const rawBias = validDepthPairs > 0 ? totalBias / validDepthPairs : 0;
-  const biasText = validDepthPairs > 0 
-    ? (rawBias > 0.02 ? `Too Deep (+${rawBias.toFixed(2)}m)` : (rawBias < -0.02 ? `Too Shallow (${rawBias.toFixed(2)}m)` : `Balanced (${rawBias.toFixed(2)}m)`)) 
-    : 'N/A';
+  const biasText = validDepthPairs > 0
+    ? (rawBias > 0.02 ? `${t('Too Deep')} (+${rawBias.toFixed(2)}m)` : (rawBias < -0.02 ? `${t('Too Shallow')} (${rawBias.toFixed(2)}m)` : `${t('Balanced')} (${rawBias.toFixed(2)}m)`))
+    : t('N/A');
   const falsePositiveRate = investigatedCount > 0 ? Math.round((ohneFundCount / investigatedCount) * 100) : 0;
 
   // 5. Depth/Metrics per Fundstück Stacked Serial Chart data
@@ -225,10 +229,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
             <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-              Operations Overview
+              {t('Operations Overview')}
             </span>
             <h2 style={{ fontSize: '1.1rem', color: '#fff', fontWeight: 800, margin: 0, fontFamily: 'var(--font-heading)' }}>
-              Clearance Analytics Dashboard
+              {t('Clearance Analytics Dashboard')}
             </h2>
           </div>
           
@@ -243,7 +247,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             gap: '2px',
             minWidth: '140px'
           }}>
-            <div style={{ fontSize: '0.48rem', color: '#8c9f96', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', lineHeight: 1 }}>TOTAL EXCAVATED VOLUME</div>
+            <div style={{ fontSize: '0.48rem', color: '#8c9f96', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', lineHeight: 1 }}>{t('TOTAL EXCAVATED VOLUME')}</div>
             <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fa5f1c', fontFamily: 'var(--font-heading)', lineHeight: 1.1 }}>
               {formattedVolume}
             </div>
@@ -258,7 +262,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         
         {/* Dropdown Selector */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.68rem', color: '#8c9f96', fontWeight: 700 }}>INSTRUMENT:</span>
+          <span style={{ fontSize: '0.68rem', color: '#8c9f96', fontWeight: 700 }}>{t('INSTRUMENT:')}</span>
           <select 
             value={filterInstrument} 
             onChange={(e) => setFilterInstrument(e.target.value)}
@@ -275,9 +279,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               height: '26px'
             }}
           >
-            <option value="all">All Instruments</option>
-            <option value="georadar">Georadar Array</option>
-            <option value="magnetic">Magnetics</option>
+            <option value="all">{t('All Instruments')}</option>
+            <option value="georadar">{t('Georadar Array')}</option>
+            <option value="magnetic">{t('Magnetics')}</option>
           </select>
         </div>
       </div>
@@ -305,7 +309,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <Database size={14} />
             </div>
             <div>
-              <div style={{ fontSize: '0.5rem', color: '#8c9f96', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>TOTAL TARGETS</div>
+              <div style={{ fontSize: '0.5rem', color: '#8c9f96', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{t('TOTAL TARGETS')}</div>
               <div style={{ fontSize: '0.9rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: '#fff' }}>{total}</div>
             </div>
           </div>
@@ -316,7 +320,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <CheckCircle2 size={14} />
             </div>
             <div>
-              <div style={{ fontSize: '0.5rem', color: '#8c9f96', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>INVESTIGATED</div>
+              <div style={{ fontSize: '0.5rem', color: '#8c9f96', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{t('INVESTIGATED')}</div>
               <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#10b981', fontFamily: 'var(--font-heading)' }}>{investigated}</div>
             </div>
           </div>
@@ -327,7 +331,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <Clock size={14} />
             </div>
             <div>
-              <div style={{ fontSize: '0.5rem', color: '#8c9f96', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>PENDING</div>
+              <div style={{ fontSize: '0.5rem', color: '#8c9f96', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{t('PENDING')}</div>
               <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#ef4444', fontFamily: 'var(--font-heading)' }}>{pending}</div>
             </div>
           </div>
@@ -338,7 +342,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <Briefcase size={14} />
             </div>
             <div>
-              <div style={{ fontSize: '0.5rem', color: '#8c9f96', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>SURVEY PROJECTS</div>
+              <div style={{ fontSize: '0.5rem', color: '#8c9f96', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{t('SURVEY PROJECTS')}</div>
               <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#a78bfa', fontFamily: 'var(--font-heading)' }}>{projectsCount}</div>
             </div>
           </div>
@@ -347,8 +351,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Card 1: Fundstück Status Distribution */}
         <div className="glass-panel" style={{ padding: '10px 12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
-            <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#f97316', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Findings Status</span>
-            <h3 style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>Grouped Findings (Sorted Low to High)</h3>
+            <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#f97316', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t('Findings Status')}</span>
+            <h3 style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>{t('Grouped Findings (Sorted Low to High)')}</h3>
           </div>
           <div style={{ width: '100%', flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -360,7 +364,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <XAxis dataKey="name" stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
                 <YAxis stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: 8 }} />
-                <Bar dataKey="count" name="Frequency" fill="#fa5f1c" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="count" name={t('Frequency')} fill="#fa5f1c" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -369,8 +373,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Card 2: Sohle Status Split by Fundstück */}
         <div className="glass-panel" style={{ padding: '10px 12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
-            <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Excavation Integrity</span>
-            <h3 style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>Sohle Status Split by Finding</h3>
+            <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t('Excavation Integrity')}</span>
+            <h3 style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>{t('Sohle Status Split by Finding')}</h3>
           </div>
           <div style={{ width: '100%', flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -383,8 +387,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <YAxis stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: 8 }} />
                 <Legend verticalAlign="top" height={16} iconSize={6} wrapperStyle={{ fontSize: 7 }} />
-                <Bar dataKey="Frei" name="Frei (Clear)" fill="#10b981" stackId="sohle" />
-                <Bar dataKey="Nicht Frei" name="Nicht Frei" fill="#ef4444" stackId="sohle" />
+                <Bar dataKey="Frei" name={t('Frei (Clear)')} fill="#10b981" stackId="sohle" />
+                <Bar dataKey="Nicht Frei" name={t('Nicht Frei')} fill="#ef4444" stackId="sohle" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -420,8 +424,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-              <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Target Log</span>
-              <h3 style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fff', margin: 0 }}>Excavated Targets Database ({filteredPoints.length})</h3>
+              <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t('Target Log')}</span>
+              <h3 style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fff', margin: 0 }}>{t('Excavated Targets Database')} ({filteredPoints.length})</h3>
             </div>
             
             <select 
@@ -430,9 +434,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               className="form-input"
               style={{ fontSize: '0.65rem', padding: '2px 14px 2px 4px', height: '20px', backgroundColor: 'rgba(10, 22, 18, 0.6)', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', cursor: 'pointer', borderRadius: '4px' }}
             >
-              <option value="all">All Targets</option>
-              <option value="investigated">Investigated</option>
-              <option value="pending">Pending</option>
+              <option value="all">{t('All Targets')}</option>
+              <option value="investigated">{t('Investigated')}</option>
+              <option value="pending">{t('Pending')}</option>
             </select>
           </div>
 
@@ -446,7 +450,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           }}>
             {filteredPoints.map((point: LocalPoint) => {
               const isInvestigated = point.local_status === 'investigated';
-              let statusText = 'PENDING';
+              let statusText = t('PENDING');
               let badgeColor = '#ef4444';
               
               if (isInvestigated && point.feedback) {
@@ -492,7 +496,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </span>
                   </div>
                   <div style={{ fontSize: '0.55rem', color: '#64748b', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {point.instrument?.toUpperCase()} • {point.layer?.replace('Stoerkoerper ', '') || 'Target'}
+                    {point.instrument?.toUpperCase()} • {point.layer?.replace('Stoerkoerper ', '') || t('Target')}
                   </div>
                   
                   <div style={{ 
@@ -505,9 +509,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     borderRadius: '3px',
                     fontSize: '0.55rem'
                   }}>
-                    <span style={{ color: '#94a3b8', fontWeight: 700 }}>EVAL: {point.evaluated_depth ? `${point.evaluated_depth}m` : 'N/A'}</span>
+                    <span style={{ color: '#94a3b8', fontWeight: 700 }}>{t('EVAL')}: {point.evaluated_depth ? `${point.evaluated_depth}m` : t('N/A')}</span>
                     {isInvestigated && point.feedback?.actual_depth && (
-                      <span style={{ color: '#10b981', fontWeight: 800 }}>EXCAV: {point.feedback.actual_depth}m</span>
+                      <span style={{ color: '#10b981', fontWeight: 800 }}>{t('EXCAV')}: {point.feedback.actual_depth}m</span>
                     )}
                   </div>
                 </div>
@@ -519,8 +523,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Card 4: Evaluated vs Excavated Depth Curve + KPI Summary */}
         <div className="glass-panel" style={{ padding: '10px 12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
-            <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#38bdf8', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Sensor Accuracy</span>
-            <h3 style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>Evaluated vs Excavated Depth</h3>
+            <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#38bdf8', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t('Sensor Accuracy')}</span>
+            <h3 style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>{t('Evaluated vs Excavated Depth')}</h3>
           </div>
           
           <div style={{ flex: 1, minHeight: 0, width: '100%' }}>
@@ -544,8 +548,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <YAxis stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: 8 }} />
                 <Legend verticalAlign="top" height={16} iconSize={6} wrapperStyle={{ fontSize: 7 }} />
-                <Area type="monotone" dataKey="Evaluated (Sensor)" stroke="#fa5f1c" fillOpacity={1} fill="url(#colorEval)" strokeWidth={1.2} />
-                <Area type="monotone" dataKey="Excavated (Actual)" stroke="#10b981" fillOpacity={1} fill="url(#colorExec)" strokeWidth={1.2} />
+                <Area type="monotone" dataKey="Evaluated (Sensor)" name={t('Evaluated (Sensor)')} stroke="#fa5f1c" fillOpacity={1} fill="url(#colorEval)" strokeWidth={1.2} />
+                <Area type="monotone" dataKey="Excavated (Actual)" name={t('Excavated (Actual)')} stroke="#10b981" fillOpacity={1} fill="url(#colorExec)" strokeWidth={1.2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -553,15 +557,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* Geophysics KPI mini list */}
           <div className="glass-card" style={{ padding: '6px 8px', display: 'flex', justifyContent: 'space-between', gap: '6px', border: '1px solid rgba(255,255,255,0.04)', fontSize: '0.55rem', flexShrink: 0 }}>
             <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ color: '#8c9f96', fontWeight: 700 }}>MEAN ERROR</div>
+              <div style={{ color: '#8c9f96', fontWeight: 700 }}>{t('MEAN ERROR')}</div>
               <strong style={{ color: '#fff', fontSize: '0.68rem' }}>&plusmn; {meanDepthError}m</strong>
             </div>
             <div style={{ textAlign: 'center', flex: 1, borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ color: '#8c9f96', fontWeight: 700 }}>ESTIMATION BIAS</div>
+              <div style={{ color: '#8c9f96', fontWeight: 700 }}>{t('ESTIMATION BIAS')}</div>
               <strong style={{ color: '#fa5f1c', fontSize: '0.62rem', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={biasText}>{biasText}</strong>
             </div>
             <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ color: '#8c9f96', fontWeight: 700 }}>FPR (EMPTY)</div>
+              <div style={{ color: '#8c9f96', fontWeight: 700 }}>{t('FPR (EMPTY)')}</div>
               <strong style={{ color: '#ef4444', fontSize: '0.68rem' }}>{falsePositiveRate}%</strong>
             </div>
           </div>
@@ -570,8 +574,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Card 5: Metrics per Fundstück (Stacked Serial Chart) */}
         <div className="glass-panel" style={{ padding: '10px 12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
-            <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#fa5f1c', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Target Profiling</span>
-            <h3 style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>Target Dimensions (Stacked Serial Chart)</h3>
+            <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#fa5f1c', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t('Target Profiling')}</span>
+            <h3 style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>{t('Target Dimensions (Stacked Serial Chart)')}</h3>
           </div>
           
           <div style={{ width: '100%', flex: 1, minHeight: 0 }}>
@@ -585,10 +589,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <YAxis stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: 8 }} />
                 <Legend verticalAlign="top" height={16} iconSize={6} wrapperStyle={{ fontSize: 7 }} />
-                <Bar dataKey="Depth (m)" fill="#fa5f1c" stackId="metrics" />
-                <Bar dataKey="Length (m)" fill="#38bdf8" stackId="metrics" />
-                <Bar dataKey="Width (m)" fill="#e2e8f0" stackId="metrics" />
-                <Bar dataKey="Volume (m³)" fill="#10b981" stackId="metrics" />
+                <Bar dataKey="Depth (m)" name={t('Depth (m)')} fill="#fa5f1c" stackId="metrics" />
+                <Bar dataKey="Length (m)" name={t('Length (m)')} fill="#38bdf8" stackId="metrics" />
+                <Bar dataKey="Width (m)" name={t('Width (m)')} fill="#e2e8f0" stackId="metrics" />
+                <Bar dataKey="Volume (m³)" name={t('Volume (m³)')} fill="#10b981" stackId="metrics" />
               </BarChart>
             </ResponsiveContainer>
           </div>

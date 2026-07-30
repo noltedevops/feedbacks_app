@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { type LocalPoint } from '../db/indexedDb';
 import { Camera, Upload, Send, X, Move } from 'lucide-react';
+import { makeT, type AppLang } from '../i18n';
 
 // High-precision coordinates converter from Lat/Lng to UTM Zone 32N (EPSG:32632)
 export function latLonToUtm32nJS(lat: number, lon: number): [number, number] {
@@ -46,6 +47,7 @@ export function latLonToUtm32nJS(lat: number, lon: number): [number, number] {
 }
 
 interface FeedbackFormProps {
+  lang: AppLang;
   point: LocalPoint;
   currentUser: string; // Investigator Full Name
   currentUserUsername: string; // Investigator Username
@@ -76,15 +78,18 @@ interface FeedbackFormProps {
   onCancel: () => void;
 }
 
-export const FeedbackForm: React.FC<FeedbackFormProps> = ({ 
-  point, 
+export const FeedbackForm: React.FC<FeedbackFormProps> = ({
+  lang,
+  point,
   currentUser, 
   currentUserUsername, 
   isEditLocationMode,
   setIsEditLocationMode: _setIsEditLocationMode,
   onSave, 
-  onCancel 
+  onCancel
 }) => {
+  const t = makeT(lang);
+
   // Section 2 States
   const [laenge, setLaenge] = useState<string>('');
   const [breite, setBreite] = useState<string>('');
@@ -293,7 +298,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
       {/* Header Title without Logo */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px', flexShrink: 0 }}>
         <div>
-          <h2 style={{ fontSize: '1.15rem', color: '#f1f5f9', fontWeight: 700, margin: 0 }}>Field Application Form</h2>
+          <h2 style={{ fontSize: '1.15rem', color: '#f1f5f9', fontWeight: 700, margin: 0 }}>{t('Field Application Form')}</h2>
         </div>
         <button 
           onClick={onCancel}
@@ -320,7 +325,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         }}>
           <Move size={14} style={{ marginTop: '2px', flexShrink: 0 }} />
           <div>
-            <strong>Location Edit Mode Active:</strong> Drag the target marker on the map to its exact location. Coordinates will update in real-time. Click "Submit" to save.
+            <strong>{t('Location Edit Mode Active:')}</strong> {t('Drag the target marker on the map to its exact location. Coordinates will update in real-time. Click "Submit" to save.')}
           </div>
         </div>
       )}
@@ -336,20 +341,20 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.78rem' }}>
             <div>
-              <span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>Project ID</span>
+              <span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>{t('Project ID')}</span>
               <strong style={{ color: '#e2e8f0' }}>{point.project_id || '11-24-2736'}</strong>
             </div>
             <div>
-              <span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>Instrument</span>
+              <span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>{t('Instrument')}</span>
               <strong style={{ color: '#e2e8f0', textTransform: 'uppercase' }}>{point.instrument || 'georadar'}</strong>
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>Bewertete Tiefe (m)</span>
-              <strong style={{ color: '#e2e8f0' }}>{point.evaluated_depth ? `${point.evaluated_depth} m` : 'N/A'}</strong>
+              <span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>{t('Bewertete Tiefe (m)')}</span>
+              <strong style={{ color: '#e2e8f0' }}>{point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')}</strong>
             </div>
             <div style={{ gridColumn: '1 / -1', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }}>
               <div>
-                <span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>Coordinate (X; Y)</span>
+                <span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>{t('Coordinate (X; Y)')}</span>
                 <strong style={{ color: '#e2e8f0' }}>X: {easting.toFixed(3)} | Y: {northing.toFixed(3)}</strong>
               </div>
             </div>
@@ -364,7 +369,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           
           {/* Active Investigator (Read-only) */}
           <div className="form-group">
-            <label className="form-label" style={{ fontSize: '0.7rem', color: '#64748b' }}>Investigator</label>
+            <label className="form-label" style={{ fontSize: '0.7rem', color: '#64748b' }}>{t('Investigator')}</label>
             <input
               type="text"
               className="form-input"
@@ -386,7 +391,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   className="form-input"
                   value={laenge}
                   onChange={(e) => setLaenge(e.target.value)}
-                  placeholder="e.g. 1.20"
+                  placeholder={lang === 'DE' ? 'z. B. 1.20' : 'e.g. 1.20'}
                   style={{ height: '32px', fontSize: '0.75rem', width: '100%', minWidth: 0, padding: '4px 8px', boxSizing: 'border-box' }}
                 />
               </div>
@@ -398,7 +403,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   className="form-input"
                   value={breite}
                   onChange={(e) => setBreite(e.target.value)}
-                  placeholder="e.g. 1.00"
+                  placeholder={lang === 'DE' ? 'z. B. 1.00' : 'e.g. 1.00'}
                   style={{ height: '32px', fontSize: '0.75rem', width: '100%', minWidth: 0, padding: '4px 8px', boxSizing: 'border-box' }}
                 />
               </div>
@@ -410,7 +415,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   className="form-input"
                   value={tiefe}
                   onChange={(e) => setTiefe(e.target.value)}
-                  placeholder="e.g. 0.90"
+                  placeholder={lang === 'DE' ? 'z. B. 0.90' : 'e.g. 0.90'}
                   style={{ height: '32px', fontSize: '0.75rem', width: '100%', minWidth: 0, padding: '4px 8px', boxSizing: 'border-box' }}
                 />
               </div>
@@ -418,7 +423,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
             
             {/* Meter Cube Autopopulated */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', padding: '6px 10px', borderRadius: '6px', marginTop: '4px' }}>
-              <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 600 }}>Meter Cube Volume (m³)</span>
+              <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 600 }}>{t('Meter Cube Volume (m³)')}</span>
               <strong style={{ fontSize: '0.75rem', color: '#38bdf8' }}>{computedVolume} m³</strong>
             </div>
           </div>
@@ -457,13 +462,13 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           {/* Conditional Field: Schreibe (open if Sonstige selected) */}
           {fundstueck === 'Sonstige' && (
             <div className="form-group" style={{ animation: 'fade-in 0.15s ease-out' }}>
-              <label className="form-label" style={{ fontSize: '0.7rem' }}>Schreibe (Specify) *</label>
+              <label className="form-label" style={{ fontSize: '0.7rem' }}>{t('Schreibe (Specify) *')}</label>
               <input
                 type="text"
                 className="form-input"
                 value={other}
                 onChange={(e) => setOther(e.target.value)}
-                placeholder="Describe finding..."
+                placeholder={t('Describe finding...')}
                 style={{ fontSize: '0.75rem', height: '32px' }}
                 required
               />
@@ -483,7 +488,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   onChange={() => setSohleStatus('Frei')}
                   style={{ cursor: 'pointer' }}
                 />
-                Frei (Clear)
+                {t('Frei (Clear)')}
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', cursor: 'pointer', color: sohleStatus === 'Nicht Frei' ? '#ef4444' : '#64748b', fontWeight: 600 }}>
                 <input
@@ -494,20 +499,20 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   onChange={() => setSohleStatus('Nicht Frei')}
                   style={{ cursor: 'pointer' }}
                 />
-                Nicht Frei (Not Clear)
+                {t('Nicht Frei (Not Clear)')}
               </label>
             </div>
           </div>
 
           {/* Bemerkung */}
           <div className="form-group">
-            <label className="form-label" style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700 }}>Bemerkung (Remarks)</label>
+            <label className="form-label" style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700 }}>{t('Bemerkung (Remarks)')}</label>
             <textarea
               rows={3}
               className="form-input"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Write any additional remarks..."
+              placeholder={t('Write any additional remarks...')}
               style={{ fontSize: '0.75rem', resize: 'vertical' }}
             />
           </div>
@@ -515,8 +520,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           {/* Attached Photos */}
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-              <label className="form-label" style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: 0 }}>Attached Photos (Multiple)</label>
-              <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontWeight: 800 }}>Bilder Number: {photos.length}</span>
+              <label className="form-label" style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: 0 }}>{t('Attached Photos (Multiple)')}</label>
+              <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontWeight: 800 }}>{t('Bilder Number')}: {photos.length}</span>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -529,7 +534,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   disabled={compressing}
                 >
                   <Camera size={14} />
-                  {compressing ? 'Saving...' : 'Take Photo'}
+                  {compressing ? t('Saving...') : t('Take Photo')}
                 </button>
                 <input
                   id="hidden-camera-input"
@@ -542,7 +547,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                 
                 <label className="btn-secondary" style={{ cursor: 'pointer', gap: '6px', justifyContent: 'center', padding: '8px 4px', fontSize: '0.72rem' }}>
                   <Upload size={14} />
-                  {compressing ? 'Saving...' : 'Upload Image'}
+                  {compressing ? t('Saving...') : t('Upload Image')}
                   <input
                     type="file"
                     accept="image/*"
@@ -601,11 +606,11 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
           <button type="button" className="btn-secondary" onClick={onCancel} style={{ flex: 1, padding: '10px', fontSize: '0.8rem' }}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button type="submit" className="btn-primary" style={{ flex: 1, padding: '10px', fontSize: '0.8rem' }} disabled={compressing}>
             <Send size={14} />
-            Submit
+            {t('Submit')}
           </button>
         </div>
 
@@ -628,7 +633,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           padding: '20px',
           boxSizing: 'border-box'
         }}>
-          <h3 style={{ color: '#fff', margin: 0, fontFamily: 'var(--font-heading)' }}>Camera Capture</h3>
+          <h3 style={{ color: '#fff', margin: 0, fontFamily: 'var(--font-heading)' }}>{t('Camera Capture')}</h3>
           <div style={{
             position: 'relative',
             width: '100%',
@@ -655,7 +660,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
               onClick={stopCamera}
               style={{ flex: 1, padding: '10px', fontSize: '0.8rem', color: '#fff', borderColor: 'rgba(255,255,255,0.2)' }}
             >
-              Cancel
+              {t('Cancel')}
             </button>
             <button
               type="button"
@@ -663,7 +668,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
               onClick={capturePhoto}
               style={{ flex: 1, padding: '10px', fontSize: '0.8rem' }}
             >
-              Capture
+              {t('Capture')}
             </button>
           </div>
         </div>

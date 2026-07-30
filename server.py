@@ -72,6 +72,100 @@ class SyncPayload(BaseModel):
     feedback: List[FeedbackCreate]
     point_updates: Optional[List[PointUpdate]] = None
 
+class UserRegister(BaseModel):
+    full_name: str
+    username: str
+    email: Optional[str] = None
+    password: str
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+def seed_default_users(db: Session):
+    try:
+        if db.query(models.User).count() == 0:
+            default_users = [
+                models.User(
+                    id="usr-collector-001",
+                    full_name="Eric Musonera",
+                    username="collector",
+                    email="eric.musonera@nolte-geoservices.de",
+                    password_hash="password",
+                    role="collector"
+                ),
+                models.User(
+                    id="usr-dashboard-001",
+                    full_name="Operations Analyst",
+                    username="dashboard",
+                    email="analytics@nolte-geoservices.de",
+                    password_hash="password",
+                    role="dashboard"
+                ),
+                models.User(
+                    id="usr-eric-001",
+                    full_name="Eric Musonera",
+                    username="eric.musonera",
+                    email="eric.musonera@nolte-geoservices.de",
+                    password_hash="password",
+                    role="collector"
+                )
+            ]
+            db.add_all(default_users)
+            db.commit()
+    except Exception as e:
+        print("Error seeding default users:", e)
+
+@app.on_event("startup")
+def startup_event():
+    from database import SessionLocal
+    db = SessionLocal()
+    try:
+        seed_default_users(db)
+    finally:
+        db.close()
+
+# Authentication API Endpoints
+@app.post("/api/auth/register")
+def register_user(payload: UserRegister, db: Session = Depends(get_db)):
+    existing = db.query(models.User).filter(models.User.username == payload.username).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    new_user = models.User(
+        id=str(uuid.uuid4()),
+        full_name=payload.full_name,
+        username=payload.username,
+        email=payload.email,
+        password_hash=payload.password,
+        role="collector" # Role assigned on database level
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {
+        "status": "success",
+        "username": new_user.username,
+        "full_name": new_user.full_name,
+        "email": new_user.email,
+        "role": new_user.role
+    }
+
+@app.post("/api/auth/login")
+def login_user(payload: UserLogin, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.username == payload.username).first()
+    if not user or user.password_hash != payload.password:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    
+    return {
+        "status": "success",
+        "username": user.username,
+        "full_name": user.full_name,
+        "email": user.email,
+        "role": user.role
+    }
+
+
 # API Endpoints
 @app.get("/api/points")
 def get_points(db: Session = Depends(get_db)):

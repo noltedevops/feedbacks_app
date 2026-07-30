@@ -4,8 +4,10 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { type LocalPoint, getResolvedStatus } from '../db/indexedDb';
 import { Layers, FolderPlus, Home, FileSpreadsheet, FileText } from 'lucide-react';
+import { makeT, type AppLang, type Translator } from '../i18n';
 
 interface FieldMapProps {
+  lang: AppLang;
   points: LocalPoint[];
   selectedPoint: LocalPoint | null;
   onSelectPoint: (point: LocalPoint | null) => void;
@@ -237,6 +239,7 @@ const MapToolbar: React.FC<{
   basemapOpen: boolean;
   setBasemapOpen: (val: boolean) => void;
   points: LocalPoint[];
+  t: Translator;
 }> = ({
   viewMode,
   onAddDataClick,
@@ -244,7 +247,8 @@ const MapToolbar: React.FC<{
   setActiveBasemap,
   basemapOpen,
   setBasemapOpen,
-  points
+  points,
+  t
 }) => {
   const map = useMap();
 
@@ -303,7 +307,7 @@ const MapToolbar: React.FC<{
                 fontWeight: activeBasemap === 'dark' ? 'bold' : 'normal'
               }}
             >
-              Dark Canvas
+              {t('Dark Canvas')}
             </button>
             <button
               onClick={() => { setActiveBasemap('streets'); setBasemapOpen(false); }}
@@ -319,7 +323,7 @@ const MapToolbar: React.FC<{
                 fontWeight: activeBasemap === 'streets' ? 'bold' : 'normal'
               }}
             >
-              OSM Streets
+              {t('OSM Streets')}
             </button>
             <button
               onClick={() => { setActiveBasemap('satellite'); setBasemapOpen(false); }}
@@ -335,7 +339,7 @@ const MapToolbar: React.FC<{
                 fontWeight: activeBasemap === 'satellite' ? 'bold' : 'normal'
               }}
             >
-              Satellite Map
+              {t('Satellite Map')}
             </button>
           </div>
         )}
@@ -370,7 +374,7 @@ const MapToolbar: React.FC<{
             justifyContent: 'center',
             transition: 'background-color 0.2s'
           }}
-          title="Zoom In"
+          title={t('Zoom In')}
         >
           +
         </button>
@@ -392,7 +396,7 @@ const MapToolbar: React.FC<{
             justifyContent: 'center',
             transition: 'background-color 0.2s'
           }}
-          title="Zoom Out"
+          title={t('Zoom Out')}
         >
           &minus;
         </button>
@@ -412,7 +416,7 @@ const MapToolbar: React.FC<{
             justifyContent: 'center',
             transition: 'background-color 0.2s'
           }}
-          title="Fit bounds"
+          title={t('Fit bounds')}
         >
           <Home size={16} />
         </button>
@@ -432,7 +436,7 @@ const MapToolbar: React.FC<{
             justifyContent: 'center',
             transition: 'background-color 0.2s'
           }}
-          title="Basemap switcher"
+          title={t('Basemap switcher')}
         >
           <Layers size={16} />
         </button>
@@ -452,7 +456,7 @@ const MapToolbar: React.FC<{
               justifyContent: 'center',
               transition: 'background-color 0.2s'
             }}
-            title="Add Data Layer"
+            title={t('Add Data Layer')}
           >
             <FolderPlus size={16} />
           </button>
@@ -470,17 +474,17 @@ const MapToolbar: React.FC<{
         boxShadow: 'var(--shadow-lg)'
       }}>
         <span style={{ fontWeight: 800, color: '#fff', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.04em', borderRight: '1px solid rgba(255,255,255,0.15)', paddingRight: '10px' }}>
-          Map Legend
+          {t('Map Legend')}
         </span>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.7rem', color: '#cbd5e1', fontWeight: 600 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', border: '0.75px solid white' }}></div>
-            <span>Investigated</span>
+            <span>{t('Investigated')}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444', border: '0.75px solid white' }}></div>
-            <span>Pending</span>
+            <span>{t('Pending')}</span>
           </div>
         </div>
       </div>
@@ -489,15 +493,17 @@ const MapToolbar: React.FC<{
   );
 };
 
-export const FieldMap: React.FC<FieldMapProps> = ({ 
-  points, 
-  selectedPoint, 
-  onSelectPoint, 
-  viewMode, 
+export const FieldMap: React.FC<FieldMapProps> = ({
+  lang,
+  points,
+  selectedPoint,
+  onSelectPoint,
+  viewMode,
   onAddDataClick,
   isEditLocationMode = false,
   onPointPositionChange
 }) => {
+  const t = makeT(lang);
   const [activeBasemap, setActiveBasemap] = useState<BasemapKey>('dark');
   const [basemapOpen, setBasemapOpen] = useState(false);
   const [popupPointId, setPopupPointId] = useState<string | null>(null);
@@ -578,7 +584,7 @@ export const FieldMap: React.FC<FieldMapProps> = ({
                 <Popup>
                   <div style={{ color: '#0f172a', fontFamily: 'var(--font-body)', fontSize: '0.8rem', minWidth: '150px' }}>
                     <h4 style={{ fontWeight: 700, color: '#f97316', marginBottom: '4px' }}>VM Nr. {point.vm_nr}</h4>
-                    <p style={{ margin: '2px 0', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>DRAG TO RE-POSITION</p>
+                    <p style={{ margin: '2px 0', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>{t('DRAG TO RE-POSITION')}</p>
                   </div>
                 </Popup>
               </Marker>
@@ -634,32 +640,32 @@ export const FieldMap: React.FC<FieldMapProps> = ({
                   backgroundColor: 'rgba(0,0,0,0.05)',
                   color: getResolvedStatus(selectedPoint) === 'clear' ? '#10b981' : getResolvedStatus(selectedPoint) === 'uxo' ? '#ef4444' : getResolvedStatus(selectedPoint) === 'scrap' ? '#f59e0b' : getResolvedStatus(selectedPoint) === 'false_alarm' ? '#8b5cf6' : '#64748b',
                 }}>
-                  {getResolvedStatus(selectedPoint).toUpperCase()}
+                  {t(getResolvedStatus(selectedPoint)).toUpperCase()}
                 </span>
               </div>
 
               {/* UTM Coordinates & GPR Meta */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: 'rgba(0,0,0,0.02)', padding: '6px 8px', borderRadius: '8px' }}>
-                <div><strong style={{ color: '#475569' }}>Project ID:</strong> {selectedPoint.project_id || '11-24-2736'}</div>
-                <div><strong style={{ color: '#475569' }}>Target ID:</strong> {selectedPoint.target_id || 'N/A'}</div>
-                <div><strong style={{ color: '#475569' }}>UTM coords:</strong> X: {selectedPoint.easting} | Y: {selectedPoint.northing}</div>
-                <div><strong style={{ color: '#475569' }}>Survey Layer:</strong> {selectedPoint.layer || 'N/A'}</div>
-                <div><strong style={{ color: '#475569' }}>Evaluated Depth:</strong> {selectedPoint.evaluated_depth ? `${selectedPoint.evaluated_depth} m` : 'N/A'}</div>
+                <div><strong style={{ color: '#475569' }}>{t('Project ID')}:</strong> {selectedPoint.project_id || '11-24-2736'}</div>
+                <div><strong style={{ color: '#475569' }}>{t('Target ID')}:</strong> {selectedPoint.target_id || t('N/A')}</div>
+                <div><strong style={{ color: '#475569' }}>{t('UTM coords')}:</strong> X: {selectedPoint.easting} | Y: {selectedPoint.northing}</div>
+                <div><strong style={{ color: '#475569' }}>{t('Survey Layer')}:</strong> {selectedPoint.layer || t('N/A')}</div>
+                <div><strong style={{ color: '#475569' }}>{t('Evaluated Depth')}:</strong> {selectedPoint.evaluated_depth ? `${selectedPoint.evaluated_depth} m` : t('N/A')}</div>
               </div>
 
               {/* Feedback Log (if visited) */}
               {selectedPoint.feedback && selectedPoint.feedback.visited && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: 'rgba(16, 185, 129, 0.05)', borderLeft: '3.5px solid #10b981', padding: '6px 8px', borderRadius: '4px' }}>
-                  <div style={{ fontWeight: 800, color: '#10b981', fontSize: '0.7rem', textTransform: 'uppercase', marginBottom: '2px' }}>Field Log Feedback</div>
-                  <div><strong style={{ color: '#475569' }}>Sohle Status:</strong> {selectedPoint.feedback?.sohle_status || 'N/A'}</div>
-                  <div><strong style={{ color: '#475569' }}>Fundstück:</strong> {selectedPoint.feedback?.fundstueck || 'N/A'}</div>
-                  {selectedPoint.feedback?.m_cube !== null && <div><strong style={{ color: '#475569' }}>Volumen:</strong> {selectedPoint.feedback.m_cube} m³</div>}
-                  <div><strong style={{ color: '#475569' }}>Actual Depth:</strong> {selectedPoint.feedback?.actual_depth ? `${selectedPoint.feedback.actual_depth} m` : 'N/A'}</div>
-                  <div><strong style={{ color: '#475569' }}>Investigator:</strong> {selectedPoint.feedback?.investigator || 'N/A'}</div>
-                  {selectedPoint.feedback?.notes && <div><strong style={{ color: '#475569' }}>Notes:</strong> {selectedPoint.feedback.notes}</div>}
+                  <div style={{ fontWeight: 800, color: '#10b981', fontSize: '0.7rem', textTransform: 'uppercase', marginBottom: '2px' }}>{t('Field Log Feedback')}</div>
+                  <div><strong style={{ color: '#475569' }}>{t('Sohle Status')}:</strong> {selectedPoint.feedback?.sohle_status || t('N/A')}</div>
+                  <div><strong style={{ color: '#475569' }}>Fundstück:</strong> {selectedPoint.feedback?.fundstueck || t('N/A')}</div>
+                  {selectedPoint.feedback?.m_cube !== null && <div><strong style={{ color: '#475569' }}>{t('Volumen')}:</strong> {selectedPoint.feedback.m_cube} m³</div>}
+                  <div><strong style={{ color: '#475569' }}>{t('Actual Depth')}:</strong> {selectedPoint.feedback?.actual_depth ? `${selectedPoint.feedback.actual_depth} m` : t('N/A')}</div>
+                  <div><strong style={{ color: '#475569' }}>{t('Investigator')}:</strong> {selectedPoint.feedback?.investigator || t('N/A')}</div>
+                  {selectedPoint.feedback?.notes && <div><strong style={{ color: '#475569' }}>{t('Notes')}:</strong> {selectedPoint.feedback.notes}</div>}
                   {selectedPoint.feedback?.logged_at && (
                     <div style={{ fontSize: '0.62rem', color: '#64748b', marginTop: '2px' }}>
-                      Logged: {new Date(selectedPoint.feedback.logged_at).toLocaleString()}
+                      {t('Logged')}: {new Date(selectedPoint.feedback.logged_at).toLocaleString()}
                     </div>
                   )}
                 </div>
@@ -668,7 +674,7 @@ export const FieldMap: React.FC<FieldMapProps> = ({
               {/* Photos Row (if present) */}
               {selectedPoint.feedback?.photos && JSON.parse(JSON.stringify(selectedPoint.feedback.photos)).length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
-                  <div style={{ fontWeight: 800, color: '#475569', fontSize: '0.7rem' }}>Submitted Pictures ({JSON.parse(JSON.stringify(selectedPoint.feedback.photos)).length})</div>
+                  <div style={{ fontWeight: 800, color: '#475569', fontSize: '0.7rem' }}>{t('Submitted Pictures')} ({JSON.parse(JSON.stringify(selectedPoint.feedback.photos)).length})</div>
                   <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
                     {JSON.parse(JSON.stringify(selectedPoint.feedback.photos)).map((img: string, i: number) => (
                       <img
@@ -731,7 +737,7 @@ export const FieldMap: React.FC<FieldMapProps> = ({
                     gap: '4px'
                   }}
                 >
-                  <FileText size={12} /> Print PDF
+                  <FileText size={12} /> {t('Print PDF')}
                 </button>
               </div>
 
@@ -740,6 +746,7 @@ export const FieldMap: React.FC<FieldMapProps> = ({
         )}
         
         <MapToolbar
+          t={t}
           viewMode={viewMode}
           onAddDataClick={onAddDataClick}
           activeBasemap={activeBasemap}

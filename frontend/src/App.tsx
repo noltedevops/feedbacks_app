@@ -4,9 +4,9 @@ import { FieldMap } from './components/FieldMap';
 import { Dashboard } from './components/Dashboard';
 import { FeedbackForm } from './components/FeedbackForm';
 import { ImportExport } from './components/ImportExport';
+import { makeT, type AppLang } from './i18n';
 import { 
   Compass, 
-  Upload, 
   Wifi, 
   WifiOff, 
   RefreshCw, 
@@ -27,6 +27,38 @@ import {
 const API_BASE = 'http://localhost:8000';
 
 type AppRole = 'collector' | 'dashboard';
+
+// Modern segmented language switch with a sliding highlight.
+// `compact` renders the narrow variant used inside the 80px app sidebar.
+function LangSwitch({ lang, onChange, compact = false }: {
+  lang: AppLang;
+  onChange: (lang: AppLang) => void;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      className={compact ? 'lang-switch lang-switch-compact' : 'lang-switch'}
+      data-lang={lang}
+      role="group"
+      aria-label={lang === 'EN' ? 'Language' : 'Sprache'}
+      title={lang === 'EN' ? 'Switch language (English / Deutsch)' : 'Sprache wechseln (Deutsch / English)'}
+    >
+      <span className="lang-switch-thumb" aria-hidden="true"></span>
+      {(['EN', 'DE'] as AppLang[]).map((code) => (
+        <button
+          key={code}
+          type="button"
+          className={lang === code ? 'lang-switch-option active' : 'lang-switch-option'}
+          onClick={() => onChange(code)}
+          aria-pressed={lang === code}
+          title={code === 'EN' ? 'English' : 'Deutsch'}
+        >
+          {code}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function App() {
   // Session States
@@ -55,8 +87,50 @@ export default function App() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupUsername, setSignupUsername] = useState('');
   const [signupFullName, setSignupFullName] = useState('');
-  const [signupRole, setSignupRole] = useState<AppRole>('collector');
-  
+  const [showUserModal, setShowUserModal] = useState(false);
+
+  // Language & Carousel States
+  const [lang, setLang] = useState<AppLang>((localStorage.getItem('nolte_lang') as AppLang) || 'EN');
+  const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
+  const [activeFieldImg, setActiveFieldImg] = useState(0);
+
+  // Remember the chosen language across sessions and keep <html lang> in sync
+  useEffect(() => {
+    localStorage.setItem('nolte_lang', lang);
+    document.documentElement.lang = lang === 'DE' ? 'de' : 'en';
+  }, [lang]);
+
+  // Translator for the signed-in application shell
+  const t = makeT(lang);
+
+  // Auto rotate field screenshots carousel
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveFieldImg(prev => (prev + 1) % 4);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Field operations showcase (images live in /public)
+  const fieldSurveys = lang === 'EN' ? [
+    { img: '/field1.png', title: 'Magnetometer Survey', desc: 'Hand-pushed multi-sensor gradiometer cart with RTK-GPS positioning' },
+    { img: '/field2.png', title: 'Georadar Survey (GPR)', desc: 'Tablet-controlled GPR cart profiling dense vegetation and embankments' },
+    { img: '/field3.png', title: 'Rail Corridor Clearance', desc: 'Track-guided sensor array for UXO detection in active rail infrastructure' },
+    { img: '/field4.png', title: 'Vehicle-Towed Array', desc: 'High-throughput towed magnetometer array for large open areas' }
+  ] : [
+    { img: '/field1.png', title: 'Magnetikmessung', desc: 'Handgeführter Multisensor-Gradiometerwagen mit RTK-GPS-Ortung' },
+    { img: '/field2.png', title: 'Georadar-Messung (GPR)', desc: 'Tablet-gesteuerter GPR-Wagen für dichte Vegetation und Böschungen' },
+    { img: '/field3.png', title: 'Räumung im Gleisbereich', desc: 'Gleisgeführtes Sensorarray zur Kampfmittelortung im Bahnbetrieb' },
+    { img: '/field4.png', title: 'Fahrzeuggezogenes Array', desc: 'Leistungsstarkes Schlepp-Magnetometerarray für große Freiflächen' }
+  ];
+
+  // Every platform entry point (header dropdown + footer links) funnels through login
+  const openPlatform = () => {
+    setShowPlatformDropdown(false);
+    setShowAuthModal(true);
+    setAuthView('login');
+  };
+
   // Map and Data States
   const [points, setPoints] = useState<LocalPoint[]>([]);
   const [selectedPoint, setSelectedPoint] = useState<LocalPoint | null>(null);
@@ -102,11 +176,11 @@ export default function App() {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      showToast('success', 'Connection restored. Cloud sync enabled.');
+      showToast('success', t('Connection restored. Cloud sync enabled.'));
     };
     const handleOffline = () => {
       setIsOnline(false);
-      showToast('info', 'Offline mode active. Logs queued in IndexedDB.');
+      showToast('info', t('Offline mode active. Logs queued in IndexedDB.'));
     };
 
     window.addEventListener('online', handleOnline);
@@ -202,7 +276,7 @@ export default function App() {
 
   const handleSync = async () => {
     if (!isOnline) {
-      showToast('error', 'Sync aborted: Network is offline.');
+      showToast('error', t('Sync aborted: Network is offline.'));
       return;
     }
     setSyncing(true);
@@ -260,7 +334,7 @@ export default function App() {
       showToast('success', `Data Sync Complete! Synchronized ${syncResult.synced_feedback} logs and ${syncResult.synced_points || 0} target locations.`);
     } catch (err) {
       console.error(err);
-      showToast('error', 'Cloud database sync failed.');
+      showToast('error', t('Cloud database sync failed.'));
     } finally {
       setSyncing(false);
     }
@@ -368,7 +442,7 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
-      showToast('error', 'Failed to save feedback findings.');
+      showToast('error', t('Failed to save feedback findings.'));
     }
   };
 
@@ -416,7 +490,7 @@ export default function App() {
       showToast('success', `Imported ${importedPoints.length} GPR targets.`);
     } catch (err) {
       console.error(err);
-      showToast('error', 'Failed to import GPR points.');
+      showToast('error', t('Failed to import GPR points.'));
     }
   };
 
@@ -427,82 +501,105 @@ export default function App() {
   };
 
   // Auth Submit Handlers
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const usernameClean = usernameInput.trim().toLowerCase();
+    const usernameClean = usernameInput.trim();
     if (!usernameClean) return;
 
-    let role: AppRole = 'collector';
-    let fullname = '';
-
-    // Default accounts full names
-    if (usernameClean === 'collector') {
-      role = 'collector';
-      fullname = 'Field Collector';
-    } else if (usernameClean === 'dashboard' || usernameClean === 'admin') {
-      role = 'dashboard';
-      fullname = 'Operations Analyst';
-    } else if (usernameClean.includes('musonera') || usernameClean.includes('musoso')) {
-      fullname = 'Eric Musonera';
-    } else {
-      // Look up in profiles registry
-      const profiles = JSON.parse(localStorage.getItem('nolte_users_profiles') || '{}');
-      const userProfile = profiles[usernameClean];
-      if (userProfile) {
-        role = userProfile.role;
-        fullname = userProfile.fullname;
-      } else {
-        // Fallback: If username has a dot, replace with space and capitalize, else default to "Eric Musonera"
-        if (usernameClean.includes('.')) {
-          fullname = usernameClean.split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-        } else {
-          fullname = 'Eric Musonera'; // Default first and last name instead of single word username
-        }
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: usernameClean, password: passwordInput })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const role = (data.role || 'collector') as AppRole;
+        const fullname = data.full_name || 'Eric Musonera';
+        
+        localStorage.setItem('nolte_user', data.username);
+        localStorage.setItem('nolte_role', role);
+        localStorage.setItem('nolte_user_fullname', fullname);
+        
+        setCurrentUser(data.username);
+        setCurrentUserFullName(fullname);
+        setUserRole(role);
+        setIsLoggedIn(true);
+        showToast('success', `Welcome back, ${fullname}!`);
+        return;
       }
+    } catch (err) {
+      console.warn('Backend login unreachable, using local fallback', err);
     }
 
-    localStorage.setItem('nolte_user', usernameInput.trim());
+    // Local fallback for offline/demo
+    let role: AppRole = 'collector';
+    let fullname = 'Eric Musonera';
+    if (usernameClean.toLowerCase() === 'dashboard' || usernameClean.toLowerCase() === 'admin') {
+      role = 'dashboard';
+      fullname = 'Operations Analyst';
+    }
+    localStorage.setItem('nolte_user', usernameClean);
     localStorage.setItem('nolte_role', role);
     localStorage.setItem('nolte_user_fullname', fullname);
     
-    setCurrentUser(usernameInput.trim());
+    setCurrentUser(usernameClean);
     setCurrentUserFullName(fullname);
     setUserRole(role);
     setIsLoggedIn(true);
     showToast('success', `Welcome back, ${fullname}!`);
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    const usernameClean = signupUsername.trim().toLowerCase();
+    const usernameClean = signupUsername.trim();
     const fullNameClean = signupFullName.trim();
     if (!usernameClean || !fullNameClean) return;
 
-    // Save to profiles registry
-    const profiles = JSON.parse(localStorage.getItem('nolte_users_profiles') || '{}');
-    profiles[usernameClean] = {
-      fullname: fullNameClean,
-      email: signupEmail.trim(),
-      role: signupRole
-    };
-    localStorage.setItem('nolte_users_profiles', JSON.stringify(profiles));
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: fullNameClean,
+          username: usernameClean,
+          email: signupEmail.trim(),
+          password: passwordInput || 'password'
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const role = (data.role || 'collector') as AppRole;
+        
+        localStorage.setItem('nolte_user', data.username);
+        localStorage.setItem('nolte_role', role);
+        localStorage.setItem('nolte_user_fullname', data.full_name);
+        
+        setCurrentUser(data.username);
+        setCurrentUserFullName(data.full_name);
+        setUserRole(role);
+        setIsLoggedIn(true);
+        setShowAuthModal(false);
+        showToast('success', `Account created successfully! Welcome, ${data.full_name}.`);
+        return;
+      }
+    } catch (err) {
+      console.warn('Backend register unreachable, using local session fallback', err);
+    }
 
-    // Support legacy lookup
-    const usersRegistry = JSON.parse(localStorage.getItem('nolte_users_registry') || '{}');
-    usersRegistry[usernameClean] = signupRole;
-    localStorage.setItem('nolte_users_registry', JSON.stringify(usersRegistry));
-
-    localStorage.setItem('nolte_user', signupUsername.trim());
-    localStorage.setItem('nolte_role', signupRole);
+    const role: AppRole = 'collector';
+    localStorage.setItem('nolte_user', usernameClean);
+    localStorage.setItem('nolte_role', role);
     localStorage.setItem('nolte_user_fullname', fullNameClean);
     
-    setCurrentUser(signupUsername.trim());
+    setCurrentUser(usernameClean);
     setCurrentUserFullName(fullNameClean);
-    setUserRole(signupRole);
+    setUserRole(role);
     setIsLoggedIn(true);
     setShowAuthModal(false);
     showToast('success', `Account created successfully! Welcome, ${fullNameClean}.`);
   };
+
 
   const handleForgot = (e: React.FormEvent) => {
     e.preventDefault();
@@ -574,136 +671,355 @@ export default function App() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: '#090d16' }}>
       
-      {/* 1. Landing Page View (Authentication in the style of ArcGIS Field Maps) */}
+      {/* 1. Sentry-Inspired Landing Page View */}
       {!isLoggedIn ? (
         <div style={{
           display: 'flex',
-          flexGrow: 1,
           flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '40px 20px',
-          background: 'radial-gradient(circle, rgba(13, 31, 62, 0.75) 0%, rgba(9, 13, 22, 0.96) 100%), url(/aerial_bg.png) no-repeat center center/cover',
-          position: 'relative',
-          color: '#fff',
-          textAlign: 'center'
+          minHeight: '100vh',
+          width: '100vw',
+          backgroundColor: '#090d16',
+          backgroundImage: 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 130, 32, 0.15), rgba(9, 13, 22, 1)), radial-gradient(circle at 80% 60%, rgba(56, 189, 248, 0.08), transparent 50%)',
+          color: '#ffffff',
+          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+          overflowX: 'hidden'
         }}>
           
-          {/* Centralized Presentation Section */}
-          <div style={{
+          {/* Top Header Navigation Bar */}
+          <header style={{
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
-            gap: '16px',
-            maxWidth: '620px',
-            marginBottom: '32px',
-            animation: 'fade-in-up 0.5s ease-out'
+            justifyContent: 'space-between',
+            padding: '18px 48px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            backgroundColor: 'rgba(9, 13, 22, 0.75)',
+            backdropFilter: 'blur(16px)',
+            position: 'sticky',
+            top: 0,
+            zIndex: 100
           }}>
-            {/* Logo */}
-            <img 
-              src="/logo.png" 
-              alt="Nolte Logo" 
-              style={{ 
-                height: '76px', 
-                width: 'auto', 
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))'
-              }} 
-            />
-
-            {/* Titles */}
-            <div style={{ marginTop: '4px' }}>
-              <h1 style={{ 
-                fontSize: '2.5rem', 
-                fontWeight: 700, 
-                color: '#ffffff', 
-                letterSpacing: '-0.02em', 
-                margin: 0,
-                lineHeight: '1.2'
-              }}>
-                Nolte Geoservices GmbH
-              </h1>
-              <p style={{ 
-                fontSize: '1.3rem', 
-                color: '#94a3b8', 
-                fontWeight: 300, 
-                margin: '6px 0 0 0',
-                letterSpacing: '0.02em'
-              }}>
-                Target Tracker & Data Visualization Platform
-              </p>
+            {/* Brand Logo & Wordmark — the top-most element, so it outweighs the nav */}
+            <div className="brand-mark">
+              <img src="/logo.png" alt="Nolte Logo" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
+              <span className="brand-name">Nolte Geoservices GmbH</span>
             </div>
 
-            {/* Divider Line */}
-            <div style={{ 
-              width: '50px', 
-              height: '1.5px', 
-              backgroundColor: 'rgba(255,255,255,0.25)', 
-              margin: '8px 0' 
-            }}></div>
+            {/* Middle Nav Links: ONLY Platform (with dropdown) and Company */}
+            <nav style={{ display: 'flex', alignItems: 'center', gap: '36px', position: 'relative' }}>
+              
+              {/* Platform Tab with Dropdown */}
+              <div
+                style={{ position: 'relative' }}
+                onMouseEnter={() => setShowPlatformDropdown(true)}
+                onMouseLeave={() => setShowPlatformDropdown(false)}
+              >
+                <button
+                  type="button"
+                  className={showPlatformDropdown ? 'nav-tab is-open' : 'nav-tab'}
+                  onClick={() => setShowPlatformDropdown(open => !open)}
+                >
+                  {lang === 'EN' ? 'Platform' : 'Plattform'}
+                  <span className="nav-caret">▼</span>
+                </button>
 
-            {/* Description Paragraph */}
-            <p style={{ 
-              fontSize: '0.95rem', 
-              color: '#cbd5e1', 
-              lineHeight: '1.6', 
-              margin: '8px 0',
-              fontWeight: 400
+                {/* Dropdown Menu on Hover — labels only, no icons or descriptions */}
+                {showPlatformDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: '-14px',
+                    paddingTop: '14px',
+                    zIndex: 1000
+                  }}>
+                    <div className="nav-menu">
+                      <button type="button" className="nav-menu-item" onClick={openPlatform}>
+                        {lang === 'EN' ? 'Dashboard' : 'Dashboard'}
+                      </button>
+                      <button type="button" className="nav-menu-item" onClick={openPlatform}>
+                        {lang === 'EN' ? 'Field App' : 'Feld-App'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Company Tab -> Links to Nolte Services GmbH */}
+              <a
+                className="nav-tab"
+                href="https://www.nolteservices.com"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {lang === 'EN' ? 'Company' : 'Unternehmen'}
+              </a>
+
+            </nav>
+
+            {/* Right Controls: Translator & Auth Buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              
+              {/* Language Switcher (English <-> Deutsch) */}
+              <LangSwitch lang={lang} onChange={setLang} />
+
+              <button
+                onClick={() => {
+                  setShowAuthModal(true);
+                  setAuthView('login');
+                }}
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '6px',
+                  padding: '8px 18px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)')}
+              >
+                {lang === 'EN' ? 'Sign in' : 'Anmelden'}
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowAuthModal(true);
+                  setAuthView('signup');
+                }}
+                style={{
+                  backgroundColor: '#f58220',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '8px 20px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(245, 130, 32, 0.35)',
+                  transition: 'all 0.15s'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#ea6a00')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#f58220')}
+              >
+                {lang === 'EN' ? 'Get Access' : 'Zugang anfordern'}
+              </button>
+            </div>
+          </header>
+
+          {/* Hero Section Container */}
+          <main style={{
+            display: 'flex',
+            flexGrow: 1,
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '50px 48px',
+            maxWidth: '1380px',
+            margin: '0 auto',
+            width: '100%',
+            gap: '40px'
+          }}>
+            
+            {/* Left Hero Text Content */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '580px', zIndex: 2 }}>
+              
+              {/* Hero Main Headline */}
+              <h1 style={{
+                fontSize: '3.5rem',
+                fontWeight: 800,
+                color: '#ffffff',
+                lineHeight: 1.08,
+                letterSpacing: '-0.03em',
+                margin: '0 0 20px 0'
+              }}>
+                {lang === 'EN' ? 'Investigated before' : 'Untersucht, bevor es'}<br />
+                <span style={{
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f58220 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  {lang === 'EN' ? "it's a problem" : 'zum Problem wird'}
+                </span>
+              </h1>
+
+              {/* Sub-headline Description */}
+              <p style={{
+                fontSize: '1.15rem',
+                color: '#94a3b8',
+                lineHeight: 1.6,
+                margin: '0 0 36px 0',
+                fontWeight: 400
+              }}>
+                {lang === 'EN' 
+                  ? 'Navigate every anomaly and UXO inspection with real-time, actionable target detection, automated GPR logging, and instant field-to-office sync.'
+                  : 'Führen Sie jede Anomalie- und Kampfmittelinspektion mit Echtzeit-Zieldetektion, automatisierter Radarderfassung und sofortiger Feld-Büro-Synchronisierung durch.'}
+              </p>
+
+              {/* Hero CTA Action Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <button
+                  onClick={() => {
+                    setShowAuthModal(true);
+                    setAuthView('signup');
+                  }}
+                  style={{
+                    backgroundColor: '#f58220',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '14px 32px',
+                    fontSize: '1rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    boxShadow: '0 8px 24px rgba(245, 130, 32, 0.4)',
+                    transition: 'all 0.15s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#ea6a00';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f58220';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  {lang === 'EN' ? 'Get Early Access' : 'Jetzt Zugang anfordern'} <ArrowRight size={18} />
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowAuthModal(true);
+                    setAuthView('login');
+                  }}
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    color: '#ffffff',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '8px',
+                    padding: '14px 28px',
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)')}
+                >
+                  {lang === 'EN' ? 'Sign In' : 'Anmelden'}
+                </button>
+              </div>
+            </div>
+
+            {/* Right Side Visual Showcase: Field Operations Carousel */}
+            <div style={{
+              flexShrink: 0,
+              width: '580px',
+              height: '420px',
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}>
-              Welcome to Nolte Geoservices Platforms. This is a secure geophysics and field operations solution that allows you to capture GPR target feedback, perform UXO inspections, take notes, and synchronize data with the office. Use this platform to manage targets and deploy them for use in the field.
-            </p>
 
-            {/* Learn More Link */}
-            <a 
-              href="https://www.nolteservices.com" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              style={{ 
-                color: '#38bdf8', 
-                fontSize: '0.85rem', 
-                fontWeight: 500,
-                textDecoration: 'none',
-                marginTop: '4px'
-              }}
-              onMouseEnter={(e) => (e.target as any).style.color = '#7dd3fc'}
-              onMouseLeave={(e) => (e.target as any).style.color = '#38bdf8'}
-            >
-              Learn more about Nolte Services GmbH
-            </a>
-          </div>
+              {/*
+                No border and no solid backdrop: the photo is feathered by a mask
+                and sits inside the drifting spectrum bloom, so it reads as part of
+                the page rather than something trapped in a rectangle.
+              */}
+              <div className="hero-stage">
+                <div className="hero-frame">
+                  {/* key forces a remount per slide so the reveal replays top -> bottom */}
+                  <img
+                    key={activeFieldImg}
+                    className="hero-photo"
+                    src={fieldSurveys[activeFieldImg].img}
+                    alt={fieldSurveys[activeFieldImg].title}
+                  />
 
-          {/* Prominent White Sign In Button */}
-          {!showAuthModal && (
-            <button 
-              onClick={() => {
-                setShowAuthModal(true);
-                setAuthView('login');
-              }}
-              style={{
-                backgroundColor: '#ffffff',
-                color: '#0f172a',
-                border: 'none',
-                borderRadius: '6px',
-                padding: '14px 48px',
-                fontSize: '1rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-                transition: 'transform 0.15s, background-color 0.15s',
-                animation: 'fade-in-up 0.6s ease-out'
-              }}
-              onMouseEnter={(e) => {
-                (e.target as any).style.backgroundColor = '#f1f5f9';
-                (e.target as any).style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={(e) => {
-                (e.target as any).style.backgroundColor = '#ffffff';
-                (e.target as any).style.transform = 'translateY(0)';
-              }}
-            >
-              Sign in
-            </button>
-          )}
+                  {/* Continuous black-to-white ramp laid over the photo */}
+                  <div className="hero-veil"></div>
+
+                  {/* Light bar travelling top -> bottom, keeps the frame alive between slides */}
+                  <div className="hero-scan"></div>
+
+                  {/* Legibility wash for the caption */}
+                  <div className="hero-wash"></div>
+                </div>
+
+                {/* Caption sits outside the masked frame so its text stays crisp */}
+                <div className="hero-caption" key={`cap-${activeFieldImg}`}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f58220', flexShrink: 0 }}></span>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#ffffff' }}>
+                        {fieldSurveys[activeFieldImg].title}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+                      {fieldSurveys[activeFieldImg].desc}
+                    </span>
+                  </div>
+
+                  <span style={{
+                    fontSize: '0.75rem',
+                    fontFamily: 'monospace',
+                    color: '#c3cddd',
+                    backgroundColor: 'rgba(148, 173, 214, 0.16)',
+                    padding: '4px 10px',
+                    borderRadius: '5px',
+                    fontWeight: 700,
+                    flexShrink: 0
+                  }}>
+                    0{activeFieldImg + 1} / 0{fieldSurveys.length}
+                  </span>
+                </div>
+              </div>
+
+              {/* Carousel Navigation Indicators */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                marginTop: '26px'
+              }}>
+                {fieldSurveys.map((_, idx) => (
+                  <button
+                    key={idx}
+                    className={activeFieldImg === idx ? 'hero-dot is-active' : 'hero-dot'}
+                    onClick={() => setActiveFieldImg(idx)}
+                    style={{ width: activeFieldImg === idx ? '34px' : '8px' }}
+                    title={`View screenshot ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+            </div>
+          </main>
+
+          {/* Footer: company mark, then the same two platform entry points as the header */}
+          <footer className="site-footer">
+            <div className="footer-inner">
+              <div className="brand-mark brand-mark--sm">
+                <img src="/logo.png" alt="Nolte Logo" style={{ height: '18px', width: 'auto', objectFit: 'contain' }} />
+                <span className="brand-name">Nolte Geoservices GmbH</span>
+              </div>
+
+              <div className="footer-links">
+                <button type="button" className="footer-link" onClick={openPlatform}>
+                  {lang === 'EN' ? 'Field App' : 'Feld-App'}
+                </button>
+                <span className="footer-sep"></span>
+                <button type="button" className="footer-link" onClick={openPlatform}>
+                  {lang === 'EN' ? 'Dashboard' : 'Dashboard'}
+                </button>
+              </div>
+            </div>
+          </footer>
 
           {/* Glassmorphic Login/Signup Modal Overlay */}
           {showAuthModal && (
@@ -713,8 +1029,8 @@ export default function App() {
               left: 0,
               width: '100vw',
               height: '100vh',
-              backgroundColor: 'rgba(9, 13, 22, 0.75)',
-              backdropFilter: 'blur(12px)',
+              backgroundColor: 'rgba(9, 13, 22, 0.8)',
+              backdropFilter: 'blur(16px)',
               zIndex: 9999,
               display: 'flex',
               alignItems: 'center',
@@ -725,15 +1041,17 @@ export default function App() {
               <div className="glass-panel" style={{
                 width: '100%',
                 maxWidth: '420px',
-                padding: '30px 24px',
+                padding: '32px 28px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '20px',
-                boxShadow: '0 25px 50px rgba(0,0,0,0.6)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
                 position: 'relative',
                 animation: 'modal-scale-up 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                textAlign: 'left'
+                textAlign: 'left',
+                backgroundColor: '#0f172a',
+                borderRadius: '14px'
               }}>
                 
                 {/* Close Button */}
@@ -756,13 +1074,13 @@ export default function App() {
                   <X size={18} />
                 </button>
 
-                {/* Modal Header */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '14px' }}>
-                  <img src="/logo.png" alt="Nolte Logo" style={{ height: '40px', width: 'auto' }} />
-                  <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fff', margin: 0 }}>
-                    {authView === 'login' ? 'Sign In' : authView === 'signup' ? 'Create Account' : 'Reset Password'}
+                {/* Modal Header with Original Logo */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '14px' }}>
+                  <img src="/logo.png" alt="Nolte Logo" style={{ height: '42px', width: 'auto', objectFit: 'contain' }} />
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', margin: 0 }}>
+                    {authView === 'login' ? (lang === 'EN' ? 'Sign In' : 'Anmelden') : authView === 'signup' ? (lang === 'EN' ? 'Create Account' : 'Konto erstellen') : (lang === 'EN' ? 'Reset Password' : 'Passwort zurücksetzen')}
                   </h2>
-                  <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>
+                  <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.05em' }}>
                     NOLTE GEOSERVICES PLATFORM
                   </span>
                 </div>
@@ -771,19 +1089,19 @@ export default function App() {
                 {authView === 'login' && (
                   <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div className="form-group">
-                      <label className="form-label" htmlFor="login-username">Username or Operator ID</label>
+                      <label className="form-label" htmlFor="login-username">{t('Username / Operator ID')}</label>
                       <input
                         id="login-username"
                         type="text"
                         className="form-input"
                         value={usernameInput}
                         onChange={(e) => setUsernameInput(e.target.value)}
-                        placeholder="Enter collector or dashboard"
+                        placeholder={t('Enter collector or dashboard')}
                         required
                       />
                     </div>
                     <div className="form-group">
-                      <label className="form-label" htmlFor="login-password">Security Password</label>
+                      <label className="form-label" htmlFor="login-password">{t('Security Password')}</label>
                       <input
                         id="login-password"
                         type="password"
@@ -796,27 +1114,32 @@ export default function App() {
                     </div>
                     
                     {/* Demo helpers */}
-                    <div style={{ padding: '8px 10px', backgroundColor: 'rgba(249, 115, 22, 0.04)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(249,115,22,0.1)', fontSize: '0.68rem', color: '#f97316', lineHeight: '1.4' }}>
-                      <b>Demo Accounts:</b><br />
-                      - Field Collector: <b>collector</b> | password<br />
-                      - Dashboard Viewer: <b>dashboard</b> | password
+                    <div style={{ padding: '8px 10px', backgroundColor: 'rgba(245, 130, 32, 0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(245, 130, 32, 0.2)', fontSize: '0.68rem', color: '#f58220', lineHeight: '1.4' }}>
+                      <b>{t('Database Accounts:')}</b><br />
+                      - {t('Field Collector')}: <b>collector</b> | password<br />
+                      - {t('Dashboard Viewer')}: <b>dashboard</b> | password
                     </div>
 
-                    <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '4px' }}>
-                      Sign In <ArrowRight size={14} />
+                    <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '4px', backgroundColor: '#f58220' }}>
+                      {lang === 'EN' ? 'Sign In' : 'Anmelden'} <ArrowRight size={14} />
                     </button>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', marginTop: '4px' }}>
-                      <span onClick={() => setAuthView('forgot')} style={{ color: '#64748b', cursor: 'pointer' }}>Forgot Password?</span>
-                      <span onClick={() => setAuthView('signup')} style={{ color: 'hsl(var(--primary))', cursor: 'pointer', fontWeight: 600 }}>Create Account</span>
+                      <span onClick={() => setAuthView('forgot')} style={{ color: '#64748b', cursor: 'pointer' }}>
+                        {lang === 'EN' ? 'Forgot Password?' : 'Passwort vergessen?'}
+                      </span>
+                      <span onClick={() => setAuthView('signup')} style={{ color: '#f58220', cursor: 'pointer', fontWeight: 600 }}>
+                        {lang === 'EN' ? 'Create Account' : 'Konto erstellen'}
+                      </span>
                     </div>
                   </form>
                 )}
 
+                {/* Create Account View */}
                 {authView === 'signup' && (
                   <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div className="form-group">
-                      <label className="form-label" htmlFor="signup-fullname">Full Name</label>
+                      <label className="form-label" htmlFor="signup-fullname">{t('Full Name')}</label>
                       <input 
                         id="signup-fullname"
                         type="text" 
@@ -828,7 +1151,7 @@ export default function App() {
                       />
                     </div>
                     <div className="form-group">
-                      <label className="form-label" htmlFor="signup-username">Username / Operator ID</label>
+                      <label className="form-label" htmlFor="signup-username">{t('Username / Operator ID')}</label>
                       <input 
                         id="signup-username"
                         type="text" 
@@ -840,7 +1163,7 @@ export default function App() {
                       />
                     </div>
                     <div className="form-group">
-                      <label className="form-label" htmlFor="signup-email">Corporate Email</label>
+                      <label className="form-label" htmlFor="signup-email">{t('Corporate Email')}</label>
                       <input 
                         id="signup-email"
                         type="email" 
@@ -852,38 +1175,29 @@ export default function App() {
                       />
                     </div>
                     <div className="form-group">
-                      <label className="form-label" htmlFor="signup-role">Target Role</label>
-                      <select 
-                        id="signup-role"
-                        className="form-input" 
-                        value={signupRole}
-                        onChange={(e) => setSignupRole(e.target.value as AppRole)}
-                        required 
-                      >
-                        <option value="collector">Field Data Collector</option>
-                        <option value="dashboard">Operations Analyst / Dashboard</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="signup-password">Create Password</label>
+                      <label className="form-label" htmlFor="signup-password">{t('Create Password')}</label>
                       <input 
                         id="signup-password"
                         type="password" 
                         className="form-input" 
+                        value={passwordInput}
+                        onChange={(e) => setPasswordInput(e.target.value)}
                         placeholder="••••••••" 
                         required 
                       />
                     </div>
                     
-                    <div style={{ padding: '6px 8px', backgroundColor: 'rgba(16, 185, 129, 0.04)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(16,185,129,0.1)', fontSize: '0.65rem', color: '#10b981', lineHeight: '1.3' }}>
-                      <b>Development Mode:</b> Account will be registered and logged in instantly.
+                    <div style={{ padding: '6px 8px', backgroundColor: 'rgba(16, 185, 129, 0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(16,185,129,0.2)', fontSize: '0.68rem', color: '#10b981', lineHeight: '1.3' }}>
+                      <b>{t('Development Mode:')}</b> {t('Account will be registered and logged in instantly. Access/Role is assigned at database level.')}
                     </div>
 
-                    <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '4px' }}>
-                      Create & Sign In
+                    <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '4px', backgroundColor: '#f58220' }}>
+                      {lang === 'EN' ? 'Create & Sign In' : 'Erstellen & Anmelden'}
                     </button>
                     <div style={{ textAlign: 'center', fontSize: '0.72rem', marginTop: '4px' }}>
-                      <span onClick={() => setAuthView('login')} style={{ color: '#64748b', cursor: 'pointer' }}>Back to Sign In</span>
+                      <span onClick={() => setAuthView('login')} style={{ color: '#64748b', cursor: 'pointer' }}>
+                        {lang === 'EN' ? 'Back to Sign In' : 'Zurück zur Anmeldung'}
+                      </span>
                     </div>
                   </form>
                 )}
@@ -891,20 +1205,22 @@ export default function App() {
                 {authView === 'forgot' && (
                   <form onSubmit={handleForgot} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div className="form-group">
-                      <label className="form-label" htmlFor="forgot-email">Username or Email</label>
+                      <label className="form-label" htmlFor="forgot-email">{t('Username or Email')}</label>
                       <input 
                         id="forgot-email"
                         type="text" 
                         className="form-input" 
-                        placeholder="Enter your email" 
+                        placeholder={t('Enter your email')}
                         required 
                       />
                     </div>
-                    <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '4px' }}>
-                      Send Recovery Email
+                    <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '4px', backgroundColor: '#f58220' }}>
+                      {lang === 'EN' ? 'Send Recovery Email' : 'Wiederherstellungs-E-Mail senden'}
                     </button>
                     <div style={{ textAlign: 'center', fontSize: '0.72rem', marginTop: '4px' }}>
-                      <span onClick={() => setAuthView('login')} style={{ color: '#64748b', cursor: 'pointer' }}>Back to Sign In</span>
+                      <span onClick={() => setAuthView('login')} style={{ color: '#64748b', cursor: 'pointer' }}>
+                        {lang === 'EN' ? 'Back to Sign In' : 'Zurück zur Anmeldung'}
+                      </span>
                     </div>
                   </form>
                 )}
@@ -913,43 +1229,24 @@ export default function App() {
             </div>
           )}
 
-          {/* Landing Animations Styles */}
-          <style>{`
-            @keyframes fade-in-up {
-              from { opacity: 0; transform: translateY(12px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
-            @keyframes modal-scale-up {
-              from { opacity: 0; transform: scale(0.96); }
-              to { opacity: 1; transform: scale(1); }
-            }
-          `}</style>
-
         </div>
       ) : (
         
         // 2. Logged In Screens Layout
         <>
         <div className="app-container">
-          {/* Vertical left sidebar navigation (Screenshot template match) */}
+          {/* Vertical left sidebar navigation */}
           <aside className={`app-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`} style={{ transition: 'width 0.2s, padding 0.2s, border-right 0.2s, opacity 0.2s' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', opacity: isSidebarCollapsed ? 0 : 1, transition: 'opacity 0.15s' }}>
               
-              {/* Theme toggle button (replacing microphone record logo) */}
-              <button 
-                onClick={() => {
-                  const newTheme = theme === 'dark' ? 'light' : 'dark';
-                  setTheme(newTheme);
-                  localStorage.setItem('theme', newTheme);
-                }}
-                className="sidebar-logo"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}
-                title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
-              >
-                <div className="sidebar-logo-inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {theme === 'dark' ? <Sun size={20} color="#fa5f1c" /> : <Moon size={20} color="#0f172a" />}
-                </div>
-              </button>
+              {/* Top Sidebar: Original Nolte Logo Image */}
+              <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 0' }}>
+                <img 
+                  src="/logo.png" 
+                  alt="Nolte Logo" 
+                  style={{ height: '36px', width: 'auto', objectFit: 'contain' }} 
+                />
+              </div>
 
               {/* Navigation Menu */}
               <nav className="sidebar-menu">
@@ -959,10 +1256,10 @@ export default function App() {
                     setUserRole('collector');
                     setActiveTab('map');
                   }}
-                  title="Field App"
+                  title={t('Field App')}
                 >
                   <Compass size={20} />
-                  <span className="sidebar-item-label">Field App</span>
+                  <span className="sidebar-item-label">{t('Field App')}</span>
                 </button>
 
                 <button 
@@ -970,7 +1267,7 @@ export default function App() {
                   onClick={() => {
                     setUserRole('dashboard');
                   }}
-                  title="Dashboard"
+                  title={t('Dashboard')}
                 >
                   {/* Bar chart icon */}
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -978,29 +1275,17 @@ export default function App() {
                     <line x1="12" x2="12" y1="20" y2="4" />
                     <line x1="6" x2="6" y1="20" y2="14" />
                   </svg>
-                  <span className="sidebar-item-label">Dashboard</span>
-                </button>
-
-                <button 
-                  className={`sidebar-item ${userRole === 'collector' && activeTab === 'import' ? 'active' : ''}`}
-                  onClick={() => {
-                    setUserRole('collector');
-                    setActiveTab('import');
-                  }}
-                  title="Load Points"
-                >
-                  <Upload size={20} />
-                  <span className="sidebar-item-label">Load Points</span>
+                  <span className="sidebar-item-label">{t('Dashboard')}</span>
                 </button>
 
                 <button 
                   className="sidebar-item"
                   onClick={handleSync}
                   disabled={syncing}
-                  title="Sync Data"
+                  title={t('Sync Data')}
                 >
                   <RefreshCw size={20} className={syncing ? 'animate-spin' : ''} />
-                  <span className="sidebar-item-label">Sync</span>
+                  <span className="sidebar-item-label">{t('Sync')}</span>
                   {pendingSyncCount > 0 && (
                     <span className="sidebar-item-badge">{pendingSyncCount}</span>
                   )}
@@ -1009,7 +1294,7 @@ export default function App() {
                 <div 
                   className="sidebar-item"
                   style={{ cursor: 'default' }}
-                  title={isOnline ? "Network Connection: Online" : "Network Connection: Offline"}
+                  title={isOnline ? t('Network Connection: Online') : t('Network Connection: Offline')}
                 >
                   {isOnline ? (
                     <Wifi size={20} style={{ color: '#10b981' }} />
@@ -1017,45 +1302,136 @@ export default function App() {
                     <WifiOff size={20} style={{ color: '#ef4444' }} />
                   )}
                   <span className="sidebar-item-label" style={{ color: isOnline ? '#10b981' : '#ef4444' }}>
-                    {isOnline ? 'Online' : 'Offline'}
+                    {isOnline ? t('Online') : t('Offline')}
                   </span>
                 </div>
               </nav>
             </div>
 
             {/* Bottom Controls */}
-            <div className="sidebar-bottom">
-              <div 
-                className="sidebar-avatar"
-                title={`User: ${currentUserFullName || currentUser}`}
-                onClick={() => {
-                  showToast('info', `Signed in as: ${currentUserFullName} (${userRole})`);
-                }}
-              >
-                <div style={{
-                  width: '100%', 
-                  height: '100%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  fontWeight: 'bold', 
-                  color: '#fa5f1c', 
-                  fontSize: '0.85rem',
-                  fontFamily: 'var(--font-heading)'
-                }}>
-                  {(currentUserFullName || currentUser || 'US').substring(0, 2).toUpperCase()}
+            <div className="sidebar-bottom" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', width: '100%' }}>
+              
+              {/* User Profile Button & Pop-up Modal */}
+              <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                <div 
+                  className="sidebar-avatar"
+                  style={{ cursor: 'pointer' }}
+                  title={`${t('User')}: ${currentUserFullName || currentUser}`}
+                  onClick={() => setShowUserModal(!showUserModal)}
+                >
+                  <div style={{
+                    width: '100%', 
+                    height: '100%', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    fontWeight: 'bold', 
+                    color: '#f58220', 
+                    fontSize: '0.85rem',
+                    fontFamily: 'var(--font-heading)'
+                  }}>
+                    {(currentUserFullName || currentUser || 'US').substring(0, 2).toUpperCase()}
+                  </div>
                 </div>
+
+                {/* Pop-up Modal on User Button Click */}
+                {showUserModal && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '50px',
+                    left: '60px',
+                    backgroundColor: '#0f172a',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    width: '240px',
+                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8)',
+                    zIndex: 10010,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    color: '#ffffff',
+                    backdropFilter: 'blur(12px)',
+                    animation: 'fade-in-up 0.2s ease-out'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(245, 130, 32, 0.15)',
+                        border: '1px solid rgba(245, 130, 32, 0.4)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#f58220',
+                        fontWeight: 'bold',
+                        fontSize: '0.95rem'
+                      }}>
+                        {(currentUserFullName || currentUser || 'US').substring(0, 2).toUpperCase()}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                          {currentUserFullName || 'Eric Musonera'}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                          @{currentUser || 'user'} · <span style={{ color: '#f58220', textTransform: 'capitalize' }}>{userRole}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.08)', margin: '2px 0' }}></div>
+
+                    <button
+                      onClick={() => {
+                        setShowUserModal(false);
+                        handleSignOut();
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        width: '100%',
+                        backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                        color: '#f87171',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.3)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.15)')}
+                    >
+                      <LogOut size={15} /> {lang === 'EN' ? 'Sign Out' : 'Abmelden'}
+                    </button>
+                  </div>
+                )}
               </div>
 
+              {/* Language Switcher (available in both Field App and Dashboard) */}
+              <LangSwitch lang={lang} onChange={setLang} compact />
+
+              {/* Theme Toggle Button placed where Logout button was */}
               <button 
                 className="sidebar-logout" 
-                onClick={handleSignOut}
-                title="Sign Out"
+                onClick={() => {
+                  const newTheme = theme === 'dark' ? 'light' : 'dark';
+                  setTheme(newTheme);
+                  localStorage.setItem('theme', newTheme);
+                }}
+                title={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
               >
-                <LogOut size={16} />
+                {theme === 'dark' ? <Sun size={18} color="#f58220" /> : <Moon size={18} color="#0f172a" />}
               </button>
+
             </div>
           </aside>
+
+
 
           {/* Collapsible Sidebar Toggle Handle (Dockable) */}
           <button
@@ -1080,7 +1456,7 @@ export default function App() {
               transition: 'left 0.2s, background-color 0.2s',
               pointerEvents: 'auto'
             }}
-            title={isSidebarCollapsed ? "Expand Sidebar (Undock)" : "Collapse Sidebar (Dock)"}
+            title={isSidebarCollapsed ? t('Expand Sidebar (Undock)') : t('Collapse Sidebar (Dock)')}
           >
             {isSidebarCollapsed ? <ChevronsRight size={12} /> : <ChevronsLeft size={12} />}
           </button>
@@ -1096,6 +1472,7 @@ export default function App() {
                 
                 {selectedPoint ? (
                   <FeedbackForm
+                    lang={lang}
                     point={selectedPoint}
                     currentUser={currentUserFullName}
                     currentUserUsername={currentUser}
@@ -1110,13 +1487,13 @@ export default function App() {
                     {/* Survey Details Header (Screenshot Match) */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                        Active Survey Area
+                        {t('Active Survey Area')}
                       </span>
                       <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         Wilhelmshaven Seedeich
                       </h2>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '2px' }}>
-                        <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#8c9f96', textTransform: 'uppercase' }}>Project ID</span>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#8c9f96', textTransform: 'uppercase' }}>{t('Project ID')}</span>
                         <select
                           className="form-input"
                           value={filterProjectId}
@@ -1133,14 +1510,14 @@ export default function App() {
                             cursor: 'pointer'
                           }}
                         >
-                          <option value="all">All Projects</option>
+                          <option value="all">{t('All Projects')}</option>
                           {uniqueProjectIds.map(id => (
                             <option key={id} value={id}>{id}</option>
                           ))}
                         </select>
                       </div>
                       <span style={{ fontSize: '0.68rem', color: '#8c9f96', marginTop: '4px' }}>
-                        {filteredPoints.length} Targets Detected
+                        {filteredPoints.length} {t('Targets Detected')}
                       </span>
                     </div>
 
@@ -1157,7 +1534,7 @@ export default function App() {
                               className="form-input"
                               value={searchQuery}
                               onChange={(e) => setSearchQuery(e.target.value)}
-                              placeholder="Search targets..."
+                              placeholder={t('Search targets...')}
                               style={{ width: '100%', paddingLeft: '30px', fontSize: '0.8rem', backgroundColor: 'rgba(10,22,18,0.4)', borderColor: 'rgba(255,255,255,0.06)' }}
                             />
                           </div>
@@ -1173,7 +1550,7 @@ export default function App() {
                                 onChange={(e) => setFilterVmNr(e.target.value)}
                                 style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'rgba(10,22,18,0.4)', borderColor: 'rgba(255,255,255,0.06)' }}
                               >
-                                <option value="all">All VM Nr.</option>
+                                <option value="all">{t('All VM Nr.')}</option>
                                 {allVmNumbers.map(vm => (
                                   <option key={vm} value={vm.toString()}>VM {vm}</option>
                                 ))}
@@ -1189,9 +1566,9 @@ export default function App() {
                                 onChange={(e) => setFilterInstrument(e.target.value)}
                                 style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'rgba(10,22,18,0.4)', borderColor: 'rgba(255,255,255,0.06)' }}
                               >
-                                <option value="all">All Instruments</option>
-                                <option value="georadar">Georadar</option>
-                                <option value="magnetic">Magnetic</option>
+                                <option value="all">{t('All Instruments')}</option>
+                                <option value="georadar">{t('Georadar')}</option>
+                                <option value="magnetic">{t('Magnetic')}</option>
                               </select>
                             </div>
 
@@ -1201,22 +1578,22 @@ export default function App() {
                         {/* List coordinates */}
                         <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#8c9f96', letterSpacing: '0.02em', textTransform: 'uppercase' }}>TARGET LISTING ({filteredPoints.length})</span>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#8c9f96', letterSpacing: '0.02em', textTransform: 'uppercase' }}>{t('TARGET LISTING')} ({filteredPoints.length})</span>
                             <select
                               className="form-input"
                               value={filterStatus}
                               onChange={(e) => setFilterStatus(e.target.value)}
                               style={{ width: '120px', fontSize: '0.7rem', height: '24px', padding: '0 4px', background: 'rgba(10, 22, 18, 0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
                             >
-                              <option value="all">All Targets</option>
-                              <option value="investigated">Investigated</option>
-                              <option value="pending">Pending</option>
+                              <option value="all">{t('All Targets')}</option>
+                              <option value="investigated">{t('Investigated')}</option>
+                              <option value="pending">{t('Pending')}</option>
                             </select>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', flexGrow: 1, paddingRight: '2px' }}>
                             {filteredPoints.map((point) => {
                               const isInvestigated = point.local_status === 'investigated';
-                              let statusText = 'PENDING';
+                              let statusText = t('PENDING');
                               let color = '#ef4444'; // Red for pending
 
                               if (isInvestigated && point.feedback) {
@@ -1250,7 +1627,7 @@ export default function App() {
                                     </span>
                                   </div>
                                   <div style={{ fontSize: '0.7rem', color: '#475569', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {point.instrument?.toUpperCase()} • {point.layer?.replace('Stoerkoerper ', '') || 'Target Layer'}
+                                    {point.instrument?.toUpperCase()} • {point.layer?.replace('Stoerkoerper ', '') || t('Target Layer')}
                                   </div>
                                   
                                   <div style={{ 
@@ -1262,9 +1639,9 @@ export default function App() {
                                     backgroundColor: 'rgba(0, 0, 0, 0.02)',
                                     borderRadius: '6px'
                                   }}>
-                                    <span style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 700 }}>EVALUATED DEPTH</span>
+                                    <span style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 700 }}>{t('EVALUATED DEPTH')}</span>
                                     <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0f172a' }}>
-                                      {point.evaluated_depth ? `${point.evaluated_depth} m` : 'N/A'}
+                                      {point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')}
                                     </span>
                                   </div>
                                 </div>
@@ -1275,6 +1652,7 @@ export default function App() {
                       </>
                     ) : (
                       <ImportExport
+                        lang={lang}
                         onImportSuccess={handleImportPoints}
                         onSeedRequest={handleSeedRequest}
                         isOnline={isOnline}
@@ -1305,13 +1683,13 @@ export default function App() {
                   color: '#0f172a'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.75rem', color: '#0f172a', textTransform: 'uppercase', fontFamily: 'var(--font-heading)', letterSpacing: '0.02em' }}>Quick Summary</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.75rem', color: '#0f172a', textTransform: 'uppercase', fontFamily: 'var(--font-heading)', letterSpacing: '0.02em' }}>{t('Quick Summary')}</span>
                   </div>
 
                   {/* Stat 1: Target Investigation Status */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: '#64748b' }}>
-                      <span>INVESTIGATION PROGRESS</span>
+                      <span>{t('INVESTIGATION PROGRESS')}</span>
                       <span>{filteredPoints.filter(p => p.local_status === 'investigated').length} / {filteredPoints.length}</span>
                     </div>
                     <div style={{ height: '6px', width: '100%', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
@@ -1327,7 +1705,7 @@ export default function App() {
                   {/* Stat 2: Instruments Class (Magnetic Progress) */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: '#64748b' }}>
-                      <span>MAGNETIC TARGETS</span>
+                      <span>{t('MAGNETIC TARGETS')}</span>
                       <span>
                         {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'magnetic' && p.local_status === 'investigated').length} / {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'magnetic').length}
                       </span>
@@ -1345,7 +1723,7 @@ export default function App() {
                   {/* Stat 3: Georadar Targets Progress */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: '#64748b' }}>
-                      <span>GEORADAR TARGETS</span>
+                      <span>{t('GEORADAR TARGETS')}</span>
                       <span>
                         {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'georadar' && p.local_status === 'investigated').length} / {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'georadar').length}
                       </span>
@@ -1362,6 +1740,7 @@ export default function App() {
                 </div>
 
                 <FieldMap
+                  lang={lang}
                   points={filteredPoints}
                   selectedPoint={selectedPoint}
                   onSelectPoint={(point) => setSelectedPoint(point)}
@@ -1380,6 +1759,7 @@ export default function App() {
               {/* Map background for high-tech transparent look (Screenshot 2 Match) */}
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
                 <FieldMap
+                  lang={lang}
                   points={filteredPoints}
                   selectedPoint={selectedPoint}
                   onSelectPoint={(point) => setSelectedPoint(point)}
@@ -1404,7 +1784,8 @@ export default function App() {
                 width: '100%',
                 height: '100%'
               }}>
-                <Dashboard 
+                <Dashboard
+                  lang={lang}
                   points={points}
                   filteredPoints={filteredPoints}
                   selectedPoint={selectedPoint}
