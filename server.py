@@ -307,6 +307,11 @@ def sync_data(payload: SyncPayload, db: Session = Depends(get_db)):
 
         existing_fb = db.query(models.Feedback).filter(models.Feedback.id == fb.id).first()
         logged_at_dt = fb.logged_at or datetime.datetime.utcnow()
+        # The field app sends ISO-8601 with a trailing 'Z', so pydantic yields an aware datetime,
+        # while visit_date is TIMESTAMP WITHOUT TIME ZONE and reads back naive. Normalise to naive
+        # UTC so comparisons below don't raise and inserts aren't silently shifted by the session tz.
+        if logged_at_dt.tzinfo is not None:
+            logged_at_dt = logged_at_dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
         
         # Serialize photos list to JSON string
         photos_json = json.dumps(fb.photos) if fb.photos else "[]"
@@ -315,7 +320,7 @@ def sync_data(payload: SyncPayload, db: Session = Depends(get_db)):
         anomaly.status = 'investigated'
         
         if existing_fb:
-            if fb.logged_at and (not existing_fb.visit_date or fb.logged_at > existing_fb.visit_date):
+            if fb.logged_at and (not existing_fb.visit_date or logged_at_dt > existing_fb.visit_date):
                 existing_fb.visited = fb.visited
                 existing_fb.tief = fb.actual_depth
                 existing_fb.photos = photos_json
