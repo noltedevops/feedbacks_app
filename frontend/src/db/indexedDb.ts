@@ -1,5 +1,14 @@
 import Dexie, { type Table } from 'dexie';
 
+export interface TeamsTools {
+  need_update: boolean;
+  truppfuehrer: string | null;   // auto-filled from the logged-in user
+  maschinenfuehrer: string | null;
+  bez_suchfeld: string | null;
+  messgeraet: string | null;
+  sondierer: string | null;
+}
+
 export interface LocalPoint {
   id: string;
   project_id: string;
@@ -45,6 +54,7 @@ export interface LocalPoint {
     laenge: number | null;
     breite: number | null;
     m_cube: number | null;
+    teams_tools?: TeamsTools | null;
   } | null;
 }
 
@@ -69,6 +79,7 @@ export interface PendingFeedback {
   laenge: number | null;
   breite: number | null;
   m_cube: number | null;
+  teams_tools?: TeamsTools | null;
 }
 
 export interface PendingPointUpdate {

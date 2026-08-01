@@ -131,6 +131,12 @@ const de: Record<string, string> = {
   'Nicht Frei (Not Clear)': 'Nicht Frei',
   'Bemerkung (Remarks)': 'Bemerkung',
   'Write any additional remarks...': 'Zusätzliche Bemerkungen eintragen...',
+  'Teams and Tools': 'Trupp und Geräte',
+  'Need update?': 'Aktualisierung nötig?',
+  'Yes': 'Ja',
+  'No': 'Nein',
+  'No previous entry for this project yet - please fill the fields below.':
+    'Für dieses Projekt liegt noch kein Eintrag vor – bitte die Felder unten ausfüllen.',
   'Attached Photos (Multiple)': 'Angehängte Fotos (mehrere)',
   'Bilder Number': 'Bilder-Anzahl',
   'Take Photo': 'Foto aufnehmen',

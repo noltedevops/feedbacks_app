@@ -49,6 +49,21 @@ def init_db():
             
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables initialized successfully.")
+
+    # create_all only creates missing tables, it never alters existing ones, so new
+    # columns have to be added explicitly for databases seeded before they existed.
+    try:
+        with engine.connect() as conn:
+            if engine.url.drivername.startswith("postgresql"):
+                conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS teams_tools JSON;"))
+            else:
+                existing = {row[1] for row in conn.execute(text("PRAGMA table_info(feedback);"))}
+                if "teams_tools" not in existing:
+                    conn.execute(text("ALTER TABLE feedback ADD COLUMN teams_tools JSON;"))
+            conn.commit()
+            logger.info("Verified feedback.teams_tools column exists.")
+    except Exception as e:
+        logger.error(f"Failed to add feedback.teams_tools column: {e}")
     
     # Create PL/pgSQL triggers for bidirectional sync in PostgreSQL
     if engine.url.drivername.startswith("postgresql"):

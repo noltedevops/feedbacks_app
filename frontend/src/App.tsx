@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { db, type LocalPoint, type PendingFeedback } from './db/indexedDb';
+import { useState, useEffect, useMemo } from 'react';
+import { db, type LocalPoint, type PendingFeedback, type TeamsTools } from './db/indexedDb';
 import { FieldMap } from './components/FieldMap';
 import { Dashboard } from './components/Dashboard';
 import { FeedbackForm } from './components/FeedbackForm';
@@ -154,6 +154,17 @@ export default function App() {
   // Map and Data States
   const [points, setPoints] = useState<LocalPoint[]>([]);
   const [selectedPoint, setSelectedPoint] = useState<LocalPoint | null>(null);
+
+  // Latest teams & tools recorded on this project, read from the local mirror so the
+  // "Need update? -> No" path still auto-populates when the crew is offline.
+  const lastTeamsTools = useMemo<TeamsTools | null>(() => {
+    const projectId = selectedPoint?.project_id;
+    if (!projectId) return null;
+    return points
+      .filter((p) => p.project_id === projectId && p.feedback?.teams_tools)
+      .sort((a, b) => (b.feedback!.logged_at || '').localeCompare(a.feedback!.logged_at || ''))[0]
+      ?.feedback?.teams_tools ?? null;
+  }, [points, selectedPoint?.project_id]);
   const [activeTab, setActiveTab] = useState<'map' | 'import'>('map');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
@@ -381,6 +392,7 @@ export default function App() {
     laenge: number | null;
     breite: number | null;
     m_cube: number | null;
+    teams_tools: TeamsTools;
   }) => {
     if (!selectedPoint) return;
 
@@ -405,7 +417,8 @@ export default function App() {
         fundstueck: feedbackData.fundstueck,
         laenge: feedbackData.laenge,
         breite: feedbackData.breite,
-        m_cube: feedbackData.m_cube
+        m_cube: feedbackData.m_cube,
+        teams_tools: feedbackData.teams_tools
       };
 
       await db.pendingFeedback.put(feedbackRecord);
@@ -447,7 +460,8 @@ export default function App() {
           fundstueck: feedbackData.fundstueck,
           laenge: feedbackData.laenge,
           breite: feedbackData.breite,
-          m_cube: feedbackData.m_cube
+          m_cube: feedbackData.m_cube,
+          teams_tools: feedbackData.teams_tools
         }
       };
       
@@ -1496,6 +1510,7 @@ export default function App() {
                     point={selectedPoint}
                     currentUser={currentUserFullName}
                     currentUserUsername={currentUser}
+                    lastTeamsTools={lastTeamsTools}
                     isEditLocationMode={isEditLocationMode}
                     setIsEditLocationMode={setIsEditLocationMode}
                     onSave={handleSaveFeedback}

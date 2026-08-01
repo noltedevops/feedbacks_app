@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { type LocalPoint } from '../db/indexedDb';
-import { Camera, Upload, Send, X, Move } from 'lucide-react';
+import { type LocalPoint, type TeamsTools } from '../db/indexedDb';
+import { Camera, Upload, Send, X, Move, Users } from 'lucide-react';
 import { makeT, type AppLang } from '../i18n';
 
 // High-precision coordinates converter from Lat/Lng to UTM Zone 32N (EPSG:32632)
@@ -51,6 +51,9 @@ interface FeedbackFormProps {
   point: LocalPoint;
   currentUser: string; // Investigator Full Name
   currentUserUsername: string; // Investigator Username
+  // Most recent teams & tools recorded for this project, used to auto-populate
+  // the section when the crew answers "No" to Need update?
+  lastTeamsTools: TeamsTools | null;
   isEditLocationMode: boolean;
   setIsEditLocationMode: (mode: boolean) => void;
   onSave: (feedbackData: {
@@ -74,6 +77,7 @@ interface FeedbackFormProps {
     laenge: number | null;
     breite: number | null;
     m_cube: number | null;
+    teams_tools: TeamsTools;
   }) => void;
   onCancel: () => void;
 }
@@ -81,8 +85,9 @@ interface FeedbackFormProps {
 export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   lang,
   point,
-  currentUser, 
-  currentUserUsername, 
+  currentUser,
+  currentUserUsername,
+  lastTeamsTools,
   isEditLocationMode,
   setIsEditLocationMode: _setIsEditLocationMode,
   onSave, 
@@ -100,6 +105,13 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const [notes, setNotes] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [compressing, setCompressing] = useState(false);
+
+  // Teams & Tools states. Truppführer always mirrors the logged-in user.
+  const [needUpdate, setNeedUpdate] = useState<boolean>(true);
+  const [maschinenfuehrer, setMaschinenfuehrer] = useState<string>('');
+  const [bezSuchfeld, setBezSuchfeld] = useState<string>('');
+  const [messgeraet, setMessgeraet] = useState<string>('');
+  const [sondierer, setSondierer] = useState<string>('');
 
   // Camera Modal States
   const [showCameraModal, setShowCameraModal] = useState(false);
@@ -194,7 +206,16 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
       setNotes('');
       setPhotos([]);
     }
-  }, [point]);
+
+    // Prefer what this target already recorded, else carry over the last crew/kit
+    // used on the project. Only ask the crew to type it in when neither exists.
+    const source = point.feedback?.teams_tools || lastTeamsTools;
+    setNeedUpdate(!source);
+    setMaschinenfuehrer(source?.maschinenfuehrer || '');
+    setBezSuchfeld(source?.bez_suchfeld || '');
+    setMessgeraet(source?.messgeraet || '');
+    setSondierer(source?.sondierer || '');
+  }, [point, lastTeamsTools]);
 
   // Listen for real-time marker dragging coordinates and convert them back to UTM
   useEffect(() => {
@@ -282,7 +303,15 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
       fundstueck,
       laenge: lVal,
       breite: bVal,
-      m_cube: mCube
+      m_cube: mCube,
+      teams_tools: {
+        need_update: needUpdate,
+        truppfuehrer: currentUser || null,
+        maschinenfuehrer: maschinenfuehrer.trim() || null,
+        bez_suchfeld: bezSuchfeld.trim() || null,
+        messgeraet: messgeraet.trim() || null,
+        sondierer: sondierer.trim() || null
+      }
     });
   };
 
@@ -358,6 +387,98 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                 <strong style={{ color: '#e2e8f0' }}>X: {easting.toFixed(3)} | Y: {northing.toFixed(3)}</strong>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Section 1b: Teams and Tools */}
+        <div className="glass-card" style={{ padding: '14px', borderLeft: '3px solid #38bdf8', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ fontWeight: 800, fontSize: '0.75rem', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Users size={13} />
+            {t('Teams and Tools')}
+          </div>
+
+          {/* Need update? - when No, the fields below stay as last recorded for this project */}
+          <div className="form-group">
+            <label className="form-label" style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700 }}>{t('Need update?')} *</label>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '2px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', cursor: 'pointer', color: needUpdate ? '#38bdf8' : '#64748b', fontWeight: 600 }}>
+                <input
+                  type="radio"
+                  name="teams_need_update"
+                  checked={needUpdate}
+                  onChange={() => setNeedUpdate(true)}
+                  style={{ cursor: 'pointer' }}
+                />
+                {t('Yes')}
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', cursor: 'pointer', color: !needUpdate ? '#10b981' : '#64748b', fontWeight: 600 }}>
+                <input
+                  type="radio"
+                  name="teams_need_update"
+                  checked={!needUpdate}
+                  onChange={() => {
+                    setNeedUpdate(false);
+                    const source = point.feedback?.teams_tools || lastTeamsTools;
+                    setMaschinenfuehrer(source?.maschinenfuehrer || '');
+                    setBezSuchfeld(source?.bez_suchfeld || '');
+                    setMessgeraet(source?.messgeraet || '');
+                    setSondierer(source?.sondierer || '');
+                  }}
+                  disabled={!point.feedback?.teams_tools && !lastTeamsTools}
+                  style={{ cursor: 'pointer' }}
+                />
+                {t('No')}
+              </label>
+            </div>
+            {!point.feedback?.teams_tools && !lastTeamsTools && (
+              <span style={{ fontSize: '0.65rem', color: '#64748b', display: 'block', marginTop: '4px' }}>
+                {t('No previous entry for this project yet - please fill the fields below.')}
+              </span>
+            )}
+          </div>
+
+          {/* Truppführer - always mirrors the signed-in user */}
+          <div className="form-group">
+            <label className="form-label" style={{ fontSize: '0.7rem', color: '#64748b' }}>Truppführer</label>
+            <input
+              type="text"
+              className="form-input"
+              value={currentUser}
+              disabled
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.02)', color: '#94a3b8', cursor: 'not-allowed', border: '1px solid rgba(255, 255, 255, 0.05)', fontSize: '0.75rem', height: '30px' }}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            {([
+              ['Maschinenführer', maschinenfuehrer, setMaschinenfuehrer],
+              ['Bez.Suchfeld', bezSuchfeld, setBezSuchfeld],
+              ['Messgerät', messgeraet, setMessgeraet],
+              ['Sondierer', sondierer, setSondierer]
+            ] as const).map(([label, value, setter]) => (
+              <div className="form-group" key={label} style={{ margin: 0, minWidth: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.65rem' }}>{label} *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={value}
+                  onChange={(e) => setter(e.target.value)}
+                  disabled={!needUpdate}
+                  required
+                  style={{
+                    height: '32px',
+                    fontSize: '0.75rem',
+                    width: '100%',
+                    minWidth: 0,
+                    padding: '4px 8px',
+                    boxSizing: 'border-box',
+                    backgroundColor: needUpdate ? undefined : 'rgba(255, 255, 255, 0.02)',
+                    color: needUpdate ? undefined : '#94a3b8',
+                    cursor: needUpdate ? undefined : 'not-allowed'
+                  }}
+                />
+              </div>
+            ))}
           </div>
         </div>
 

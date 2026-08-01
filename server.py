@@ -26,6 +26,14 @@ app.add_middleware(
 )
 
 # Schemas
+class TeamsTools(BaseModel):
+    need_update: bool = True
+    truppfuehrer: Optional[str] = None      # auto-filled from the logged-in user
+    maschinenfuehrer: Optional[str] = None
+    bez_suchfeld: Optional[str] = None
+    messgeraet: Optional[str] = None
+    sondierer: Optional[str] = None
+
 class FeedbackCreate(BaseModel):
     id: str
     point_id: str
@@ -47,6 +55,7 @@ class FeedbackCreate(BaseModel):
     laenge: Optional[float] = None
     breite: Optional[float] = None
     m_cube: Optional[float] = None
+    teams_tools: Optional[TeamsTools] = None
 
 class PointCreate(BaseModel):
     vm_nr: str
@@ -223,7 +232,8 @@ def get_points(db: Session = Depends(get_db)):
                 "fundstueck": latest_feedback.fundstueck,
                 "laenge": latest_feedback.laenge,
                 "breite": latest_feedback.breite,
-                "m_cube": latest_feedback.m_cube
+                "m_cube": latest_feedback.m_cube,
+                "teams_tools": latest_feedback.teams_tools
             }
             
         result.append({
@@ -315,6 +325,9 @@ def sync_data(payload: SyncPayload, db: Session = Depends(get_db)):
         
         # Serialize photos list to JSON string
         photos_json = json.dumps(fb.photos) if fb.photos else "[]"
+
+        # Stored as JSON so the whole teams & tools block travels as one column
+        teams_tools_val = fb.teams_tools.model_dump() if fb.teams_tools else None
         
         # Update anomaly status to 'investigated' in anomalies table
         anomaly.status = 'investigated'
@@ -338,7 +351,9 @@ def sync_data(payload: SyncPayload, db: Session = Depends(get_db)):
                 existing_fb.laenge = fb.laenge
                 existing_fb.breite = fb.breite
                 existing_fb.m_cube = fb.m_cube
-                
+                if teams_tools_val is not None:
+                    existing_fb.teams_tools = teams_tools_val
+
                 synced_feedback_count += 1
         else:
             new_fb = models.Feedback(
@@ -360,7 +375,8 @@ def sync_data(payload: SyncPayload, db: Session = Depends(get_db)):
                 fundstueck=fb.fundstueck,
                 laenge=fb.laenge,
                 breite=fb.breite,
-                m_cube=fb.m_cube
+                m_cube=fb.m_cube,
+                teams_tools=teams_tools_val
             )
             db.add(new_fb)
             synced_feedback_count += 1

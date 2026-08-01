@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Boolean, DateTime, Integer, ForeignKey, create_engine
+from sqlalchemy import Column, String, Float, Boolean, DateTime, Integer, ForeignKey, JSON, create_engine
 from sqlalchemy.orm import declarative_base, relationship
 from geoalchemy2 import Geometry
 import datetime
@@ -61,6 +61,10 @@ class Feedback(Base):
     sohle_status = Column(String(50), nullable=True)
     bilder_n = Column(Integer, nullable=True, default=0)
     other = Column(String(255), nullable=True)
+
+    # Teams & tools captured on the field form:
+    # {need_update, truppfuehrer, maschinenfuehrer, bez_suchfeld, messgeraet, sondierer}
+    teams_tools = Column(JSON, nullable=True)
 
     anomaly = relationship("Anomaly", back_populates="feedbacks")
 
