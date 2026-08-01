@@ -24,7 +24,11 @@ import {
   ChevronsRight
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:8000';
+// Same-origin: FastAPI serves this bundle out of static/, so /api/... resolves against
+// whatever host the app was opened from. Lets field devices reach the server by LAN IP
+// instead of pointing at their own localhost. `npm run dev` relies on the proxy in
+// vite.config.ts to forward /api to the backend.
+const API_BASE = '';
 
 // Feedback ids key the update-vs-insert branch on the server, so a collision would
 // overwrite another target's findings. crypto.randomUUID() is only defined in secure
