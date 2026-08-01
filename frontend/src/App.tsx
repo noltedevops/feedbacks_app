@@ -26,6 +26,22 @@ import {
 
 const API_BASE = 'http://localhost:8000';
 
+// Feedback ids key the update-vs-insert branch on the server, so a collision would
+// overwrite another target's findings. crypto.randomUUID() is only defined in secure
+// contexts, so degrade to getRandomValues before ever falling back to Math.random.
+function newId(): string {
+  const c = globalThis.crypto;
+  if (c?.randomUUID) return c.randomUUID();
+  if (c?.getRandomValues) {
+    const b = c.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    const hex = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 type AppRole = 'collector' | 'dashboard';
 
 // Modern segmented language switch with a sliding highlight.
@@ -366,7 +382,7 @@ export default function App() {
 
     try {
       const feedbackRecord: PendingFeedback = {
-        id: selectedPoint.feedback?.id || Math.random().toString(36).substring(2, 15),
+        id: selectedPoint.feedback?.id || newId(),
         point_id: selectedPoint.id,
         visited: true,
         status: feedbackData.status,
@@ -459,7 +475,7 @@ export default function App() {
       } else {
         await db.transaction('rw', db.points, async () => {
           for (const p of importedPoints) {
-            const tempId = Math.random().toString(36).substring(2, 15);
+            const tempId = newId();
             const target_id_val = `11-24-2736-${p.easting.toFixed(3)}-${p.northing.toFixed(3)}`;
             await db.points.put({
               id: tempId,
