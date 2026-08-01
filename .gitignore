@@ -9,6 +9,9 @@ venv/
 .env
 .env.*
 
+# Agent tooling
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db
