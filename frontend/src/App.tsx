@@ -4,6 +4,7 @@ import { FieldMap } from './components/FieldMap';
 import { Dashboard } from './components/Dashboard';
 import { FeedbackForm } from './components/FeedbackForm';
 import { ImportExport } from './components/ImportExport';
+import { ReportDialog, type ProjectOption } from './components/ReportDialog';
 import { makeT, type AppLang } from './i18n';
 import { 
   Compass, 
@@ -21,7 +22,8 @@ import {
   Sun,
   Moon,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Table2
 } from 'lucide-react';
 
 // Same-origin: FastAPI serves this bundle out of static/, so /api/... resolves against
@@ -154,6 +156,9 @@ export default function App() {
   // Map and Data States
   const [points, setPoints] = useState<LocalPoint[]>([]);
   const [selectedPoint, setSelectedPoint] = useState<LocalPoint | null>(null);
+  const [serverProjects, setServerProjects] = useState<ProjectOption[]>([]);
+  // 'dashboard' offers PDF + CSV, 'field' is CSV only
+  const [reportDialog, setReportDialog] = useState<false | 'dashboard' | 'field'>(false);
 
   // Latest teams & tools recorded on this project, read from the local mirror so the
   // "Need update? -> No" path still auto-populates when the crew is offline.
@@ -263,6 +268,15 @@ export default function App() {
       console.error(err);
     }
   };
+
+  // Project names for the report filter; best effort, the local ids are the fallback.
+  useEffect(() => {
+    if (!isOnline) return;
+    fetch(`${API_BASE}/api/projects`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setServerProjects)
+      .catch(() => setServerProjects([]));
+  }, [isOnline]);
 
   const fetchFromServer = async () => {
     try {
@@ -701,6 +715,12 @@ export default function App() {
 
   const allVmNumbers = points.map(p => p.vm_nr).sort((a,b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
   const uniqueProjectIds = Array.from(new Set(points.map(p => p.project_id || '11-24-2736'))).sort();
+
+  // Report/export filter options: server names when reachable, otherwise the ids
+  // already mirrored locally so the field app can still export offline.
+  const projectOptions: ProjectOption[] = serverProjects.length
+    ? serverProjects
+    : uniqueProjectIds.map(id => ({ project_id: id, project_name: '' }));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: '#090d16' }}>
@@ -1554,6 +1574,19 @@ export default function App() {
                       <span style={{ fontSize: '0.68rem', color: '#8c9f96', marginTop: '4px' }}>
                         {filteredPoints.length} {t('Targets Detected')}
                       </span>
+
+                      {/* Filtered CSV export, same project + date-range filters as the dashboard report */}
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => setReportDialog('field')}
+                        disabled={!isOnline}
+                        title={isOnline ? t('Export CSV') : t('Network Connection: Offline')}
+                        style={{ marginTop: '8px', padding: '7px', fontSize: '0.72rem', justifyContent: 'center', gap: '6px', width: '100%' }}
+                      >
+                        <Table2 size={13} />
+                        {t('Export CSV')}
+                      </button>
                     </div>
 
                     {activeTab === 'map' ? (
@@ -1833,6 +1866,7 @@ export default function App() {
                   setFilterStatus={setFilterStatus}
                   filterInstrument={filterInstrument}
                   setFilterInstrument={setFilterInstrument}
+                  onGenerateReport={() => setReportDialog('dashboard')}
                 />
               </div>
 
@@ -1889,6 +1923,17 @@ export default function App() {
           to { transform: translateX(0); }
         }
       `}</style>
+
+      {reportDialog && (
+        <ReportDialog
+          lang={lang}
+          apiBase={API_BASE}
+          projects={projectOptions}
+          allowPdf={reportDialog === 'dashboard'}
+          title={reportDialog === 'field' ? t('Export CSV') : undefined}
+          onClose={() => setReportDialog(false)}
+        />
+      )}
 
     </div>
   );

@@ -131,6 +131,18 @@ const de: Record<string, string> = {
   'Nicht Frei (Not Clear)': 'Nicht Frei',
   'Bemerkung (Remarks)': 'Bemerkung',
   'Write any additional remarks...': 'Zusätzliche Bemerkungen eintragen...',
+  // --- Reports / export ---
+  'Generate Report': 'Bericht erstellen',
+  'Export CSV': 'CSV exportieren',
+  'Download PDF': 'PDF herunterladen',
+  'Download CSV': 'CSV herunterladen',
+  'From': 'Von',
+  'To': 'Bis',
+  'Leave dates empty to include the whole period.': 'Datumsfelder leer lassen, um den gesamten Zeitraum einzuschließen.',
+  'The start date must be before the end date.': 'Das Startdatum muss vor dem Enddatum liegen.',
+  'Report generation failed. Check that the server is reachable.':
+    'Berichtserstellung fehlgeschlagen. Bitte prüfen, ob der Server erreichbar ist.',
+
   'Teams and Tools': 'Trupp und Geräte',
   'Need update?': 'Aktualisierung nötig?',
   'Yes': 'Ja',

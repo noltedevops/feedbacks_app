@@ -1,5 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -11,6 +12,7 @@ import uuid
 
 from database import init_db, get_db, utm32n_to_latlon
 import models
+import report
 from config import settings
 
 init_db()
@@ -411,6 +413,66 @@ def sync_data(payload: SyncPayload, db: Session = Depends(get_db)):
         "synced_points": synced_points_count,
         "points": get_points(db)
     }
+
+
+@app.get("/api/projects")
+def list_projects(db: Session = Depends(get_db)):
+    """Projects that actually carry anomalies, for the report filter dropdown."""
+    rows = (
+        db.query(models.Anomaly.project_id, models.Project.project_name)
+        .join(models.Project, models.Project.project_id == models.Anomaly.project_id)
+        .distinct()
+        .all()
+    )
+    return [{"project_id": pid, "project_name": name} for pid, name in rows]
+
+
+def _report_rows(db, project_id, start, end):
+    start_dt = report.parse_date(start)
+    end_dt = report.parse_date(end, end_of_day=True)
+    if start and start_dt is None:
+        raise HTTPException(status_code=400, detail=f"Invalid start date: {start}")
+    if end and end_dt is None:
+        raise HTTPException(status_code=400, detail=f"Invalid end date: {end}")
+    return report.fetch_rows(db, project_id, start_dt, end_dt), start_dt, end_dt
+
+
+def _stamp(project_id, start, end):
+    return "-".join(filter(None, [project_id or "alle", start or None, end or None]))
+
+
+@app.get("/api/reports/feedback.pdf")
+def report_feedback_pdf(
+    project_id: Optional[str] = Query(None),
+    start: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
+    end: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
+    db: Session = Depends(get_db),
+):
+    rows, start_dt, end_dt = _report_rows(db, project_id, start, end)
+    pdf = report.build_pdf(rows, project_id, start_dt, end_dt)
+    filename = f"oeffnungsmassnahmen-{_stamp(project_id, start, end)}.pdf"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/api/reports/feedback.csv")
+def report_feedback_csv(
+    project_id: Optional[str] = Query(None),
+    start: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
+    end: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
+    db: Session = Depends(get_db),
+):
+    rows, _, _ = _report_rows(db, project_id, start, end)
+    filename = f"feedback-{_stamp(project_id, start, end)}.csv"
+    return Response(
+        # BOM so Excel opens the German umlauts correctly
+        content=("﻿" + report.rows_to_csv(rows)).encode("utf-8"),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/api/stats")

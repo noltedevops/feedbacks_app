@@ -2,10 +2,11 @@ import React from 'react';
 import { type LocalPoint } from '../db/indexedDb';
 import { makeT, type AppLang } from '../i18n';
 import { 
-  CheckCircle2, 
+  CheckCircle2,
   Database,
   Clock,
-  Briefcase
+  Briefcase,
+  FileText
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -34,6 +35,7 @@ interface DashboardProps {
   setFilterStatus: (status: string) => void;
   filterInstrument: string;
   setFilterInstrument: (instrument: string) => void;
+  onGenerateReport: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -49,7 +51,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   filterStatus,
   setFilterStatus,
   filterInstrument,
-  setFilterInstrument
+  setFilterInstrument,
+  onGenerateReport
 }) => {
   const t = makeT(lang);
 
@@ -283,6 +286,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <option value="georadar">{t('Georadar Array')}</option>
             <option value="magnetic">{t('Magnetics')}</option>
           </select>
+
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={onGenerateReport}
+            title={t('Generate Report')}
+            style={{ height: '26px', padding: '0 12px', fontSize: '0.72rem', fontWeight: 700, gap: '6px', borderRadius: '6px', whiteSpace: 'nowrap' }}
+          >
+            <FileText size={13} />
+            {t('Generate Report')}
+          </button>
         </div>
       </div>
 
