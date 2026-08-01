@@ -9,6 +9,9 @@ venv/
 .env
 .env.*
 
+# Local SQLite fallback, created when the Postgres connection fails
+uxo_local.db
+
 # Agent tooling
 .claude/
 
