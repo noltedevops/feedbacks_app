@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { db, type LocalPoint, type PendingFeedback, type TeamsTools } from './db/indexedDb';
 import { FieldMap } from './components/FieldMap';
-import { Dashboard } from './components/Dashboard';
+import { Dashboard, matchesDepthBucket } from './components/Dashboard';
 import { FeedbackForm } from './components/FeedbackForm';
 import { ImportExport } from './components/ImportExport';
 import { ReportDialog, type ProjectOption } from './components/ReportDialog';
@@ -309,6 +309,8 @@ export default function App() {
   const [filterStatus, setFilterStatus] = useState('all'); // all, investigated, pending
   const [filterInstrument, setFilterInstrument] = useState('all'); // all, georadar, magnetic
   const [filterProjectId, setFilterProjectId] = useState('all');
+  // Dashboard-only depth bucket; see DEPTH_BUCKETS. 'all' means no depth constraint.
+  const [filterDepth, setFilterDepth] = useState('all');
   
   // Toast Notification
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
@@ -889,6 +891,13 @@ export default function App() {
     
     return matchesSearch && matchesVmNr && matchesStatus && matchesInstrument && matchesProjectId;
   });
+
+  // The depth bucket is a dashboard control, so it narrows the dashboard's log list and
+  // map markers only - the field app keeps rendering from the unnarrowed filteredPoints.
+  // Status is already applied above; depth composes on top of it (AND).
+  const dashboardFilteredPoints = filteredPoints.filter(p =>
+    matchesDepthBucket(p, filterDepth, filterStatus)
+  );
 
   const allVmNumbers = points.map(p => p.vm_nr).sort((a,b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
   const uniqueProjectIds = Array.from(new Set(points.map(p => p.project_id || '11-24-2736'))).sort();
@@ -2020,7 +2029,7 @@ export default function App() {
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
                 <FieldMap
                   lang={lang}
-                  points={filteredPoints}
+                  points={dashboardFilteredPoints}
                   selectedPoint={selectedPoint}
                   onSelectPoint={(point) => setSelectedPoint(point)}
                   viewMode="dashboard"
@@ -2047,7 +2056,7 @@ export default function App() {
                 <Dashboard
                   lang={lang}
                   points={points}
-                  filteredPoints={filteredPoints}
+                  filteredPoints={dashboardFilteredPoints}
                   selectedPoint={selectedPoint}
                   onSelectPoint={(point) => setSelectedPoint(point)}
                   isOnline={isOnline}
@@ -2058,6 +2067,8 @@ export default function App() {
                   setFilterStatus={setFilterStatus}
                   filterInstrument={filterInstrument}
                   setFilterInstrument={setFilterInstrument}
+                  filterDepth={filterDepth}
+                  setFilterDepth={setFilterDepth}
                   onGenerateReport={() => setReportDialog('dashboard')}
                 />
               </div>

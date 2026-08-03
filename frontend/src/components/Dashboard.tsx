@@ -21,6 +21,43 @@ import {
   Area
 } from 'recharts';
 
+// Depth buckets for the dashboard depth filter. Edges are inclusive-low /
+// exclusive-high - [0,0.5), [0.5,1.0), [1.0,1.5), [1.5,inf) - so a target at exactly
+// 0.5 m lands in the second bucket and never in two at once. Labels stay German in
+// both language modes because the crew reads them as fixed depth classes.
+export const DEPTH_BUCKETS: { id: string; label: string; min: number; max: number | null }[] = [
+  { id: 'all', label: 'Alle Tiefen', min: 0, max: null },
+  { id: '0-0.5', label: '0 – 0,5 m', min: 0, max: 0.5 },
+  { id: '0.5-1', label: '0,5 – 1,0 m', min: 0.5, max: 1.0 },
+  { id: '1-1.5', label: '1,0 – 1,5 m', min: 1.0, max: 1.5 },
+  { id: '1.5+', label: '> 1,5 m', min: 1.5, max: null }
+];
+
+// Which depth column a bucket reads has to follow the status selection: `tief` (the
+// actual excavated depth) is null until a target is opened, so filtering pending
+// targets on it would make every one of them disappear.
+function resolveDepth(point: LocalPoint, filterStatus: string): number | null {
+  const actual = point.feedback?.actual_depth ?? null;   // tief
+  const evaluated = point.evaluated_depth ?? null;       // errechnete Tiefe
+  if (filterStatus === 'pending') return evaluated;
+  if (filterStatus === 'investigated') return actual;
+  return actual ?? evaluated;                            // all: actual wins, else calculated
+}
+
+// Shared by every dashboard dataset so the cards, the log list and the map markers all
+// narrow identically. `all` is the only value that imposes no constraint; under any
+// specific bucket a target with no value on the relevant column is excluded.
+export function matchesDepthBucket(point: LocalPoint, bucketId: string, filterStatus: string): boolean {
+  if (bucketId === 'all') return true;
+  const bucket = DEPTH_BUCKETS.find(b => b.id === bucketId);
+  if (!bucket) return true;
+
+  const depth = resolveDepth(point, filterStatus);
+  if (depth === null || Number.isNaN(depth)) return false;
+
+  return depth >= bucket.min && (bucket.max === null || depth < bucket.max);
+}
+
 interface DashboardProps {
   lang: AppLang;
   points: LocalPoint[];
@@ -35,6 +72,8 @@ interface DashboardProps {
   setFilterStatus: (status: string) => void;
   filterInstrument: string;
   setFilterInstrument: (instrument: string) => void;
+  filterDepth: string;
+  setFilterDepth: (depth: string) => void;
   onGenerateReport: () => void;
 }
 
@@ -52,6 +91,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   setFilterStatus,
   filterInstrument,
   setFilterInstrument,
+  filterDepth,
+  setFilterDepth,
   onGenerateReport
 }) => {
   const t = makeT(lang);
@@ -70,12 +111,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Unique Project IDs Count
   const projectIds = Array.from(new Set(dashboardPoints.map(p => p.project_id || '11-24-2736')));
   const projectsCount = projectIds.length;
-
-  // Total Excavated Volume & progress percentage
-  const totalVolume = dashboardPoints.reduce((sum, p) => sum + (p.feedback?.m_cube || 0), 0);
-  const targetCapacity = 250; // Target capacity in cubic meters
-  const volumePercentage = Math.min(100, Math.round((totalVolume / targetCapacity) * 100));
-  const formattedVolume = totalVolume.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " m³";
 
   // 1. Fundstück Status Chart (sorted low-to-high frequency of finding)
   const fundstueckMap: { [key: string]: number } = {};
@@ -229,40 +264,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
         pointerEvents: 'auto',
         zIndex: 10
       }}>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-            <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-              {t('Operations Overview')}
-            </span>
-            <h2 style={{ fontSize: '1.1rem', color: '#fff', fontWeight: 800, margin: 0, fontFamily: 'var(--font-heading)' }}>
-              {t('Clearance Analytics Dashboard')}
-            </h2>
-          </div>
-          
-          {/* 5th KPI Card: Total Excavated Volume */}
-          <div className="glass-card" style={{
-            padding: '4px 10px',
-            borderRadius: '6px',
-            borderLeft: '3px solid #fa5f1c',
-            backgroundColor: 'rgba(255,255,255,0.02)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '2px',
-            minWidth: '140px'
-          }}>
-            <div style={{ fontSize: '0.48rem', color: '#8c9f96', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', lineHeight: 1 }}>{t('TOTAL EXCAVATED VOLUME')}</div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fa5f1c', fontFamily: 'var(--font-heading)', lineHeight: 1.1 }}>
-              {formattedVolume}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
-              <div style={{ height: '3px', flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '1.5px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${volumePercentage}%`, backgroundColor: '#fa5f1c', borderRadius: '1.5px' }} />
-              </div>
-              <span style={{ fontSize: '0.45rem', color: '#8c9f96', fontWeight: 700 }}>{volumePercentage}%</span>
-            </div>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+          <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            {t('Operations Overview')}
+          </span>
+          <h2 style={{ fontSize: '1.1rem', color: '#fff', fontWeight: 800, margin: 0, fontFamily: 'var(--font-heading)' }}>
+            {t('Clearance Analytics Dashboard')}
+          </h2>
         </div>
-        
+
         {/* Dropdown Selector */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <span style={{ fontSize: '0.68rem', color: '#8c9f96', fontWeight: 700 }}>{t('INSTRUMENT:')}</span>
@@ -436,22 +446,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
           minHeight: 0,
           overflow: 'hidden'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flexShrink: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
               <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t('Target Log')}</span>
               <h3 style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fff', margin: 0 }}>{t('Excavated Targets Database')} ({filteredPoints.length})</h3>
             </div>
-            
-            <select 
-              value={filterStatus} 
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="form-input"
-              style={{ fontSize: '0.65rem', padding: '2px 14px 2px 4px', height: '20px', backgroundColor: 'rgba(10, 22, 18, 0.6)', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', cursor: 'pointer', borderRadius: '4px' }}
-            >
-              <option value="all">{t('All Targets')}</option>
-              <option value="investigated">{t('Investigated')}</option>
-              <option value="pending">{t('Pending')}</option>
-            </select>
+
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
+              {/* Depth bucket. Reads tief or errechnete Tiefe depending on the status
+                  next to it, and narrows every card, chart and map marker. */}
+              <select
+                value={filterDepth}
+                onChange={(e) => setFilterDepth(e.target.value)}
+                className="form-input"
+                title={t('Depth filter')}
+                style={{ fontSize: '0.65rem', padding: '2px 14px 2px 4px', height: '20px', backgroundColor: 'rgba(10, 22, 18, 0.6)', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', cursor: 'pointer', borderRadius: '4px' }}
+              >
+                {DEPTH_BUCKETS.map(bucket => (
+                  <option key={bucket.id} value={bucket.id}>{bucket.label}</option>
+                ))}
+              </select>
+
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="form-input"
+                title={t('Status filter')}
+                style={{ fontSize: '0.65rem', padding: '2px 14px 2px 4px', height: '20px', backgroundColor: 'rgba(10, 22, 18, 0.6)', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', cursor: 'pointer', borderRadius: '4px' }}
+              >
+                <option value="all">{t('All Targets')}</option>
+                <option value="investigated">{t('Investigated')}</option>
+                <option value="pending">{t('Pending')}</option>
+              </select>
+            </div>
           </div>
 
           <div style={{ 

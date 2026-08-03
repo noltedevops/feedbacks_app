@@ -84,8 +84,10 @@ const de: Record<string, string> = {
   // --- Dashboard ---
   'Operations Overview': 'Betriebsübersicht',
   'Clearance Analytics Dashboard': 'Räumungs-Analyse-Dashboard',
-  'TOTAL EXCAVATED VOLUME': 'GESAMTES AUSHUBVOLUMEN',
   'INSTRUMENT:': 'INSTRUMENT:',
+  // The bucket labels themselves stay German in both modes - see DEPTH_BUCKETS.
+  'Depth filter': 'Tiefenfilter',
+  'Status filter': 'Statusfilter',
   'TOTAL TARGETS': 'ZIELE GESAMT',
   'INVESTIGATED': 'UNTERSUCHT',
   'SURVEY PROJECTS': 'MESSPROJEKTE',
