@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { db, type LocalPoint, type PendingFeedback, type TeamsTools } from './db/indexedDb';
 import { FieldMap } from './components/FieldMap';
 import { Dashboard } from './components/Dashboard';
@@ -23,7 +23,9 @@ import {
   Moon,
   ChevronsLeft,
   ChevronsRight,
-  Table2
+  Table2,
+  FilePlus2,
+  ListChecks
 } from 'lucide-react';
 
 // Same-origin: FastAPI serves this bundle out of static/, so /api/... resolves against
@@ -78,6 +80,118 @@ function LangSwitch({ lang, onChange, compact = false }: {
           {code}
         </button>
       ))}
+    </div>
+  );
+}
+
+// How the just-submitted record is doing on its way to the server. Purely
+// informational - none of these states gate the confirmation screen.
+type SubmissionSyncState = 'syncing' | 'synced' | 'offline' | 'pending';
+
+// Replaces the field form once a record is written to IndexedDB. It is deliberately
+// driven by the local save alone: /api/sync runs in the background, so an offline
+// crew - or one whose sync just 4xx'd - still gets their confirmation.
+function SubmissionConfirmation({ lang, vmNr, syncState, onOpenForm, onBackToList }: {
+  lang: AppLang;
+  vmNr: string;
+  syncState: SubmissionSyncState;
+  onOpenForm: () => void;
+  onBackToList: () => void;
+}) {
+  const t = makeT(lang);
+
+  const syncLabel: Record<SubmissionSyncState, string> = {
+    syncing: t('Syncing to the cloud database...'),
+    synced: t('Synced to the cloud database.'),
+    offline: t('Saved offline - it will sync automatically once back online.'),
+    pending: t('Not synced yet - the app will retry automatically.')
+  };
+  const syncColor = syncState === 'synced' ? '#10b981' : syncState === 'syncing' ? '#38bdf8' : '#f59e0b';
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '18px',
+      height: '100%',
+      textAlign: 'center',
+      padding: '8px 4px',
+      overflowY: 'auto',
+      animation: 'fade-in-up 0.25s ease-out'
+    }}>
+      <div style={{
+        width: '64px',
+        height: '64px',
+        borderRadius: '50%',
+        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+        border: '1px solid rgba(16, 185, 129, 0.35)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0
+      }}>
+        <CheckCircle2 size={32} color="#10b981" />
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#f1f5f9', margin: 0 }}>
+          {t('Submission Received')}
+        </h2>
+        <p style={{ fontSize: '0.82rem', color: '#cbd5e1', margin: 0, lineHeight: 1.5 }}>
+          {t('Thank you! Your record has been submitted.')}
+        </p>
+        <span style={{ fontSize: '0.7rem', color: '#8c9f96' }}>
+          {t('Target')} VM {vmNr}
+        </span>
+      </div>
+
+      {/* Non-blocking sync indicator */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '6px 12px',
+        borderRadius: '999px',
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        border: `1px solid ${syncColor}33`,
+        fontSize: '0.68rem',
+        color: syncColor,
+        fontWeight: 600
+      }}>
+        {syncState === 'offline'
+          ? <WifiOff size={12} />
+          : <RefreshCw size={12} className={syncState === 'syncing' ? 'animate-spin' : ''} />}
+        {syncLabel[syncState]}
+      </div>
+
+      <div style={{ width: '100%', height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.06)' }} />
+
+      <p style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 600, margin: 0 }}>
+        {t('Would you like to add another record?')}
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={onOpenForm}
+          style={{ padding: '11px', fontSize: '0.8rem', justifyContent: 'center', gap: '8px', width: '100%' }}
+        >
+          <FilePlus2 size={15} />
+          {t('Open Field Application Form')}
+        </button>
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={onBackToList}
+          style={{ padding: '10px', fontSize: '0.78rem', justifyContent: 'center', gap: '8px', width: '100%' }}
+        >
+          <ListChecks size={14} />
+          {t('Back to Target List')}
+        </button>
+      </div>
     </div>
   );
 }
@@ -176,7 +290,19 @@ export default function App() {
   const [syncing, setSyncing] = useState(false);
   const [addDataOpen, setAddDataOpen] = useState(false);
   const [isEditLocationMode, setIsEditLocationMode] = useState(false);
-  
+
+  // Set once a record is written to IndexedDB; swaps the form out for the thank-you
+  // screen. Never touched by the sync result - see handleSaveFeedback.
+  const [submission, setSubmission] = useState<{ point: LocalPoint; vmNr: string } | null>(null);
+  // Target whose form must open blank, so "Open Field Application Form" hands back an
+  // empty sheet instead of the record that was just filed against it.
+  const [blankFormPointId, setBlankFormPointId] = useState<string | null>(null);
+
+  // Overlapping sync cycles are what POSTed the same feedback id twice; these collapse
+  // them into one run plus at most one follow-up. See handleSync.
+  const syncInFlightRef = useRef(false);
+  const syncQueuedRef = useRef(false);
+
   // Search and Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [filterVmNr, setFilterVmNr] = useState('all');
@@ -238,10 +364,11 @@ export default function App() {
     }
   }, [isLoggedIn]);
 
-  // Auto-sync when online
+  // Auto-sync when online. Silent: the crew did not ask for this run, and a failure
+  // here is harmless because the records stay queued locally.
   useEffect(() => {
     if (isOnline && pendingSyncCount > 0 && isLoggedIn) {
-      handleSync();
+      void handleSync({ silent: true });
     }
   }, [isOnline, pendingSyncCount, isLoggedIn]);
 
@@ -319,16 +446,29 @@ export default function App() {
     }
   };
 
-  const handleSync = async () => {
+  // `silent` suppresses the failure toasts for syncs the crew did not ask for, so a
+  // background retry never shouts over the submission confirmation.
+  const handleSync = async ({ silent = false }: { silent?: boolean } = {}) => {
     if (!isOnline) {
-      showToast('error', t('Sync aborted: Network is offline.'));
+      if (!silent) showToast('error', t('Sync aborted: Network is offline.'));
       return;
     }
+    // Saving a record starts a sync and also bumps the pending counter the auto-sync
+    // effect watches, so two cycles used to POST the same row concurrently and the
+    // loser came back as a duplicate-key 400. Coalesce instead: the in-flight run
+    // picks up whatever was queued behind it.
+    if (syncInFlightRef.current) {
+      syncQueuedRef.current = true;
+      return;
+    }
+    syncInFlightRef.current = true;
     setSyncing(true);
     try {
       const pendingItems = await db.pendingFeedback.toArray();
       const pendingPoints = await db.pendingPointUpdates.toArray();
-      
+      const sentFeedbackIds = pendingItems.map((i) => i.id);
+      const sentPointIds = pendingPoints.map((p) => p.id);
+
       const res = await fetch(`${API_BASE}/api/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -338,12 +478,15 @@ export default function App() {
         })
       });
       
-      if (!res.ok) throw new Error('Sync endpoint failed');
+      if (!res.ok) throw new Error(`Sync endpoint failed with ${res.status}`);
       const syncResult = await res.json();
-      
-      await db.pendingFeedback.clear();
-      await db.pendingPointUpdates.clear();
-      
+
+      // Drop only what this request actually carried, so a record queued while it was
+      // in flight survives for the next cycle - and, just as importantly, an accepted
+      // record is never re-sent and can never collide with itself server-side.
+      await db.pendingFeedback.bulkDelete(sentFeedbackIds);
+      await db.pendingPointUpdates.bulkDelete(sentPointIds);
+
       await db.transaction('rw', db.points, async () => {
         await db.points.clear();
         for (const p of syncResult.points) {
@@ -379,9 +522,15 @@ export default function App() {
       showToast('success', `Data Sync Complete! Synchronized ${syncResult.synced_feedback} logs and ${syncResult.synced_points || 0} target locations.`);
     } catch (err) {
       console.error(err);
-      showToast('error', t('Cloud database sync failed.'));
+      // Records stay queued in IndexedDB, so nothing is lost - the next cycle retries.
+      if (!silent) showToast('error', t('Cloud database sync failed.'));
     } finally {
       setSyncing(false);
+      syncInFlightRef.current = false;
+      if (syncQueuedRef.current) {
+        syncQueuedRef.current = false;
+        void handleSync({ silent });
+      }
     }
   };
 
@@ -480,15 +629,23 @@ export default function App() {
       };
       
       await db.points.put(updatedPoint);
-      setSelectedPoint(updatedPoint);
       await loadLocalData();
       await updatePendingCount();
-      
-      showToast('success', `Feedback ${coordsUpdated ? 'and updated location ' : ''}logged locally for VM ${selectedPoint.vm_nr}.`);
+
+      // The local write succeeded, so the record is safe - confirm it now. The server
+      // round trip below is fire-and-forget: offline, a 4xx or a 5xx must never leave
+      // the crew staring at a form that looks like it did nothing.
+      setSubmission({ point: updatedPoint, vmNr: selectedPoint.vm_nr });
+      setSelectedPoint(null);
+      setBlankFormPointId(null);
+      setIsEditLocationMode(false);
+
       if (isOnline) {
-        handleSync();
+        void handleSync({ silent: true });
       }
     } catch (err) {
+      // Nothing was confirmed and selectedPoint is untouched, so the form keeps every
+      // value the crew typed and they can hit Submit again.
       console.error(err);
       showToast('error', t('Failed to save feedback findings.'));
     }
@@ -673,6 +830,8 @@ export default function App() {
     localStorage.removeItem('nolte_user_fullname');
     setIsLoggedIn(false);
     setSelectedPoint(null);
+    setSubmission(null);
+    setBlankFormPointId(null);
     setIsEditLocationMode(false);
     setUsernameInput('');
     setPasswordInput('');
@@ -688,7 +847,25 @@ export default function App() {
   // Turn off edit location mode when selectedPoint changes
   useEffect(() => {
     setIsEditLocationMode(false);
+    // Opening any target leaves the confirmation screen behind. Submitting clears
+    // selectedPoint in the same batch, so this never eats a fresh confirmation.
+    if (selectedPoint) setSubmission(null);
   }, [selectedPoint]);
+
+  // The point handed to the form. "Open Field Application Form" asks for a blank sheet
+  // on the target just filed, and hiding its feedback puts FeedbackForm on its own
+  // empty-form branch rather than duplicating that reset logic here. Keyed by id so
+  // picking a different target still shows that target's stored record.
+  const formPoint = useMemo(() => {
+    if (!selectedPoint) return null;
+    return blankFormPointId === selectedPoint.id
+      ? { ...selectedPoint, feedback: null }
+      : selectedPoint;
+  }, [selectedPoint, blankFormPointId]);
+
+  // Non-blocking status for the confirmation screen's sync chip.
+  const submissionSyncState: SubmissionSyncState =
+    !isOnline ? 'offline' : syncing ? 'syncing' : pendingSyncCount > 0 ? 'pending' : 'synced';
 
   // Filters logic
   const filteredPoints = points.filter(p => {
@@ -1334,7 +1511,7 @@ export default function App() {
 
                 <button 
                   className="sidebar-item"
-                  onClick={handleSync}
+                  onClick={() => handleSync()}
                   disabled={syncing}
                   title={t('Sync Data')}
                 >
@@ -1524,17 +1701,32 @@ export default function App() {
               {/* Left sidebar collector control panel */}
               <section className="glass-panel collector-sidebar" style={{ width: '380px', display: 'flex', flexDirection: 'column', flexShrink: 0, padding: '16px', overflow: 'hidden', border: 'none', background: 'rgba(15, 34, 28, 0.4)' }}>
                 
-                {selectedPoint ? (
+                {formPoint ? (
                   <FeedbackForm
                     lang={lang}
-                    point={selectedPoint}
+                    point={formPoint}
                     currentUser={currentUserFullName}
                     currentUserUsername={currentUser}
                     lastTeamsTools={lastTeamsTools}
                     isEditLocationMode={isEditLocationMode}
                     setIsEditLocationMode={setIsEditLocationMode}
                     onSave={handleSaveFeedback}
-                    onCancel={() => setSelectedPoint(null)}
+                    onCancel={() => {
+                      setSelectedPoint(null);
+                      setBlankFormPointId(null);
+                    }}
+                  />
+                ) : submission ? (
+                  <SubmissionConfirmation
+                    lang={lang}
+                    vmNr={submission.vmNr}
+                    syncState={submissionSyncState}
+                    onOpenForm={() => {
+                      setBlankFormPointId(submission.point.id);
+                      setSelectedPoint(submission.point);
+                      setSubmission(null);
+                    }}
+                    onBackToList={() => setSubmission(null)}
                   />
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', height: '100%', overflow: 'hidden' }}>

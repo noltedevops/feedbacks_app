@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from typing import List, Optional
 from pydantic import BaseModel
 import datetime
@@ -305,6 +307,35 @@ def import_points(points_list: List[PointCreate], db: Session = Depends(get_db))
     db.commit()
     return {"status": "success", "imported": imported_count}
 
+def _upsert_feedback(db: Session, values: dict, update_teams_tools: bool):
+    """Insert a feedback row, or refresh it when the field app re-sends the same id.
+
+    The queue in IndexedDB keeps a record until the server confirms it, and two sync
+    cycles can overlap, so the plain INSERT this used to do raced itself into
+    `duplicate key value violates unique constraint "feedback_pkey"` and 400'd the
+    entire batch. ON CONFLICT DO UPDATE makes each row idempotent: a re-send of an
+    unchanged record is a no-op, an edited record overwrites the stored one, and one
+    already-present id can no longer fail its batch mates.
+
+    DO UPDATE rather than DO NOTHING because a crew can reopen a target and correct
+    its measurements - those corrections have to reach the server. The WHERE guard
+    keeps that safe in the other direction: a stale copy that has been sitting in an
+    offline queue can never clobber a newer visit already stored.
+    """
+    table = models.Feedback.__table__
+    insert = pg_insert if db.get_bind().dialect.name == "postgresql" else sqlite_insert
+    updatable = {k: v for k, v in values.items() if k != "id"}
+    if not update_teams_tools:
+        # No crew/kit block on this payload - keep whatever is already stored.
+        updatable.pop("teams_tools", None)
+    stmt = insert(table).values(**values).on_conflict_do_update(
+        index_elements=[table.c.id],
+        set_=updatable,
+        where=(table.c.visit_date.is_(None)) | (table.c.visit_date <= values["visit_date"]),
+    )
+    db.execute(stmt)
+
+
 @app.post("/api/sync")
 def sync_data(payload: SyncPayload, db: Session = Depends(get_db)):
     synced_feedback_count = 0
@@ -317,7 +348,6 @@ def sync_data(payload: SyncPayload, db: Session = Depends(get_db)):
             logger.warning(f"Skipping sync of feedback log {fb.id} because parent anomaly {fb.point_id} does not exist.")
             continue
 
-        existing_fb = db.query(models.Feedback).filter(models.Feedback.id == fb.id).first()
         logged_at_dt = fb.logged_at or datetime.datetime.utcnow()
         # The field app sends ISO-8601 with a trailing 'Z', so pydantic yields an aware datetime,
         # while visit_date is TIMESTAMP WITHOUT TIME ZONE and reads back naive. Normalise to naive
@@ -334,55 +364,34 @@ def sync_data(payload: SyncPayload, db: Session = Depends(get_db)):
         # Update anomaly status to 'investigated' in anomalies table
         anomaly.status = 'investigated'
         
-        if existing_fb:
-            if fb.logged_at and (not existing_fb.visit_date or logged_at_dt > existing_fb.visit_date):
-                existing_fb.visited = fb.visited
-                existing_fb.tief = fb.actual_depth
-                existing_fb.photos = photos_json
-                existing_fb.notes = fb.notes
-                existing_fb.investigator = fb.investigator
-                existing_fb.investigator_username = fb.investigator_username
-                existing_fb.visit_date = logged_at_dt
-                
-                # New fields
-                existing_fb.target_id = fb.target_id
-                existing_fb.sohle_status = fb.sohle_status
-                existing_fb.bilder_n = fb.bilder_n
-                existing_fb.other = fb.other
-                existing_fb.fundstueck = fb.fundstueck
-                existing_fb.laenge = fb.laenge
-                existing_fb.breite = fb.breite
-                existing_fb.m_cube = fb.m_cube
-                if teams_tools_val is not None:
-                    existing_fb.teams_tools = teams_tools_val
+        _upsert_feedback(
+            db,
+            {
+                "id": fb.id,
+                "anomaly_id": fb.point_id,
+                "visited": fb.visited,
+                "tief": fb.actual_depth,
+                "photos": photos_json,
+                "notes": fb.notes,
+                "investigator": fb.investigator,
+                "investigator_username": fb.investigator_username,
+                "visit_date": logged_at_dt,
 
-                synced_feedback_count += 1
-        else:
-            new_fb = models.Feedback(
-                id=fb.id,
-                anomaly_id=fb.point_id,
-                visited=fb.visited,
-                tief=fb.actual_depth,
-                photos=photos_json,
-                notes=fb.notes,
-                investigator=fb.investigator,
-                investigator_username=fb.investigator_username,
-                visit_date=logged_at_dt,
-                
                 # New fields
-                target_id=fb.target_id,
-                sohle_status=fb.sohle_status,
-                bilder_n=fb.bilder_n,
-                other=fb.other,
-                fundstueck=fb.fundstueck,
-                laenge=fb.laenge,
-                breite=fb.breite,
-                m_cube=fb.m_cube,
-                teams_tools=teams_tools_val
-            )
-            db.add(new_fb)
-            synced_feedback_count += 1
-            
+                "target_id": fb.target_id,
+                "sohle_status": fb.sohle_status,
+                "bilder_n": fb.bilder_n,
+                "other": fb.other,
+                "fundstueck": fb.fundstueck,
+                "laenge": fb.laenge,
+                "breite": fb.breite,
+                "m_cube": fb.m_cube,
+                "teams_tools": teams_tools_val,
+            },
+            update_teams_tools=teams_tools_val is not None,
+        )
+        synced_feedback_count += 1
+
     # Update coordinates of anomalies if present
     synced_points_count = 0
     if payload.point_updates:

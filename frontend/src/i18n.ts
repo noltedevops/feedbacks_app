@@ -159,6 +159,19 @@ const de: Record<string, string> = {
   'Camera Capture': 'Kameraaufnahme',
   'Capture': 'Aufnehmen',
 
+  // --- Submission confirmation ---
+  'Submission Received': 'Erfassung übermittelt',
+  'Thank you! Your record has been submitted.': 'Vielen Dank! Ihr Datensatz wurde übermittelt.',
+  'Would you like to add another record?': 'Möchten Sie einen weiteren Datensatz erfassen?',
+  'Open Field Application Form': 'Feld-Erfassungsformular öffnen',
+  'Back to Target List': 'Zurück zur Zielliste',
+  'Syncing to the cloud database...': 'Wird mit der Cloud-Datenbank synchronisiert...',
+  'Synced to the cloud database.': 'Mit der Cloud-Datenbank synchronisiert.',
+  'Saved offline - it will sync automatically once back online.':
+    'Offline gespeichert – wird automatisch synchronisiert, sobald wieder online.',
+  'Not synced yet - the app will retry automatically.':
+    'Noch nicht synchronisiert – die App versucht es automatisch erneut.',
+
   // --- Import / export panel ---
   'Seed Wilhelmshaven Targets': 'Wilhelmshaven-Ziele laden',
   'Seed Targets (Requires Online)': 'Ziele laden (Online erforderlich)',
