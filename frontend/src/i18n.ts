@@ -88,6 +88,8 @@ const de: Record<string, string> = {
   // The bucket labels themselves stay German in both modes - see DEPTH_BUCKETS.
   'Depth filter': 'Tiefenfilter',
   'Status filter': 'Statusfilter',
+  // Empty state for panels that only mean anything once a target has been excavated.
+  'Investigated targets only': 'Nur für untersuchte Ziele',
   'TOTAL TARGETS': 'ZIELE GESAMT',
   'INVESTIGATED': 'UNTERSUCHT',
   'SURVEY PROJECTS': 'MESSPROJEKTE',

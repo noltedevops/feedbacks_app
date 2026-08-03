@@ -1,12 +1,13 @@
 import React from 'react';
 import { type LocalPoint } from '../db/indexedDb';
 import { makeT, type AppLang } from '../i18n';
-import { 
+import {
   CheckCircle2,
   Database,
   Clock,
   Briefcase,
-  FileText
+  FileText,
+  Info
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -58,6 +59,32 @@ export function matchesDepthBucket(point: LocalPoint, bucketId: string, filterSt
   return depth >= bucket.min && (bucket.max === null || depth < bucket.max);
 }
 
+// A target counts as excavated once a field crew has filed its opening record. Sohle,
+// Fundstück and the actual measurements all live on that record, so nothing derived from
+// them exists before it.
+const hasExcavation = (p: LocalPoint) => !!p.local_status && p.local_status !== 'unvisited' && !!p.feedback;
+
+// Panels whose numbers only exist after a target has been dug. When the current selection
+// holds no excavated targets there is genuinely nothing to plot, so the panel says so
+// rather than borrowing rows from a status the user filtered out.
+const ExcavationOnly: React.FC<{ note: string }> = ({ note }) => (
+  <div style={{
+    flex: 1,
+    minHeight: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    padding: '10px',
+    textAlign: 'center',
+    color: '#64748b'
+  }}>
+    <Info size={15} />
+    <span style={{ fontSize: '0.62rem', fontWeight: 700, lineHeight: 1.3 }}>{note}</span>
+  </div>
+);
+
 interface DashboardProps {
   lang: AppLang;
   points: LocalPoint[];
@@ -97,17 +124,41 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const t = makeT(lang);
 
-  // Filter points based on selected instrument for dashboard metrics
-  const dashboardPoints = points.filter(p => 
-    filterInstrument === 'all' || 
-    (p.instrument && p.instrument.toLowerCase() === filterInstrument.toLowerCase())
+  // EVALUATION-BASED SET: every target the current filters select, pending included.
+  // Sensor/evaluated depth and the headline counts are meaningful for all of them.
+  // `filteredPoints` (log list + map markers) is the same selection, narrowed upstream
+  // in App. Status is applied here too so the cards can never report on targets the
+  // status dropdown excluded.
+  const dashboardPoints = points.filter(p => {
+    const matchesInstrument = filterInstrument === 'all' ||
+      (p.instrument && p.instrument.toLowerCase() === filterInstrument.toLowerCase());
+
+    const isInvestigated = !!p.local_status && p.local_status !== 'unvisited';
+    const matchesStatus = filterStatus === 'investigated' ? isInvestigated
+      : filterStatus === 'pending' ? !isInvestigated
+      : true;
+
+    return matchesInstrument && matchesStatus && matchesDepthBucket(p, filterDepth, filterStatus);
+  });
+
+  // EXCAVATION-BASED SET: the dug subset of the above. Sohle, findings, actual
+  // measurements and the evaluated-vs-excavated accuracy KPIs may only ever read from
+  // this. Under Status = Pending it is empty by construction, which is exactly what
+  // drives the empty states - a pending target has nothing to contribute to them.
+  // Re-bucketing with 'investigated' forces the depth filter onto the actual `tief`
+  // column, so an excavated target with no recorded depth cannot slip into a bucket via
+  // its evaluated value when Status = All.
+  const excavatedPoints = dashboardPoints.filter(p =>
+    hasExcavation(p) && matchesDepthBucket(p, filterDepth, 'investigated')
   );
+  const hasExcavationData = excavatedPoints.length > 0;
+  const excavationOnlyNote = t('Investigated targets only');
 
   // Calculate statistics
   const total = dashboardPoints.length;
-  const investigated = dashboardPoints.filter(p => p.local_status === 'investigated').length;
+  const investigated = dashboardPoints.filter(p => !!p.local_status && p.local_status !== 'unvisited').length;
   const pending = total - investigated;
-  
+
   // Unique Project IDs Count
   const projectIds = Array.from(new Set(dashboardPoints.map(p => p.project_id || '11-24-2736')));
   const projectsCount = projectIds.length;
@@ -117,11 +168,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const standardOptions = ['ohne Fund', 'Eisenteil', 'Eisenstange / Eisenstab', 'Eisendraht', 'Eisenseil', 'Eisennägel', 'Steine', 'Sonstige'];
   standardOptions.forEach(opt => { fundstueckMap[opt] = 0; });
 
-  dashboardPoints.forEach(p => {
-    if (p.local_status === 'investigated' && p.feedback) {
-      const key = p.feedback.fundstueck || 'ohne Fund';
-      fundstueckMap[key] = (fundstueckMap[key] || 0) + 1;
-    }
+  // Fundstück is recorded during excavation, so this reads the dug subset only.
+  excavatedPoints.forEach(p => {
+    const key = p.feedback!.fundstueck || 'ohne Fund';
+    fundstueckMap[key] = (fundstueckMap[key] || 0) + 1;
   });
 
   const fundstueckChartData = Object.keys(fundstueckMap)
@@ -134,18 +184,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // 2. Sohle Status split by Fundstück
   const sohleSplitMap: { [key: string]: { name: string; 'Frei': number; 'Nicht Frei': number } } = {};
-  dashboardPoints.forEach(p => {
-    if (p.local_status === 'investigated' && p.feedback) {
-      const fund = p.feedback.fundstueck || 'ohne Fund';
-      const sohle = p.feedback.sohle_status || 'Frei';
-      if (!sohleSplitMap[fund]) {
-        sohleSplitMap[fund] = { name: fund, 'Frei': 0, 'Nicht Frei': 0 };
-      }
-      if (sohle === 'Frei') {
-        sohleSplitMap[fund]['Frei']++;
-      } else {
-        sohleSplitMap[fund]['Nicht Frei']++;
-      }
+  excavatedPoints.forEach(p => {
+    const fund = p.feedback!.fundstueck || 'ohne Fund';
+    const sohle = p.feedback!.sohle_status || 'Frei';
+    if (!sohleSplitMap[fund]) {
+      sohleSplitMap[fund] = { name: fund, 'Frei': 0, 'Nicht Frei': 0 };
+    }
+    if (sohle === 'Frei') {
+      sohleSplitMap[fund]['Frei']++;
+    } else {
+      sohleSplitMap[fund]['Nicht Frei']++;
     }
   });
   const sohleSplitChartData = Object.values(sohleSplitMap);
@@ -158,25 +206,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
     'Excavated (Actual)': 0
   }));
 
-  dashboardPoints.forEach(p => {
-    if (p.local_status === 'investigated' && p.feedback) {
-      const evalD = p.evaluated_depth || 0;
-      const execD = p.feedback.actual_depth || 0;
-      
-      if (evalD > 0) {
-        for (let i = 0; i < depthIntervals.length; i++) {
-          if (evalD <= depthIntervals[i]) {
-            depthCompData[i]['Evaluated (Sensor)']++;
-            break;
-          }
+  // A paired accuracy comparison: both series have to describe the same targets, so both
+  // read the excavated subset. The panel as a whole is gated on hasExcavationData.
+  excavatedPoints.forEach(p => {
+    const evalD = p.evaluated_depth || 0;
+    const execD = p.feedback!.actual_depth || 0;
+
+    if (evalD > 0) {
+      for (let i = 0; i < depthIntervals.length; i++) {
+        if (evalD <= depthIntervals[i]) {
+          depthCompData[i]['Evaluated (Sensor)']++;
+          break;
         }
       }
-      if (execD > 0) {
-        for (let i = 0; i < depthIntervals.length; i++) {
-          if (execD <= depthIntervals[i]) {
-            depthCompData[i]['Excavated (Actual)']++;
-            break;
-          }
+    }
+    if (execD > 0) {
+      for (let i = 0; i < depthIntervals.length; i++) {
+        if (execD <= depthIntervals[i]) {
+          depthCompData[i]['Excavated (Actual)']++;
+          break;
         }
       }
     }
@@ -189,20 +237,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
   let investigatedCount = 0;
   let ohneFundCount = 0;
 
-  dashboardPoints.forEach(p => {
-    if (p.local_status === 'investigated' && p.feedback) {
-      investigatedCount++;
-      if (p.feedback.fundstueck === 'ohne Fund') {
-        ohneFundCount++;
-      }
-      
-      const evalD = p.evaluated_depth;
-      const execD = p.feedback.actual_depth;
-      if (evalD !== null && execD !== null && evalD !== undefined && execD !== undefined) {
-        totalDiff += Math.abs(evalD - execD);
-        totalBias += (evalD - execD);
-        validDepthPairs++;
-      }
+  // Mean error, bias and FPR are evaluated-vs-excavated measures - undefined without an
+  // excavation to compare against, so they never see a pending target.
+  excavatedPoints.forEach(p => {
+    investigatedCount++;
+    if (p.feedback!.fundstueck === 'ohne Fund') {
+      ohneFundCount++;
+    }
+
+    const evalD = p.evaluated_depth;
+    const execD = p.feedback!.actual_depth;
+    if (evalD !== null && execD !== null && evalD !== undefined && execD !== undefined) {
+      totalDiff += Math.abs(evalD - execD);
+      totalBias += (evalD - execD);
+      validDepthPairs++;
     }
   });
 
@@ -215,18 +263,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // 5. Depth/Metrics per Fundstück Stacked Serial Chart data
   const metricsMap: { [key: string]: { count: number; depthSum: number; lengthSum: number; widthSum: number; volSum: number } } = {};
-  dashboardPoints.forEach(p => {
-    if (p.local_status === 'investigated' && p.feedback) {
-      const fund = p.feedback.fundstueck || 'ohne Fund';
-      if (!metricsMap[fund]) {
-        metricsMap[fund] = { count: 0, depthSum: 0, lengthSum: 0, widthSum: 0, volSum: 0 };
-      }
-      metricsMap[fund].count++;
-      metricsMap[fund].depthSum += p.feedback.actual_depth || 0;
-      metricsMap[fund].lengthSum += p.feedback.laenge || 0;
-      metricsMap[fund].widthSum += p.feedback.breite || 0;
-      metricsMap[fund].volSum += p.feedback.m_cube || 0;
+  // Every series here is an actual site measurement taken in the opening, so this is the
+  // dug subset only. There is no evaluation-based series in this chart to keep.
+  excavatedPoints.forEach(p => {
+    const fund = p.feedback!.fundstueck || 'ohne Fund';
+    if (!metricsMap[fund]) {
+      metricsMap[fund] = { count: 0, depthSum: 0, lengthSum: 0, widthSum: 0, volSum: 0 };
     }
+    metricsMap[fund].count++;
+    metricsMap[fund].depthSum += p.feedback!.actual_depth || 0;
+    metricsMap[fund].lengthSum += p.feedback!.laenge || 0;
+    metricsMap[fund].widthSum += p.feedback!.breite || 0;
+    metricsMap[fund].volSum += p.feedback!.m_cube || 0;
   });
 
   const metricsChartData = Object.keys(metricsMap).map(key => {
@@ -378,20 +426,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#f97316', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t('Findings Status')}</span>
             <h3 style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>{t('Grouped Findings (Sorted Low to High)')}</h3>
           </div>
-          <div style={{ width: '100%', flex: 1, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={fundstueckChartData}
-                margin={{ top: 5, right: 5, left: -32, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis dataKey="name" stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
-                <YAxis stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: 8 }} />
-                <Bar dataKey="count" name={t('Frequency')} fill="#fa5f1c" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {hasExcavationData ? (
+            <div style={{ width: '100%', flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={fundstueckChartData}
+                  margin={{ top: 5, right: 5, left: -32, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="name" stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: 8 }} />
+                  <Bar dataKey="count" name={t('Frequency')} fill="#fa5f1c" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <ExcavationOnly note={excavationOnlyNote} />
+          )}
         </div>
 
         {/* Card 2: Sohle Status Split by Fundstück */}
@@ -400,22 +452,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t('Excavation Integrity')}</span>
             <h3 style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>{t('Sohle Status Split by Finding')}</h3>
           </div>
-          <div style={{ width: '100%', flex: 1, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={sohleSplitChartData}
-                margin={{ top: 5, right: 5, left: -32, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis dataKey="name" stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
-                <YAxis stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: 8 }} />
-                <Legend verticalAlign="top" height={16} iconSize={6} wrapperStyle={{ fontSize: 7 }} />
-                <Bar dataKey="Frei" name={t('Frei (Clear)')} fill="#10b981" stackId="sohle" />
-                <Bar dataKey="Nicht Frei" name={t('Nicht Frei')} fill="#ef4444" stackId="sohle" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {hasExcavationData ? (
+            <div style={{ width: '100%', flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={sohleSplitChartData}
+                  margin={{ top: 5, right: 5, left: -32, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="name" stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: 8 }} />
+                  <Legend verticalAlign="top" height={16} iconSize={6} wrapperStyle={{ fontSize: 7 }} />
+                  <Bar dataKey="Frei" name={t('Frei (Clear)')} fill="#10b981" stackId="sohle" />
+                  <Bar dataKey="Nicht Frei" name={t('Nicht Frei')} fill="#ef4444" stackId="sohle" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <ExcavationOnly note={excavationOnlyNote} />
+          )}
         </div>
 
       </div>
@@ -568,6 +624,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <h3 style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>{t('Evaluated vs Excavated Depth')}</h3>
           </div>
           
+          {/* The whole panel is an evaluated-vs-excavated comparison - both the curve and
+              the KPI strip below are undefined without an excavation to compare against,
+              so the panel empties out as one rather than showing half a comparison. */}
+          {!hasExcavationData ? (
+            <ExcavationOnly note={excavationOnlyNote} />
+          ) : (
+          <>
           <div style={{ flex: 1, minHeight: 0, width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
@@ -610,6 +673,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <strong style={{ color: '#ef4444', fontSize: '0.68rem' }}>{falsePositiveRate}%</strong>
             </div>
           </div>
+          </>
+          )}
         </div>
 
         {/* Card 5: Metrics per Fundstück (Stacked Serial Chart) */}
@@ -619,24 +684,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <h3 style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>{t('Target Dimensions (Stacked Serial Chart)')}</h3>
           </div>
           
-          <div style={{ width: '100%', flex: 1, minHeight: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={metricsChartData}
-                margin={{ top: 5, right: 5, left: -32, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis dataKey="name" stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
-                <YAxis stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: 8 }} />
-                <Legend verticalAlign="top" height={16} iconSize={6} wrapperStyle={{ fontSize: 7 }} />
-                <Bar dataKey="Depth (m)" name={t('Depth (m)')} fill="#fa5f1c" stackId="metrics" />
-                <Bar dataKey="Length (m)" name={t('Length (m)')} fill="#38bdf8" stackId="metrics" />
-                <Bar dataKey="Width (m)" name={t('Width (m)')} fill="#e2e8f0" stackId="metrics" />
-                <Bar dataKey="Volume (m³)" name={t('Volume (m³)')} fill="#10b981" stackId="metrics" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {hasExcavationData ? (
+            <div style={{ width: '100%', flex: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={metricsChartData}
+                  margin={{ top: 5, right: 5, left: -32, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="name" stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#8c9f96" fontSize={7} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: 8 }} />
+                  <Legend verticalAlign="top" height={16} iconSize={6} wrapperStyle={{ fontSize: 7 }} />
+                  <Bar dataKey="Depth (m)" name={t('Depth (m)')} fill="#fa5f1c" stackId="metrics" />
+                  <Bar dataKey="Length (m)" name={t('Length (m)')} fill="#38bdf8" stackId="metrics" />
+                  <Bar dataKey="Width (m)" name={t('Width (m)')} fill="#e2e8f0" stackId="metrics" />
+                  <Bar dataKey="Volume (m³)" name={t('Volume (m³)')} fill="#10b981" stackId="metrics" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <ExcavationOnly note={excavationOnlyNote} />
+          )}
         </div>
 
       </div>
