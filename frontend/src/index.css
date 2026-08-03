@@ -248,6 +248,68 @@ h1, h2, h3, h4, h5, h6 {
   color: #4b5563;
 }
 
+/* Native controls render light-mode by default, which is what made the selected value in
+   a closed <select> and the date picker's calendar glyph dark-on-dark. Declaring the
+   scheme lets the browser paint them for a dark surface. */
+:root {
+  color-scheme: dark;
+}
+
+body.light-theme {
+  color-scheme: light;
+}
+
+/* A <select> paints its closed value with the element's own color, not the option's, so
+   both have to be set: the first for the collapsed control, the second for the open list
+   (which some platforms render with the OS default background). */
+select.form-input {
+  color: #ffffff;
+  background-color: rgba(10, 22, 18, 0.85);
+}
+
+select.form-input option,
+select.form-input optgroup {
+  background-color: #0f241f;
+  color: #ffffff;
+}
+
+body.light-theme select.form-input {
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+}
+
+body.light-theme select.form-input option,
+body.light-theme select.form-input optgroup {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+/* The calendar glyph is a dark bitmap, invisible on the dark panels. Inverting it is the
+   only reliable way to recolor it; light mode keeps the original. */
+input[type="date"].form-input::-webkit-calendar-picker-indicator,
+input[type="datetime-local"].form-input::-webkit-calendar-picker-indicator,
+input[type="month"].form-input::-webkit-calendar-picker-indicator,
+input[type="time"].form-input::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.8);
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+input[type="date"].form-input::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"].form-input::-webkit-calendar-picker-indicator:hover,
+input[type="month"].form-input::-webkit-calendar-picker-indicator:hover,
+input[type="time"].form-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+body.light-theme input[type="date"].form-input::-webkit-calendar-picker-indicator,
+body.light-theme input[type="datetime-local"].form-input::-webkit-calendar-picker-indicator,
+body.light-theme input[type="month"].form-input::-webkit-calendar-picker-indicator,
+body.light-theme input[type="time"].form-input::-webkit-calendar-picker-indicator {
+  filter: none;
+  opacity: 1;
+}
+
 /* Base Body Layout */
 .app-container {
   display: flex;
