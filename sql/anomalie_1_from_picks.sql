@@ -11,8 +11,9 @@
 -- Notes on the source data, verified before this ran:
 --   * ST_SRID(picks.geom) = 25832 for every row, none null, so ST_SRID(p.geom)
 --     resolves correctly and no literal fallback is needed.
---   * field_3 holds 0 (1 row), 2 (67), 3 (60) and 4 (5464). Kat-4 picks are
---     excluded, leaving 128 rows.
+--   * field_3 holds 0 (1 row), 2 (67), 3 (60) and 4 (5464). Kat-4 and Kat-0
+--     picks are both excluded, leaving 127 rows. Kat-0 is treated as an
+--     unclassified/sentinel value rather than a real category.
 --   * field_4 and field_6 are not used; picks.id is not carried over either -
 --     anomalie_1.id stays NULL until the append into public.anomalies assigns it.
 
@@ -56,4 +57,4 @@ SELECT
                    || ROUND(p.field_2::numeric, 2)::text)::varchar(100) AS target_id,
     ROUND(p.field_5::numeric, 2)::double precision           AS evaluated_depth
 FROM p_11_26_5151_koeln_deutzerfeld.picks AS p
-WHERE p.field_3 <> 4;
+WHERE p.field_3 NOT IN (0, 4);
