@@ -206,12 +206,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
     'Excavated (Actual)': 0
   }));
 
-  // A paired accuracy comparison: both series have to describe the same targets, so both
-  // read the excavated subset. The panel as a whole is gated on hasExcavationData.
-  excavatedPoints.forEach(p => {
+  // Evaluated (Sensor) is errechnete Tiefe, which the survey records for every target dug
+  // or not, so it reads the full evaluation set and keeps rendering under Status = Pending.
+  dashboardPoints.forEach(p => {
     const evalD = p.evaluated_depth || 0;
-    const execD = p.feedback!.actual_depth || 0;
-
     if (evalD > 0) {
       for (let i = 0; i < depthIntervals.length; i++) {
         if (evalD <= depthIntervals[i]) {
@@ -220,6 +218,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }
       }
     }
+  });
+
+  // Excavated (Actual) only exists once a crew has opened the target.
+  excavatedPoints.forEach(p => {
+    const execD = p.feedback!.actual_depth || 0;
     if (execD > 0) {
       for (let i = 0; i < depthIntervals.length; i++) {
         if (execD <= depthIntervals[i]) {
@@ -624,13 +627,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <h3 style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>{t('Evaluated vs Excavated Depth')}</h3>
           </div>
           
-          {/* The whole panel is an evaluated-vs-excavated comparison - both the curve and
-              the KPI strip below are undefined without an excavation to compare against,
-              so the panel empties out as one rather than showing half a comparison. */}
-          {!hasExcavationData ? (
-            <ExcavationOnly note={excavationOnlyNote} />
-          ) : (
-          <>
+          {/* The curve always renders: Evaluated (Sensor) comes from errechnete Tiefe and
+              is valid for pending targets too. Only the Excavated series and the accuracy
+              KPIs below need an excavation to exist, so only those two empty out. */}
           <div style={{ flex: 1, minHeight: 0, width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
@@ -653,27 +652,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: 8 }} />
                 <Legend verticalAlign="top" height={16} iconSize={6} wrapperStyle={{ fontSize: 7 }} />
                 <Area type="monotone" dataKey="Evaluated (Sensor)" name={t('Evaluated (Sensor)')} stroke="#fa5f1c" fillOpacity={1} fill="url(#colorEval)" strokeWidth={1.2} />
-                <Area type="monotone" dataKey="Excavated (Actual)" name={t('Excavated (Actual)')} stroke="#10b981" fillOpacity={1} fill="url(#colorExec)" strokeWidth={1.2} />
+                {hasExcavationData && (
+                  <Area type="monotone" dataKey="Excavated (Actual)" name={t('Excavated (Actual)')} stroke="#10b981" fillOpacity={1} fill="url(#colorExec)" strokeWidth={1.2} />
+                )}
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          
-          {/* Geophysics KPI mini list */}
-          <div className="glass-card" style={{ padding: '6px 8px', display: 'flex', justifyContent: 'space-between', gap: '6px', border: '1px solid rgba(255,255,255,0.04)', fontSize: '0.55rem', flexShrink: 0 }}>
-            <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ color: '#8c9f96', fontWeight: 700 }}>{t('MEAN ERROR')}</div>
-              <strong style={{ color: '#fff', fontSize: '0.68rem' }}>&plusmn; {meanDepthError}m</strong>
+
+          {/* Geophysics KPI mini list - evaluated-vs-excavated measures, so undefined
+              without an excavation to compare against. */}
+          {hasExcavationData ? (
+            <div className="glass-card" style={{ padding: '6px 8px', display: 'flex', justifyContent: 'space-between', gap: '6px', border: '1px solid rgba(255,255,255,0.04)', fontSize: '0.55rem', flexShrink: 0 }}>
+              <div style={{ textAlign: 'center', flex: 1 }}>
+                <div style={{ color: '#8c9f96', fontWeight: 700 }}>{t('MEAN ERROR')}</div>
+                <strong style={{ color: '#fff', fontSize: '0.68rem' }}>&plusmn; {meanDepthError}m</strong>
+              </div>
+              <div style={{ textAlign: 'center', flex: 1, borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ color: '#8c9f96', fontWeight: 700 }}>{t('ESTIMATION BIAS')}</div>
+                <strong style={{ color: '#fa5f1c', fontSize: '0.62rem', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={biasText}>{biasText}</strong>
+              </div>
+              <div style={{ textAlign: 'center', flex: 1 }}>
+                <div style={{ color: '#8c9f96', fontWeight: 700 }}>{t('FPR (EMPTY)')}</div>
+                <strong style={{ color: '#ef4444', fontSize: '0.68rem' }}>{falsePositiveRate}%</strong>
+              </div>
             </div>
-            <div style={{ textAlign: 'center', flex: 1, borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ color: '#8c9f96', fontWeight: 700 }}>{t('ESTIMATION BIAS')}</div>
-              <strong style={{ color: '#fa5f1c', fontSize: '0.62rem', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={biasText}>{biasText}</strong>
+          ) : (
+            <div className="glass-card" style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', border: '1px solid rgba(255,255,255,0.04)', color: '#64748b', flexShrink: 0 }}>
+              <Info size={12} />
+              <span style={{ fontSize: '0.58rem', fontWeight: 700 }}>{excavationOnlyNote}</span>
             </div>
-            <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ color: '#8c9f96', fontWeight: 700 }}>{t('FPR (EMPTY)')}</div>
-              <strong style={{ color: '#ef4444', fontSize: '0.68rem' }}>{falsePositiveRate}%</strong>
-            </div>
-          </div>
-          </>
           )}
         </div>
 
