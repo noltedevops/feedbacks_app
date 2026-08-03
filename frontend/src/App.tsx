@@ -2069,6 +2069,9 @@ export default function App() {
                   setFilterInstrument={setFilterInstrument}
                   filterDepth={filterDepth}
                   setFilterDepth={setFilterDepth}
+                  filterProjectId={filterProjectId}
+                  setFilterProjectId={setFilterProjectId}
+                  projectOptions={projectOptions}
                   onGenerateReport={() => setReportDialog('dashboard')}
                 />
               </div>

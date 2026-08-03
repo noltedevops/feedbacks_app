@@ -101,6 +101,11 @@ interface DashboardProps {
   setFilterInstrument: (instrument: string) => void;
   filterDepth: string;
   setFilterDepth: (depth: string) => void;
+  // Reuses the app-wide project scoping rather than adding a parallel mechanism, so the
+  // dashboard and the field app agree on which project is in view.
+  filterProjectId: string;
+  setFilterProjectId: (projectId: string) => void;
+  projectOptions: { project_id: string; project_name?: string }[];
   onGenerateReport: () => void;
 }
 
@@ -120,6 +125,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   setFilterInstrument,
   filterDepth,
   setFilterDepth,
+  filterProjectId,
+  setFilterProjectId,
+  projectOptions,
   onGenerateReport
 }) => {
   const t = makeT(lang);
@@ -130,6 +138,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // in App. Status is applied here too so the cards can never report on targets the
   // status dropdown excluded.
   const dashboardPoints = points.filter(p => {
+    const matchesProject = filterProjectId === 'all' || p.project_id === filterProjectId;
+
     const matchesInstrument = filterInstrument === 'all' ||
       (p.instrument && p.instrument.toLowerCase() === filterInstrument.toLowerCase());
 
@@ -138,7 +148,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
       : filterStatus === 'pending' ? !isInvestigated
       : true;
 
-    return matchesInstrument && matchesStatus && matchesDepthBucket(p, filterDepth, filterStatus);
+    return matchesProject && matchesInstrument && matchesStatus &&
+      matchesDepthBucket(p, filterDepth, filterStatus);
   });
 
   // EXCAVATION-BASED SET: the dug subset of the above. Sohle, findings, actual
@@ -325,19 +336,48 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Dropdown Selector */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {/* Project scope. Narrows every card, chart, the log and the map markers, and
+              composes with instrument + status + depth. */}
+          <span style={{ fontSize: '0.68rem', color: '#8c9f96', fontWeight: 700 }}>{t('PROJECT:')}</span>
+          <select
+            value={filterProjectId}
+            onChange={(e) => setFilterProjectId(e.target.value)}
+            className="form-input"
+            title={t('Project ID')}
+            style={{
+              fontSize: '0.72rem',
+              padding: '4px 20px 4px 8px',
+              fontWeight: 700,
+              backgroundColor: 'rgba(10, 22, 18, 0.6)',
+              borderColor: 'rgba(255, 255, 255, 0.06)',
+              color: '#fff',
+              cursor: 'pointer',
+              borderRadius: '6px',
+              height: '26px',
+              maxWidth: '260px'
+            }}
+          >
+            <option value="all">{t('All Projects')}</option>
+            {projectOptions.map((p) => (
+              <option key={p.project_id} value={p.project_id}>
+                {p.project_name ? `${p.project_id} — ${p.project_name}` : p.project_id}
+              </option>
+            ))}
+          </select>
+
           <span style={{ fontSize: '0.68rem', color: '#8c9f96', fontWeight: 700 }}>{t('INSTRUMENT:')}</span>
-          <select 
-            value={filterInstrument} 
+          <select
+            value={filterInstrument}
             onChange={(e) => setFilterInstrument(e.target.value)}
             className="form-input"
-            style={{ 
-              fontSize: '0.72rem', 
-              padding: '4px 20px 4px 8px', 
-              fontWeight: 700, 
-              backgroundColor: 'rgba(10, 22, 18, 0.6)', 
-              borderColor: 'rgba(255, 255, 255, 0.06)', 
-              color: '#fff', 
+            style={{
+              fontSize: '0.72rem',
+              padding: '4px 20px 4px 8px',
+              fontWeight: 700,
+              backgroundColor: 'rgba(10, 22, 18, 0.6)',
+              borderColor: 'rgba(255, 255, 255, 0.06)',
+              color: '#fff',
               cursor: 'pointer',
               borderRadius: '6px',
               height: '26px'
