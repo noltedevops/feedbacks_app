@@ -1,11 +1,13 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { db, type LocalPoint, type PendingFeedback, type TeamsTools } from './db/indexedDb';
 import { FieldMap } from './components/FieldMap';
 import { Dashboard, matchesDepthBucket } from './components/Dashboard';
 import { FeedbackForm } from './components/FeedbackForm';
 import { ImportExport } from './components/ImportExport';
 import { ReportDialog, type ProjectOption } from './components/ReportDialog';
+import { FilterBar } from './components/FilterBar';
 import { makeT, type AppLang } from './i18n';
+import { useIsMobile } from './useIsMobile';
 import { 
   Compass, 
   Wifi, 
@@ -51,6 +53,10 @@ function newId(): string {
 }
 
 type AppRole = 'collector' | 'dashboard';
+
+// How many target cards the field app's list keeps in the DOM before the user scrolls
+// for more. See visibleTargetPoints.
+const TARGET_PAGE_SIZE = 40;
 
 // Modern segmented language switch with a sliding highlight.
 // `compact` renders the narrow variant used inside the 80px app sidebar.
@@ -206,6 +212,11 @@ export default function App() {
   // Theme States
   const [theme, setTheme] = useState<'dark' | 'light'>((localStorage.getItem('theme') as any) || 'dark');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Narrow screens reflow both surfaces into a single scrolling column. Everything a
+  // media query can do stays in index.css; this drives only the parts CSS cannot reach -
+  // chiefly moving the dashboard map out of its background layer and into the flow.
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (theme === 'light') {
@@ -869,13 +880,17 @@ export default function App() {
   const submissionSyncState: SubmissionSyncState =
     !isOnline ? 'offline' : syncing ? 'syncing' : pendingSyncCount > 0 ? 'pending' : 'synced';
 
-  // Filters logic
-  const filteredPoints = points.filter(p => {
+  // Filters logic. Memoized on their actual inputs: every one of these walks the full
+  // ~1500-target set, and the arrays they produce are props of the memoized FieldMap and
+  // Dashboard - recomputing them on an unrelated render (a sync tick, a toast, an
+  // online/offline flip) would hand those children fresh array identities and defeat
+  // their memoization entirely.
+  const filteredPoints = useMemo(() => points.filter(p => {
     const matchesSearch = p.vm_nr.toString().includes(searchQuery) ||
                           (p.find_description && p.find_description.toLowerCase().includes(searchQuery.toLowerCase()));
-    
+
     const matchesVmNr = filterVmNr === 'all' || p.vm_nr.toString() === filterVmNr;
-    
+
     let matchesStatus = true;
     const isInvestigated = p.local_status && p.local_status !== 'unvisited';
     if (filterStatus === 'investigated') {
@@ -883,33 +898,179 @@ export default function App() {
     } else if (filterStatus === 'pending') {
       matchesStatus = !isInvestigated;
     }
-    
-    const matchesInstrument = filterInstrument === 'all' || 
+
+    const matchesInstrument = filterInstrument === 'all' ||
                              (p.instrument && p.instrument.toLowerCase() === filterInstrument.toLowerCase());
-                             
+
     const matchesProjectId = filterProjectId === 'all' || p.project_id === filterProjectId;
-    
+
     return matchesSearch && matchesVmNr && matchesStatus && matchesInstrument && matchesProjectId;
-  });
+  }), [points, searchQuery, filterVmNr, filterStatus, filterInstrument, filterProjectId]);
 
   // The depth bucket is a dashboard control, so it narrows the dashboard's log list and
   // map markers only - the field app keeps rendering from the unnarrowed filteredPoints.
   // Status is already applied above; depth composes on top of it (AND).
-  const dashboardFilteredPoints = filteredPoints.filter(p =>
+  const dashboardFilteredPoints = useMemo(() => filteredPoints.filter(p =>
     matchesDepthBucket(p, filterDepth, filterStatus)
-  );
+  ), [filteredPoints, filterDepth, filterStatus]);
 
-  const allVmNumbers = points.map(p => p.vm_nr).sort((a,b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
-  const uniqueProjectIds = Array.from(new Set(points.map(p => p.project_id || '11-24-2736'))).sort();
+  const allVmNumbers = useMemo(
+    () => points.map(p => p.vm_nr).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })),
+    [points]
+  );
+  const uniqueProjectIds = useMemo(
+    () => Array.from(new Set(points.map(p => p.project_id || '11-24-2736'))).sort(),
+    [points]
+  );
 
   // Report/export filter options: server names when reachable, otherwise the ids
   // already mirrored locally so the field app can still export offline.
-  const projectOptions: ProjectOption[] = serverProjects.length
+  const projectOptions: ProjectOption[] = useMemo(() => serverProjects.length
     ? serverProjects
-    : uniqueProjectIds.map(id => ({ project_id: id, project_name: '' }));
+    : uniqueProjectIds.map(id => ({ project_id: id, project_name: '' })),
+    [serverProjects, uniqueProjectIds]
+  );
+
+  // Stable identities so the memoized FieldMap and Dashboard are not invalidated by a
+  // fresh inline closure on every render.
+  const handleSelectPoint = useCallback((point: LocalPoint | null) => setSelectedPoint(point), []);
+  const handleOpenDashboardReport = useCallback(() => setReportDialog('dashboard'), []);
+
+  // The field app's target list is windowed for the same reason as the dashboard log:
+  // one shadowed, transition-animated card per target puts ~12k nodes on the page at
+  // this dataset's size, and every scroll frame then pays to restyle them.
+  // Reset adjusted during render rather than in an effect - see the same pattern in
+  // Dashboard's log list.
+  const [visibleTargetCount, setVisibleTargetCount] = useState(TARGET_PAGE_SIZE);
+  const [lastTargetPoints, setLastTargetPoints] = useState(filteredPoints);
+
+  if (lastTargetPoints !== filteredPoints) {
+    setLastTargetPoints(filteredPoints);
+    setVisibleTargetCount(TARGET_PAGE_SIZE);
+  }
+
+  const handleTargetListScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 240) {
+      setVisibleTargetCount(c => (c >= filteredPoints.length ? c : c + TARGET_PAGE_SIZE));
+    }
+  }, [filteredPoints.length]);
+
+  const visibleTargetPoints = useMemo(
+    () => filteredPoints.slice(0, visibleTargetCount),
+    [filteredPoints, visibleTargetCount]
+  );
+
+  // Active selection shown on the field app's folded filter bar, so the crew can see what
+  // the list is scoped to without expanding it. Search is deliberately excluded - it stays
+  // visible above the bar because it is the primary control here.
+  const fieldFilterSummary = useMemo(() => {
+    const project = filterProjectId === 'all' ? t('All Projects') : filterProjectId;
+    const vm = filterVmNr === 'all' ? t('All VM Nr.') : `VM ${filterVmNr}`;
+    const instrument = filterInstrument === 'all'
+      ? t('All Instruments')
+      : filterInstrument === 'georadar' ? t('Georadar') : t('Magnetic');
+    const status = filterStatus === 'investigated' ? t('Investigated')
+      : filterStatus === 'pending' ? t('Pending')
+      : t('All Targets');
+    return [project, vm, instrument, status].join(' · ');
+  }, [filterProjectId, filterVmNr, filterInstrument, filterStatus, t]);
+
+  // Field app controls defined once and placed differently per breakpoint: inline on
+  // desktop exactly as before, folded into the filter bar on mobile. Behaviour and
+  // styling are identical in both - only their position changes.
+  const projectIdSelect = (
+    <select
+      className="form-input"
+      value={filterProjectId}
+      onChange={(e) => setFilterProjectId(e.target.value)}
+      title={t('Project ID')}
+      style={{
+        fontSize: '0.78rem',
+        fontWeight: 700,
+        height: '28px',
+        padding: '0 8px',
+        backgroundColor: 'rgba(10, 22, 18, 0.6)',
+        borderColor: 'rgba(255, 255, 255, 0.06)',
+        color: '#fff',
+        width: '100%',
+        cursor: 'pointer'
+      }}
+    >
+      <option value="all">{t('All Projects')}</option>
+      {uniqueProjectIds.map(id => (
+        <option key={id} value={id}>{id}</option>
+      ))}
+    </select>
+  );
+
+  const vmNrSelect = (
+    <div className="select-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <Shield size={12} style={{ position: 'absolute', left: '8px', color: '#8c9f96', zIndex: 1 }} />
+      <select
+        className="form-input"
+        value={filterVmNr}
+        onChange={(e) => setFilterVmNr(e.target.value)}
+        title={t('All VM Nr.')}
+        style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'rgba(10,22,18,0.4)', borderColor: 'rgba(255,255,255,0.06)' }}
+      >
+        <option value="all">{t('All VM Nr.')}</option>
+        {allVmNumbers.map(vm => (
+          <option key={vm} value={vm.toString()}>VM {vm}</option>
+        ))}
+      </select>
+    </div>
+  );
+
+  const instrumentSelect = (
+    <div className="select-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <Layers size={12} style={{ position: 'absolute', left: '8px', color: '#8c9f96', zIndex: 1 }} />
+      <select
+        className="form-input"
+        value={filterInstrument}
+        onChange={(e) => setFilterInstrument(e.target.value)}
+        title={t('All Instruments')}
+        style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'rgba(10,22,18,0.4)', borderColor: 'rgba(255,255,255,0.06)' }}
+      >
+        <option value="all">{t('All Instruments')}</option>
+        <option value="georadar">{t('Georadar')}</option>
+        <option value="magnetic">{t('Magnetic')}</option>
+      </select>
+    </div>
+  );
+
+  const statusSelect = (
+    <select
+      className="form-input"
+      value={filterStatus}
+      onChange={(e) => setFilterStatus(e.target.value)}
+      title={t('Status filter')}
+      style={isMobile
+        ? { width: '100%', fontSize: '0.75rem', background: 'rgba(10, 22, 18, 0.6)', borderColor: 'rgba(255,255,255,0.06)' }
+        : { width: '120px', fontSize: '0.7rem', height: '24px', padding: '0 4px', background: 'rgba(10, 22, 18, 0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
+    >
+      <option value="all">{t('All Targets')}</option>
+      <option value="investigated">{t('Investigated')}</option>
+      <option value="pending">{t('Pending')}</option>
+    </select>
+  );
+
+  const exportCsvButton = (
+    <button
+      type="button"
+      className="btn-secondary"
+      onClick={() => setReportDialog('field')}
+      disabled={!isOnline}
+      title={isOnline ? t('Export CSV') : t('Network Connection: Offline')}
+      style={{ marginTop: isMobile ? '2px' : '8px', padding: '7px', fontSize: '0.72rem', justifyContent: 'center', gap: '6px', width: '100%' }}
+    >
+      <Table2 size={13} />
+      {t('Export CSV')}
+    </button>
+  );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: '#090d16' }}>
+    <div className="app-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: '#090d16' }}>
       
       {/* 1. Sentry-Inspired Landing Page View */}
       {!isLoggedIn ? (
@@ -1477,7 +1638,7 @@ export default function App() {
         <div className="app-container">
           {/* Vertical left sidebar navigation */}
           <aside className={`app-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`} style={{ transition: 'width 0.2s, padding 0.2s, border-right 0.2s, opacity 0.2s' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', opacity: isSidebarCollapsed ? 0 : 1, transition: 'opacity 0.15s' }}>
+            <div className="sidebar-top" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', opacity: isSidebarCollapsed ? 0 : 1, transition: 'opacity 0.15s' }}>
               
               {/* Top Sidebar: Original Nolte Logo Image */}
               <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 0' }}>
@@ -1574,8 +1735,11 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Pop-up Modal on User Button Click */}
-                {showUserModal && (
+                {/* Desktop keeps the anchored pop-up next to the avatar. On mobile the
+                    sidebar is a fixed bottom bar, so an absolutely-positioned 240px panel
+                    anchored inside it lands off the right edge and over the content - the
+                    mobile version renders as a bottom sheet outside this subtree instead. */}
+                {showUserModal && !isMobile && (
                   <div style={{
                     position: 'absolute',
                     bottom: '50px',
@@ -1652,21 +1816,29 @@ export default function App() {
                 )}
               </div>
 
-              {/* Language Switcher (available in both Field App and Dashboard) */}
-              <LangSwitch lang={lang} onChange={setLang} compact />
+              {/* Language and theme sit in the bar on desktop. On mobile they move into
+                  the profile sheet behind the avatar: four nav items plus the avatar plus
+                  these two overflow a 380px bar, which is what was clipping the right
+                  edge. The avatar becomes the single entry point instead. */}
+              {!isMobile && (
+                <>
+                  {/* Language Switcher (available in both Field App and Dashboard) */}
+                  <LangSwitch lang={lang} onChange={setLang} compact />
 
-              {/* Theme Toggle Button placed where Logout button was */}
-              <button 
-                className="sidebar-logout" 
-                onClick={() => {
-                  const newTheme = theme === 'dark' ? 'light' : 'dark';
-                  setTheme(newTheme);
-                  localStorage.setItem('theme', newTheme);
-                }}
-                title={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
-              >
-                {theme === 'dark' ? <Sun size={18} color="#f58220" /> : <Moon size={18} color="#0f172a" />}
-              </button>
+                  {/* Theme Toggle Button placed where Logout button was */}
+                  <button
+                    className="sidebar-logout"
+                    onClick={() => {
+                      const newTheme = theme === 'dark' ? 'light' : 'dark';
+                      setTheme(newTheme);
+                      localStorage.setItem('theme', newTheme);
+                    }}
+                    title={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
+                  >
+                    {theme === 'dark' ? <Sun size={18} color="#f58220" /> : <Moon size={18} color="#0f172a" />}
+                  </button>
+                </>
+              )}
 
             </div>
           </aside>
@@ -1675,6 +1847,7 @@ export default function App() {
 
           {/* Collapsible Sidebar Toggle Handle (Dockable) */}
           <button
+            className="sidebar-toggle-handle"
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             style={{
               position: 'absolute',
@@ -1738,56 +1911,30 @@ export default function App() {
                     onBackToList={() => setSubmission(null)}
                   />
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', height: '100%', overflow: 'hidden' }}>
-                    
-                    {/* Survey Details Header (Screenshot Match) */}
+                  <div className="collector-panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px', height: '100%', overflow: 'hidden' }}>
+
+                    {/* Survey Details Header (Screenshot Match). On mobile the project
+                        picker and the CSV export move into the folded filter bar below -
+                        they are not what the crew reaches for first in the field. */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                         {t('Active Survey Area')}
                       </span>
-                      <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <h2 style={{ fontSize: isMobile ? '1rem' : '1.1rem', fontWeight: 800, color: '#fff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         Wilhelmshaven Seedeich
                       </h2>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '2px' }}>
-                        <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#8c9f96', textTransform: 'uppercase' }}>{t('Project ID')}</span>
-                        <select
-                          className="form-input"
-                          value={filterProjectId}
-                          onChange={(e) => setFilterProjectId(e.target.value)}
-                          style={{
-                            fontSize: '0.78rem',
-                            fontWeight: 700,
-                            height: '28px',
-                            padding: '0 8px',
-                            backgroundColor: 'rgba(10, 22, 18, 0.6)',
-                            borderColor: 'rgba(255, 255, 255, 0.06)',
-                            color: '#fff',
-                            width: '100%',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <option value="all">{t('All Projects')}</option>
-                          {uniqueProjectIds.map(id => (
-                            <option key={id} value={id}>{id}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <span style={{ fontSize: '0.68rem', color: '#8c9f96', marginTop: '4px' }}>
+                      {!isMobile && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '2px' }}>
+                          <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#8c9f96', textTransform: 'uppercase' }}>{t('Project ID')}</span>
+                          {projectIdSelect}
+                        </div>
+                      )}
+                      <span style={{ fontSize: '0.68rem', color: '#8c9f96', marginTop: isMobile ? '2px' : '4px' }}>
                         {filteredPoints.length} {t('Targets Detected')}
                       </span>
 
                       {/* Filtered CSV export, same project + date-range filters as the dashboard report */}
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => setReportDialog('field')}
-                        disabled={!isOnline}
-                        title={isOnline ? t('Export CSV') : t('Network Connection: Offline')}
-                        style={{ marginTop: '8px', padding: '7px', fontSize: '0.72rem', justifyContent: 'center', gap: '6px', width: '100%' }}
-                      >
-                        <Table2 size={13} />
-                        {t('Export CSV')}
-                      </button>
+                      {!isMobile && exportCsvButton}
                     </div>
 
                     {activeTab === 'map' ? (
@@ -1796,8 +1943,8 @@ export default function App() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           
                           {/* Search bar */}
-                          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <Search size={14} style={{ position: 'absolute', left: '10px', color: '#8c9f96' }} />
+                          <div className="select-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                            <Search size={14} style={{ position: 'absolute', left: '10px', color: '#8c9f96', zIndex: 1 }} />
                             <input
                               type="text"
                               className="form-input"
@@ -1808,59 +1955,42 @@ export default function App() {
                             />
                           </div>
 
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                            
-                            {/* VM Nr. Filter Select */}
-                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                              <Shield size={12} style={{ position: 'absolute', left: '8px', color: '#8c9f96' }} />
-                              <select
-                                className="form-input"
-                                value={filterVmNr}
-                                onChange={(e) => setFilterVmNr(e.target.value)}
-                                style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'rgba(10,22,18,0.4)', borderColor: 'rgba(255,255,255,0.06)' }}
-                              >
-                                <option value="all">{t('All VM Nr.')}</option>
-                                {allVmNumbers.map(vm => (
-                                  <option key={vm} value={vm.toString()}>VM {vm}</option>
-                                ))}
-                              </select>
+                          {/* Mobile folds the secondary filters (project, VM Nr., instrument,
+                              status) and the CSV export behind a one-line bar; the search box
+                              above stays visible because it is the primary control here.
+                              Desktop keeps the original inline 2-up grid. */}
+                          {isMobile ? (
+                            <FilterBar label={t('Filter')} summary={fieldFilterSummary} toggleLabel={t('Show filters')}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#8c9f96', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('Project ID')}</span>
+                                {projectIdSelect}
+                              </div>
+                              {vmNrSelect}
+                              {instrumentSelect}
+                              {statusSelect}
+                              {exportCsvButton}
+                            </FilterBar>
+                          ) : (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                              {vmNrSelect}
+                              {instrumentSelect}
                             </div>
-
-                            {/* Instrument Filter Select */}
-                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                              <Layers size={12} style={{ position: 'absolute', left: '8px', color: '#8c9f96' }} />
-                              <select
-                                className="form-input"
-                                value={filterInstrument}
-                                onChange={(e) => setFilterInstrument(e.target.value)}
-                                style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'rgba(10,22,18,0.4)', borderColor: 'rgba(255,255,255,0.06)' }}
-                              >
-                                <option value="all">{t('All Instruments')}</option>
-                                <option value="georadar">{t('Georadar')}</option>
-                                <option value="magnetic">{t('Magnetic')}</option>
-                              </select>
-                            </div>
-
-                          </div>
+                          )}
                         </div>
 
                         {/* List coordinates */}
-                        <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden' }}>
+                        <div className="collector-list-wrap" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#8c9f96', letterSpacing: '0.02em', textTransform: 'uppercase' }}>{t('TARGET LISTING')} ({filteredPoints.length})</span>
-                            <select
-                              className="form-input"
-                              value={filterStatus}
-                              onChange={(e) => setFilterStatus(e.target.value)}
-                              style={{ width: '120px', fontSize: '0.7rem', height: '24px', padding: '0 4px', background: 'rgba(10, 22, 18, 0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
-                            >
-                              <option value="all">{t('All Targets')}</option>
-                              <option value="investigated">{t('Investigated')}</option>
-                              <option value="pending">{t('Pending')}</option>
-                            </select>
+                            {/* On mobile the status filter lives in the folded bar with the rest. */}
+                            {!isMobile && statusSelect}
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', flexGrow: 1, paddingRight: '2px' }}>
-                            {filteredPoints.map((point) => {
+                          <div
+                            className="collector-list-scroll"
+                            onScroll={handleTargetListScroll}
+                            style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '6px' : '10px', overflowY: 'auto', flexGrow: 1, paddingRight: '2px' }}
+                          >
+                            {visibleTargetPoints.map((point) => {
                               const isInvestigated = point.local_status === 'investigated';
                               let statusText = t('PENDING');
                               let color = '#ef4444'; // Red for pending
@@ -1881,41 +2011,71 @@ export default function App() {
                                   className={`target-card-white ${(selectedPoint as any)?.id === point.id ? 'active' : ''}`}
                                   onClick={() => setSelectedPoint(point)}
                                 >
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>VM {point.vm_nr}</span>
-                                    <span style={{ 
-                                      fontSize: '0.62rem', 
+                                  {/* Mobile tightens the rows rather than the type: the VM
+                                      number stays 14px and the depth value 12px, but the
+                                      badge, the gaps and the depth strip all lose height. */}
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontWeight: 800, fontSize: isMobile ? '0.875rem' : '0.85rem', color: '#0f172a', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>VM {point.vm_nr}</span>
+                                    <span style={{
+                                      fontSize: isMobile ? '0.58rem' : '0.62rem',
                                       fontWeight: 800,
-                                      padding: '2px 8px', 
+                                      padding: isMobile ? '1px 6px' : '2px 8px',
                                       borderRadius: '9999px',
                                       backgroundColor: 'rgba(0,0,0,0.05)',
                                       color: color,
-                                      border: `1px solid ${color}33`
-                                    }}>
+                                      border: `1px solid ${color}33`,
+                                      whiteSpace: 'nowrap',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      ...(isMobile ? { maxWidth: '55%' } : {})
+                                    }} title={statusText}>
                                       {statusText.toUpperCase()}
                                     </span>
                                   </div>
-                                  <div style={{ fontSize: '0.7rem', color: '#475569', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  <div style={{ fontSize: isMobile ? '0.64rem' : '0.7rem', color: '#475569', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>
                                     {point.instrument?.toUpperCase()} • {point.layer?.replace('Stoerkoerper ', '') || t('Target Layer')}
                                   </div>
-                                  
-                                  <div style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
+
+                                  <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
                                     justifyContent: 'space-between',
-                                    marginTop: '4px',
-                                    padding: '4px 8px',
+                                    gap: '6px',
+                                    marginTop: isMobile ? '2px' : '4px',
+                                    padding: isMobile ? '1px 6px' : '4px 8px',
                                     backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                                    borderRadius: '6px'
+                                    borderRadius: '6px',
+                                    ...(isMobile ? { lineHeight: 1.25 } : {})
                                   }}>
-                                    <span style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 700 }}>{t('EVALUATED DEPTH')}</span>
-                                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0f172a' }}>
+                                    <span style={{ fontSize: isMobile ? '0.6rem' : '0.62rem', color: '#64748b', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('EVALUATED DEPTH')}</span>
+                                    {/* Held at ~13px on mobile: the label may compact, the measured value may not. */}
+                                    <span style={{ fontSize: isMobile ? '0.82rem' : '0.72rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap' }}>
                                       {point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')}
                                     </span>
                                   </div>
                                 </div>
                               );
                             })}
+
+                            {visibleTargetPoints.length < filteredPoints.length && (
+                              <button
+                                type="button"
+                                onClick={() => setVisibleTargetCount(c => c + TARGET_PAGE_SIZE)}
+                                style={{
+                                  flexShrink: 0,
+                                  background: 'rgba(255,255,255,0.04)',
+                                  border: '1px solid rgba(255,255,255,0.08)',
+                                  borderRadius: '8px',
+                                  color: '#8c9f96',
+                                  fontWeight: 700,
+                                  fontSize: '0.72rem',
+                                  padding: '10px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {t('Show more')} ({filteredPoints.length - visibleTargetPoints.length})
+                              </button>
+                            )}
                           </div>
                         </div>
                       </>
@@ -1934,8 +2094,10 @@ export default function App() {
               {/* Collector map widget */}
               <section className="glass-panel map-container-section" style={{ flexGrow: 1, padding: '6px', overflow: 'hidden', position: 'relative' }}>
                 
-                {/* Floating Quick Summary panel (Screenshot template match) */}
-                <div style={{
+                {/* Floating Quick Summary panel (Screenshot template match). On mobile it
+                    drops out of the overlay and stacks above the map - at 380px a 260px
+                    floating card would cover most of the map it floats over. */}
+                <div className="quick-summary-panel" style={{
                   position: 'absolute',
                   top: '16px',
                   right: '16px',
@@ -2008,37 +2170,46 @@ export default function App() {
                   </div>
                 </div>
 
-                <FieldMap
-                  lang={lang}
-                  points={filteredPoints}
-                  selectedPoint={selectedPoint}
-                  onSelectPoint={(point) => setSelectedPoint(point)}
-                  viewMode="collector"
-                  isEditLocationMode={isEditLocationMode}
-                  onPointPositionChange={handlePointPositionChange}
-                />
+                <div className="collector-map-wrap" style={{ height: '100%', width: '100%' }}>
+                  <FieldMap
+                    lang={lang}
+                    points={filteredPoints}
+                    selectedPoint={selectedPoint}
+                    onSelectPoint={handleSelectPoint}
+                    viewMode="collector"
+                    isEditLocationMode={isEditLocationMode}
+                    onPointPositionChange={handlePointPositionChange}
+                    isMobile={isMobile}
+                  />
+                </div>
               </section>
 
             </main>
           ) : (
             
             // ROLE B: END USER / DASHBOARD VIEW (DASHBOARD)
-            <main className="dashboard-main" style={{ display: 'flex', flexGrow: 1, height: '100vh', overflow: 'hidden', position: 'relative' }}>
-              
-              {/* Map background for high-tech transparent look (Screenshot 2 Match) */}
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
-                <FieldMap
-                  lang={lang}
-                  points={dashboardFilteredPoints}
-                  selectedPoint={selectedPoint}
-                  onSelectPoint={(point) => setSelectedPoint(point)}
-                  viewMode="dashboard"
-                  isEditLocationMode={false}
-                />
-              </div>
+            <main className={`dashboard-main${isMobile ? ' dashboard-main--mobile' : ''}`} style={isMobile
+              ? { display: 'block', flexGrow: 1, minWidth: 0, position: 'relative' }
+              : { display: 'flex', flexGrow: 1, height: '100vh', overflow: 'hidden', position: 'relative' }}>
+
+              {/* On desktop the map is a full-bleed background the panels float over. On
+                  mobile there is nothing to float over - the map becomes one block in the
+                  reading order, handed to Dashboard as a slot. */}
+              {!isMobile && (
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
+                  <FieldMap
+                    lang={lang}
+                    points={dashboardFilteredPoints}
+                    selectedPoint={selectedPoint}
+                    onSelectPoint={handleSelectPoint}
+                    viewMode="dashboard"
+                    isEditLocationMode={false}
+                  />
+                </div>
+              )}
 
               {/* Floating translucent overlay panels */}
-              <div style={{
+              <div style={isMobile ? undefined : {
                 position: 'absolute',
                 top: 0,
                 left: 0,
@@ -2058,7 +2229,7 @@ export default function App() {
                   points={points}
                   filteredPoints={dashboardFilteredPoints}
                   selectedPoint={selectedPoint}
-                  onSelectPoint={(point) => setSelectedPoint(point)}
+                  onSelectPoint={handleSelectPoint}
                   isOnline={isOnline}
                   onSeedRequest={handleSeedRequest}
                   addDataOpen={addDataOpen}
@@ -2072,7 +2243,19 @@ export default function App() {
                   filterProjectId={filterProjectId}
                   setFilterProjectId={setFilterProjectId}
                   projectOptions={projectOptions}
-                  onGenerateReport={() => setReportDialog('dashboard')}
+                  onGenerateReport={handleOpenDashboardReport}
+                  isMobile={isMobile}
+                  mapSlot={isMobile ? (
+                    <FieldMap
+                      lang={lang}
+                      points={dashboardFilteredPoints}
+                      selectedPoint={selectedPoint}
+                      onSelectPoint={handleSelectPoint}
+                      viewMode="dashboard"
+                      isEditLocationMode={false}
+                      isMobile
+                    />
+                  ) : undefined}
                 />
               </div>
 
@@ -2081,6 +2264,118 @@ export default function App() {
           )}
 
         </div>
+        </>
+      )}
+
+      {/* Mobile profile sheet. Rendered here, outside .app-sidebar, on purpose: the
+          sidebar sets backdrop-filter, which makes it a containing block for fixed
+          descendants, so a sheet nested inside it could not anchor to the viewport.
+          Holds everything the desktop sidebar shows around the avatar - profile,
+          language, theme, sign out - so none of it is lost on a phone. */}
+      {isLoggedIn && isMobile && showUserModal && (
+        <>
+          <div
+            className="profile-sheet-backdrop"
+            onClick={() => setShowUserModal(false)}
+            aria-hidden="true"
+          />
+          <div className="profile-sheet" role="dialog" aria-label={t('Profile and settings')}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(245, 130, 32, 0.15)',
+                border: '1px solid rgba(245, 130, 32, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#f58220',
+                fontWeight: 'bold',
+                fontSize: '0.95rem',
+                flexShrink: 0
+              }}>
+                {(currentUserFullName || currentUser || 'US').substring(0, 2).toUpperCase()}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                  {currentUserFullName || currentUser}
+                </span>
+                <span style={{ fontSize: '0.72rem', color: '#94a3b8', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                  @{currentUser || 'user'} · <span style={{ color: '#f58220', textTransform: 'capitalize' }}>{userRole}</span>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUserModal(false)}
+                aria-label={t('Close')}
+                style={{
+                  marginLeft: 'auto', background: 'none', border: 'none', color: '#94a3b8',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  minWidth: '44px', minHeight: '44px', padding: '0', flexShrink: 0
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8' }}>{t('Language')}</span>
+              <LangSwitch lang={lang} onChange={setLang} />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8' }}>{t('Theme')}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const newTheme = theme === 'dark' ? 'light' : 'dark';
+                  setTheme(newTheme);
+                  localStorage.setItem('theme', newTheme);
+                }}
+                title={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  minHeight: '44px', padding: '0 14px',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer'
+                }}
+              >
+                {theme === 'dark'
+                  ? <><Sun size={16} color="#f58220" /> {t('Light')}</>
+                  : <><Moon size={16} color="#f58220" /> {t('Dark')}</>}
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowUserModal(false);
+                handleSignOut();
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                width: '100%',
+                minHeight: '44px',
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                color: '#f87171',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '10px',
+                padding: '8px 12px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              <LogOut size={15} /> {lang === 'EN' ? 'Sign Out' : 'Abmelden'}
+            </button>
+          </div>
         </>
       )}
 

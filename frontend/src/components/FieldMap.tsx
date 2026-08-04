@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -15,6 +15,9 @@ interface FieldMapProps {
   onAddDataClick?: () => void;
   isEditLocationMode?: boolean;
   onPointPositionChange?: (lat: number, lng: number) => void;
+  // Narrow-screen layout: shrinks the floating map chrome and gates touch panning
+  // behind a tap so the map does not eat the page's vertical scroll.
+  isMobile?: boolean;
 }
 
 // CSV Exporter for single point report
@@ -192,9 +195,11 @@ const MapController: React.FC<{
   selectedPoint: LocalPoint | null; 
 }> = ({ points, selectedPoint }) => {
   const map = useMap();
-  
-  // Track serialized points IDs to trigger bounds fitting only when the point set changes
-  const pointsKey = points.map(p => p.id).join(',');
+
+  // Track serialized points IDs to trigger bounds fitting only when the point set changes.
+  // Memoized on the array identity: with ~1500 targets this join runs on every render
+  // otherwise, including renders that have nothing to do with the map.
+  const pointsKey = useMemo(() => points.map(p => p.id).join(','), [points]);
 
   useEffect(() => {
     if (points.length > 0) {
@@ -211,6 +216,19 @@ const MapController: React.FC<{
   
   return null;
 }
+
+// MapContainer only reads its options once, at mount, so toggling `dragging` as a prop
+// would never reach Leaflet. The handlers have to be enabled imperatively.
+const MapInteractivity: React.FC<{ enabled: boolean }> = ({ enabled }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    const handlers = [map.dragging, map.touchZoom, map.doubleClickZoom, map.scrollWheelZoom];
+    handlers.forEach(h => (enabled ? h.enable() : h.disable()));
+  }, [enabled, map]);
+
+  return null;
+};
 
 // Available basemaps
 const BASEMAPS = {
@@ -239,6 +257,7 @@ const MapToolbar: React.FC<{
   basemapOpen: boolean;
   setBasemapOpen: (val: boolean) => void;
   points: LocalPoint[];
+  isMobile: boolean;
   t: Translator;
 }> = ({
   viewMode,
@@ -248,6 +267,7 @@ const MapToolbar: React.FC<{
   basemapOpen,
   setBasemapOpen,
   points,
+  isMobile,
   t
 }) => {
   const map = useMap();
@@ -264,8 +284,12 @@ const MapToolbar: React.FC<{
   return (
     <div style={{
       position: 'absolute',
-      bottom: '16px',
-      left: viewMode === 'dashboard' ? '444px' : '16px',
+      bottom: isMobile ? '10px' : '16px',
+      // On desktop the dashboard's 360px left column sits over the map, so the toolbar
+      // clears it. On mobile the map is a block in the flow with nothing over it, and
+      // that offset would push the whole stack off a 380px screen.
+      left: !isMobile && viewMode === 'dashboard' ? '444px' : (isMobile ? '10px' : '16px'),
+      right: isMobile ? '10px' : undefined,
       zIndex: 1000,
       display: 'flex',
       flexDirection: 'column',
@@ -467,15 +491,21 @@ const MapToolbar: React.FC<{
       <div className="glass-panel" style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
-        padding: '6px 14px',
+        gap: isMobile ? '8px' : '12px',
+        padding: isMobile ? '5px 10px' : '6px 14px',
         borderRadius: '9999px',
         border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: 'var(--shadow-lg)'
+        boxShadow: 'var(--shadow-lg)',
+        maxWidth: '100%',
+        flexWrap: 'wrap'
       }}>
-        <span style={{ fontWeight: 800, color: '#fff', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.04em', borderRight: '1px solid rgba(255,255,255,0.15)', paddingRight: '10px' }}>
-          {t('Map Legend')}
-        </span>
+        {/* The "MAP LEGEND" caption is the first thing to go on a 380px screen - the two
+            colour chips next to it already say what it says. */}
+        {!isMobile && (
+          <span style={{ fontWeight: 800, color: '#fff', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.04em', borderRight: '1px solid rgba(255,255,255,0.15)', paddingRight: '10px' }}>
+            {t('Map Legend')}
+          </span>
+        )}
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.7rem', color: '#cbd5e1', fontWeight: 600 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -493,7 +523,7 @@ const MapToolbar: React.FC<{
   );
 };
 
-export const FieldMap: React.FC<FieldMapProps> = ({
+const FieldMapImpl: React.FC<FieldMapProps> = ({
   lang,
   points,
   selectedPoint,
@@ -501,12 +531,35 @@ export const FieldMap: React.FC<FieldMapProps> = ({
   viewMode,
   onAddDataClick,
   isEditLocationMode = false,
-  onPointPositionChange
+  onPointPositionChange,
+  isMobile = false
 }) => {
   const t = makeT(lang);
   const [activeBasemap, setActiveBasemap] = useState<BasemapKey>('dark');
   const [basemapOpen, setBasemapOpen] = useState(false);
   const [popupPointId, setPopupPointId] = useState<string | null>(null);
+
+  // On mobile the map is a block inside a scrolling page, so Leaflet's touch drag
+  // would swallow every vertical swipe that starts on it and trap the scroll. The
+  // map stays inert until the user taps it, which is also what makes the 55vh block
+  // scrollable past.
+  const [touchActivated, setTouchActivated] = useState(false);
+  const mapInteractive = !isMobile || touchActivated;
+
+  // Going back to a narrow viewport re-arms the shield. Adjusted during render rather
+  // than in an effect, so it costs no extra render pass.
+  const [lastIsMobile, setLastIsMobile] = useState(isMobile);
+  if (lastIsMobile !== isMobile) {
+    setLastIsMobile(isMobile);
+    if (!isMobile) setTouchActivated(false);
+  }
+
+  // One canvas renderer for the whole layer. Leaflet's default is SVG, which emits a
+  // separate <path> per CircleMarker - at ~1500 targets that is 1500 DOM nodes in one
+  // overlay, and the browser repaints all of them whenever the page scrolls. On canvas
+  // they collapse to a single element the compositor can leave alone. This is the main
+  // cause of the scroll stutter.
+  const renderer = useMemo(() => L.canvas({ padding: 0.5 }), []);
 
   useEffect(() => {
     if (selectedPoint) {
@@ -516,8 +569,10 @@ export const FieldMap: React.FC<FieldMapProps> = ({
     }
   }, [selectedPoint]);
 
-  // Center on Wilhelmshaven coordinates
-  const getMapCenter = (): [number, number] => {
+  // Center on Wilhelmshaven coordinates. MapContainer only reads `center` on mount,
+  // so this only needs to be right once - but it walks every point, and recomputing it
+  // on unrelated renders is pure waste at 1500 targets.
+  const center = useMemo((): [number, number] => {
     if (selectedPoint) {
       return [selectedPoint.latitude, selectedPoint.longitude];
     }
@@ -528,9 +583,76 @@ export const FieldMap: React.FC<FieldMapProps> = ({
     }
     // Default Wilhelmshaven Seedeich center
     return [53.5583, 8.1391];
-  };
+  }, [points, selectedPoint]);
 
-  const center = getMapCenter();
+  // Markers are rebuilt only when the filtered dataset, the selection or the drag mode
+  // actually changes - not on every parent render. Without this, any unrelated state
+  // update in App re-creates ~1500 elements and react-leaflet re-applies styles to
+  // every one of them.
+  const markers = useMemo(() => (
+    points.map((point) => {
+      const isSelected = selectedPoint?.id === point.id;
+      const isInvestigated = point.local_status === 'investigated';
+      const color = isInvestigated ? '#10b981' : '#ef4444';
+
+      if (isSelected && isEditLocationMode) {
+        // Render a draggable standard Marker for editing location
+        return (
+          <Marker
+            key={point.id}
+            position={[point.latitude, point.longitude]}
+            draggable={true}
+            icon={L.divIcon({
+              className: 'custom-leaflet-marker',
+              html: `
+                <div class="map-marker-pin marker-selected"
+                     style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px #fa5f1c;">
+                  <div style="width: 4px; height: 4px; background-color: white; border-radius: 50%;"></div>
+                </div>
+              `,
+              iconSize: [14, 14],
+              iconAnchor: [7, 7]
+            })}
+            eventHandlers={{
+              dragend: (e) => {
+                const marker = e.target;
+                const position = marker.getLatLng();
+                if (onPointPositionChange) {
+                  onPointPositionChange(position.lat, position.lng);
+                }
+              }
+            }}
+          >
+            <Popup>
+              <div style={{ color: '#0f172a', fontFamily: 'var(--font-body)', fontSize: '0.8rem', minWidth: '150px' }}>
+                <h4 style={{ fontWeight: 700, color: '#f97316', marginBottom: '4px' }}>VM Nr. {point.vm_nr}</h4>
+                <p style={{ margin: '2px 0', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>{t('DRAG TO RE-POSITION')}</p>
+              </div>
+            </Popup>
+          </Marker>
+        );
+      }
+
+      // Otherwise, render a high-performance CircleMarker (small point size), drawn
+      // into the shared canvas renderer rather than as its own SVG path. Touch
+      // targets get a bigger radius - 2.5px is unhittable with a finger.
+      return (
+        <CircleMarker
+          key={point.id}
+          center={[point.latitude, point.longitude]}
+          renderer={renderer}
+          radius={isSelected ? 6 : (isMobile ? 4 : 2.5)}
+          fillColor={color}
+          color="#ffffff"
+          weight={isSelected ? 1.5 : 0.4}
+          fillOpacity={0.9}
+          eventHandlers={{
+            click: () => onSelectPoint(point)
+          }}
+        />
+      );
+    })
+  ), [points, selectedPoint, isEditLocationMode, onSelectPoint, onPointPositionChange, renderer, isMobile, t]);
 
   return (
     <div style={{ height: '100%', width: '100%', position: 'relative', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
@@ -540,6 +662,12 @@ export const FieldMap: React.FC<FieldMapProps> = ({
         maxZoom={22}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
+        // Canvas is also the default for anything Leaflet draws internally here.
+        preferCanvas={true}
+        dragging={mapInteractive}
+        touchZoom={mapInteractive}
+        doubleClickZoom={mapInteractive}
+        scrollWheelZoom={mapInteractive}
       >
         <TileLayer
           attribution={BASEMAPS[activeBasemap].attribution}
@@ -547,67 +675,10 @@ export const FieldMap: React.FC<FieldMapProps> = ({
           maxZoom={22}
           maxNativeZoom={19}
         />
-        
-        {points.map((point) => {
-          const isSelected = selectedPoint?.id === point.id;
-          const isInvestigated = point.local_status === 'investigated';
-          const color = isInvestigated ? '#10b981' : '#ef4444';
 
-          if (isSelected && isEditLocationMode) {
-            // Render a draggable standard Marker for editing location
-            return (
-              <Marker
-                key={point.id}
-                position={[point.latitude, point.longitude]}
-                draggable={true}
-                icon={L.divIcon({
-                  className: 'custom-leaflet-marker',
-                  html: `
-                    <div class="map-marker-pin marker-selected" 
-                         style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px #fa5f1c;">
-                      <div style="width: 4px; height: 4px; background-color: white; border-radius: 50%;"></div>
-                    </div>
-                  `,
-                  iconSize: [14, 14],
-                  iconAnchor: [7, 7]
-                })}
-                eventHandlers={{
-                  dragend: (e) => {
-                    const marker = e.target;
-                    const position = marker.getLatLng();
-                    if (onPointPositionChange) {
-                      onPointPositionChange(position.lat, position.lng);
-                    }
-                  }
-                }}
-              >
-                <Popup>
-                  <div style={{ color: '#0f172a', fontFamily: 'var(--font-body)', fontSize: '0.8rem', minWidth: '150px' }}>
-                    <h4 style={{ fontWeight: 700, color: '#f97316', marginBottom: '4px' }}>VM Nr. {point.vm_nr}</h4>
-                    <p style={{ margin: '2px 0', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>{t('DRAG TO RE-POSITION')}</p>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          }
+        {markers}
 
-          // Otherwise, render a high-performance CircleMarker (small point size)
-          return (
-            <CircleMarker
-              key={point.id}
-              center={[point.latitude, point.longitude]}
-              radius={isSelected ? 6 : 2.5}
-              fillColor={color}
-              color="#ffffff"
-              weight={isSelected ? 1.5 : 0.4}
-              fillOpacity={0.9}
-              eventHandlers={{
-                click: () => onSelectPoint(point)
-              }}
-            />
-          );
-        })}
-
+        <MapInteractivity enabled={mapInteractive} />
         <MapController points={points} selectedPoint={selectedPoint} />
 
         {selectedPoint && popupPointId === selectedPoint.id && (
@@ -754,8 +825,51 @@ export const FieldMap: React.FC<FieldMapProps> = ({
           basemapOpen={basemapOpen}
           setBasemapOpen={setBasemapOpen}
           points={points}
+          isMobile={isMobile}
         />
       </MapContainer>
+
+      {/* Tap-to-activate shield. Until it is dismissed a vertical swipe over the map
+          scrolls the page instead of panning the map, so a 55vh map block cannot trap
+          the user mid-page. Desktop never sees it. */}
+      {isMobile && !touchActivated && (
+        <button
+          type="button"
+          onClick={() => setTouchActivated(true)}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 900,
+            border: 'none',
+            background: 'transparent',
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            paddingTop: '10px',
+            cursor: 'pointer',
+            // Let the browser handle the swipe as a page scroll rather than Leaflet.
+            touchAction: 'pan-y'
+          }}
+          aria-label={t('Tap to activate map')}
+        >
+          <span className="glass-panel" style={{
+            padding: '5px 12px',
+            borderRadius: '9999px',
+            fontSize: '0.65rem',
+            fontWeight: 800,
+            color: '#fff',
+            letterSpacing: '0.02em',
+            pointerEvents: 'none'
+          }}>
+            {t('Tap to activate map')}
+          </span>
+        </button>
+      )}
     </div>
   );
 };
+
+// Memoized: the dashboard and the field app both re-render on filter changes, language
+// switches and selection changes, and without this every one of those rebuilds the
+// whole marker layer.
+export const FieldMap = React.memo(FieldMapImpl);

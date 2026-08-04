@@ -59,6 +59,7 @@ const de: Record<string, string> = {
   'OSM Streets': 'OSM Straßen',
   'Satellite Map': 'Satellitenkarte',
   'Map Legend': 'Kartenlegende',
+  'Tap to activate map': 'Tippen zum Aktivieren',
   'DRAG TO RE-POSITION': 'ZUM VERSCHIEBEN ZIEHEN',
   'Target ID': 'Ziel-ID',
   'UTM coords': 'UTM-Koordinaten',
@@ -89,6 +90,15 @@ const de: Record<string, string> = {
   // The bucket labels themselves stay German in both modes - see DEPTH_BUCKETS.
   'Depth filter': 'Tiefenfilter',
   'Status filter': 'Statusfilter',
+  // Collapsed mobile filter bar
+  'Filter': 'Filter',
+  'Show filters': 'Filter anzeigen',
+  'Profile and settings': 'Profil und Einstellungen',
+  'Language': 'Sprache',
+  'Theme': 'Darstellung',
+  'Light': 'Hell',
+  'Dark': 'Dunkel',
+  'Close': 'Schließen',
   // Empty state for panels that only mean anything once a target has been excavated.
   'Investigated targets only': 'Nur für untersuchte Ziele',
   'TOTAL TARGETS': 'ZIELE GESAMT',
@@ -121,6 +131,7 @@ const de: Record<string, string> = {
   'Volume (m³)': 'Volumen (m³)',
   'EVAL': 'BEW.',
   'EXCAV': 'AUSH.',
+  'Show more': 'Mehr anzeigen',
 
   // --- Feedback form ---
   'Field Application Form': 'Feld-Erfassungsformular',

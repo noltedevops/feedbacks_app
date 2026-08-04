@@ -510,32 +510,8 @@ body.light-theme input[type="time"].form-input::-webkit-calendar-picker-indicato
   width: 380px;
 }
 
-/* Responsive Layout overrides for mobile/small screen devices */
-@media (max-width: 768px) {
-  .collector-main, .dashboard-main {
-    flex-direction: column !important;
-    overflow-y: auto !important;
-    height: auto !important;
-  }
-  .collector-sidebar, .dashboard-sidebar {
-    width: 100% !important;
-    height: auto !important;
-    max-height: 55vh !important;
-    flex-shrink: 0 !important;
-    overflow-y: auto !important;
-  }
-  .map-container-section {
-    height: 45vh !important;
-    min-height: 300px !important;
-    flex-grow: 1 !important;
-    margin-top: 10px !important;
-  }
-  .details-drawer {
-    width: 100% !important;
-    max-width: 100vw !important;
-    border-left: none !important;
-  }
-}
+/* Responsive layout overrides for phones live at the end of this file, so they
+   win against the theme and control rules that follow. */
 
 /* Light Theme Variables & Class Overrides */
 body.light-theme {
@@ -819,4 +795,522 @@ body.light-theme .lang-switch-option.active {
 
 .custom-map-tooltip::before {
   border-top-color: #1A1A1A !important;
+}
+
+/* ==========================================================================
+   Responsive layout overrides for phones (<= 768px).
+
+   Additive only: every rule below is scoped to this media query, so the desktop
+   layout above is untouched. It sits last in the file so it outranks the theme
+   and control rules that precede it.
+
+   `!important` is load-bearing here rather than lazy - the components carry
+   their desktop geometry in inline style objects, which no plain stylesheet
+   rule can outrank.
+
+   The one thing CSS cannot do from here is move the dashboard map out of its
+   background layer and into the reading order; useIsMobile() handles that,
+   keyed to this same 768px.
+   ========================================================================== */
+@media (max-width: 768px) {
+
+  /* The bottom nav bar's content height. Everything that has to clear it - the page's
+     bottom padding, the profile sheet's offset - is derived from this one value. */
+  :root {
+    --mobile-nav-h: 46px;
+    --mobile-nav-total: calc(var(--mobile-nav-h) + 12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* --- Shell: let the page scroll -------------------------------------- */
+  /* The desktop shell pins everything to the viewport and scrolls inside panels.
+     On a phone the page itself has to be the scroller. 100vw also has to go: it
+     counts the scrollbar gutter and is a classic source of a stray horizontal
+     scrollbar. */
+  html, body {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: auto;
+    min-height: 100%;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #root {
+    height: auto;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .app-root {
+    height: auto !important;
+    min-height: 100vh;
+    width: 100% !important;
+    overflow-x: hidden;
+  }
+
+  .app-container {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    width: 100%;
+    overflow: visible;
+  }
+
+  /* --- Sidebar becomes a bottom nav bar -------------------------------- */
+  /* The bar has to FIT. Four nav items plus the avatar plus the language switch plus
+     the theme button measured 442px against ~354px of usable width, so the trailing
+     group ran off the right edge - that was the clipped "ER" bubble. Language and
+     theme now live in the profile sheet, and the nav flexes down instead of
+     overflowing, so nothing can spill past the edge again. */
+  .app-sidebar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    /* Pinned height so the content padding below and the profile sheet's offset can
+       both be derived from one number instead of guessing. Border-box (the global
+       default here) - content-box would add the horizontal padding on top of the
+       left/right anchoring and make the bar wider than the screen. */
+    height: var(--mobile-nav-total);
+    padding: 6px 10px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+    z-index: 10000;
+  }
+
+  /* The collapse toggle is meaningless once the sidebar is a bottom bar, and its
+     collapsed state must not be able to hide the only navigation on the page. */
+  .sidebar-toggle-handle {
+    display: none !important;
+  }
+
+  /* The nav group takes the leftover width and shrinks; the avatar never does. */
+  .app-sidebar .sidebar-top {
+    flex-direction: row !important;
+    align-items: center !important;
+    width: auto !important;
+    opacity: 1 !important;
+    gap: 4px;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  /* !important + margin reset: the logo carries an inline display:flex, so without
+     these it kept a 46px slot and its 24px bottom margin in the bar - which is what
+     pushed the bar to 83px and squeezed the trailing group toward the edge. */
+  .sidebar-logo {
+    display: none !important;
+    margin-bottom: 0 !important;
+  }
+
+  .sidebar-menu {
+    flex-direction: row;
+    gap: 2px;
+    width: auto;
+    flex-grow: 0;
+    min-width: 0;
+  }
+
+  .sidebar-item {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 0;
+    max-width: 74px;
+    padding: 0 2px;
+    height: 46px;
+    gap: 2px;
+    border-radius: 10px;
+  }
+
+  .sidebar-item-label {
+    font-size: 0.5rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sidebar-item-badge {
+    top: 0;
+    right: 6px;
+  }
+
+  /* !important: this element carries flex-direction: column in an inline style. */
+  .app-sidebar .sidebar-bottom {
+    flex-direction: row !important;
+    align-items: center !important;
+    width: auto !important;
+    gap: 10px !important;
+    flex: 0 0 auto;
+  }
+
+  .sidebar-avatar,
+  .sidebar-logout {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+
+  /* Keep the whole bar on one row so it stays a ~58px strip. */
+  .app-sidebar .sidebar-menu,
+  .app-sidebar .sidebar-bottom {
+    flex-wrap: nowrap;
+  }
+
+  /* --- Profile sheet (mobile replacement for the anchored pop-up) ------- */
+  .profile-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10009;
+    animation: profile-sheet-fade 0.15s ease-out;
+  }
+
+  .profile-sheet {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    /* Sits clear of the nav bar rather than floating over page content. */
+    bottom: calc(var(--mobile-nav-total) + 8px);
+    z-index: 10011;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+    border-radius: 16px;
+    box-sizing: border-box;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+    color: #ffffff;
+    max-height: 70vh;
+    overflow-y: auto;
+    /* Opacity only, deliberately. A transform-based slide leaves the sheet displaced
+       by its start offset if the animation is throttled or interrupted, which is
+       enough to push it back over the nav bar it is supposed to clear. */
+    animation: profile-sheet-fade 0.18s ease-out;
+  }
+
+  /* Language switch and close control are real tap targets inside the sheet. */
+  .profile-sheet .lang-switch {
+    height: 40px;
+  }
+
+  .profile-sheet .lang-switch-option {
+    min-height: 36px;
+    padding: 0 14px;
+  }
+
+  body.light-theme .profile-sheet {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    color: #0f172a;
+  }
+
+  @keyframes profile-sheet-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* --- Field App (collector) ------------------------------------------- */
+  /* Single column; the bottom padding keeps the last field clear of the fixed
+     nav bar. */
+  .collector-main {
+    flex-direction: column !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 10px 10px calc(var(--mobile-nav-total) + 16px) !important;
+    gap: 12px !important;
+  }
+
+  .collector-sidebar {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 12px !important;
+  }
+
+  /* The form is the page on mobile, not a box that scrolls inside the page. */
+  .feedback-form-root,
+  .collector-panel-body,
+  .collector-list-wrap {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* The target list keeps its own scroller so it cannot grow to 1500 rows tall,
+     but contains its overscroll so it does not swallow the page's momentum. */
+  .collector-list-scroll {
+    max-height: 60vh;
+    overscroll-behavior: contain;
+  }
+
+  /* Compacted target cards: the desktop card is 14px padding with a 14px radius and
+     roomy rows, which fits about four per screen on a phone. Tightening padding and
+     line spacing (not font size - the VM number stays 14px) fits noticeably more
+     while the whole card stays a comfortable tap target well over 44px. */
+  .collector-list-scroll .target-card-white {
+    padding: 7px 9px;
+    border-radius: 10px;
+    gap: 0;
+  }
+
+  /* The lift-on-hover transform is meaningless on touch and costs a repaint per card. */
+  .collector-list-scroll .target-card-white:hover {
+    transform: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  }
+
+  /* --- Collapsed filter bar -------------------------------------------- */
+  .filter-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .filter-bar-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(10, 22, 18, 0.6);
+    color: #f1f5f9;
+    cursor: pointer;
+    text-align: left;
+    font-family: var(--font-body);
+  }
+
+  .filter-bar-icon {
+    color: #10b981;
+    flex-shrink: 0;
+  }
+
+  .filter-bar-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #8c9f96;
+    flex-shrink: 0;
+  }
+
+  /* The active selection is the reason folding is safe - it must stay on one line and
+     ellipsize rather than wrap the bar to two rows. */
+  .filter-bar-summary {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .filter-bar-chevron {
+    color: #8c9f96;
+    flex-shrink: 0;
+    transition: transform 0.18s ease;
+  }
+
+  .filter-bar-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    animation: filter-bar-open 0.16s ease-out;
+  }
+
+  /* Opacity only, for the same reason as the profile sheet: a throttled or interrupted
+     transform animation would leave the expanded controls visually offset. */
+  @keyframes filter-bar-open {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  body.light-theme .filter-bar-toggle {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    color: #0f172a;
+  }
+
+  body.light-theme .filter-bar-summary {
+    color: #0f172a;
+  }
+
+  .map-container-section {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    height: auto !important;
+    flex-grow: 0 !important;
+    padding: 10px !important;
+  }
+
+  /* Out of the overlay and into the flow: a 260px floating card would cover most
+     of a 380px-wide map. */
+  .quick-summary-panel {
+    position: static !important;
+    width: 100% !important;
+    top: auto !important;
+    right: auto !important;
+  }
+
+  .collector-map-wrap {
+    height: 55vh !important;
+    min-height: 300px;
+    width: 100% !important;
+  }
+
+  /* --- Dashboard -------------------------------------------------------- */
+  .dashboard-main--mobile {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 10px 10px calc(var(--mobile-nav-total) + 16px);
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .dashboard-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    pointer-events: auto;
+  }
+
+  /* Nothing in the column may be wider than the column - this is what keeps the
+     charts (which will happily report an intrinsic min-width) from producing a
+     horizontal scrollbar. */
+  .dashboard-mobile > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .dashboard-mobile-map {
+    height: 55vh;
+    min-height: 300px;
+    padding: 4px;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+
+  .dashboard-mobile .recharts-responsive-container {
+    max-width: 100%;
+  }
+
+  /* --- Forms: tap targets ---------------------------------------------- */
+  /* 44px is the minimum comfortable touch target; 16px text is what stops iOS
+     Safari zooming the viewport on focus. Both need !important because the
+     components set height and font-size inline. */
+  .form-input,
+  select.form-input,
+  input.form-input {
+    min-height: 44px !important;
+    height: auto !important;
+    font-size: 16px !important;
+    padding: 10px 12px !important;
+  }
+
+  textarea.form-input {
+    min-height: 88px !important;
+    padding: 10px 12px !important;
+  }
+
+  .form-label {
+    font-size: 0.75rem !important;
+    margin-bottom: 4px;
+  }
+
+  /* The 44px rule above sets padding on every .form-input, which would slide the text
+     of these controls under their absolutely-positioned leading icon. */
+  .select-with-icon select.form-input,
+  .select-with-icon input.form-input {
+    padding-left: 32px !important;
+  }
+
+  /* Laenge / Breite / Tiefe stack rather than squeezing three number fields plus
+     their labels into a 380px row. */
+  .form-grid-3,
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Take Photo / Upload stay side by side - they are buttons, not inputs, and
+     both fit at 44px. */
+  .photo-actions {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .photo-actions .btn-secondary {
+    min-height: 44px;
+    padding: 8px 6px !important;
+  }
+
+  .photo-thumb-grid {
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)) !important;
+    max-height: 200px !important;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    min-height: 44px;
+  }
+
+  /* Radios are otherwise a ~13px target. */
+  input[type="radio"],
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Submit/Cancel ride along at the bottom of the form. */
+  .form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    padding: 10px 0 4px;
+    margin-top: 4px;
+    background: linear-gradient(to top, rgba(9, 13, 22, 0.98) 55%, rgba(9, 13, 22, 0));
+  }
+
+  body.light-theme .form-actions {
+    background: linear-gradient(to top, rgba(248, 250, 252, 0.98) 55%, rgba(248, 250, 252, 0));
+  }
+
+  .details-drawer {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-left: none !important;
+  }
+
+  /* Leaflet's own popup can otherwise be wider than the screen. */
+  .leaflet-popup-content-wrapper {
+    max-width: calc(100vw - 40px);
+  }
+  .leaflet-popup-content {
+    width: auto !important;
+    max-width: 100%;
+  }
 }

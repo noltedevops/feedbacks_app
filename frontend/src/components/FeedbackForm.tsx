@@ -322,8 +322,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const computedVolume = (lVal * bVal * tVal).toFixed(3);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%', overflowY: 'auto', paddingRight: '4px' }}>
-      
+    <div className="feedback-form-root" style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%', overflowY: 'auto', paddingRight: '4px' }}>
+
       {/* Header Title without Logo */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px', flexShrink: 0 }}>
         <div>
@@ -449,7 +449,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             {([
               ['Maschinenführer', maschinenfuehrer, setMaschinenfuehrer],
               ['Bez.Suchfeld', bezSuchfeld, setBezSuchfeld],
@@ -503,7 +503,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           {/* Subsection 1: Öffnungsmessungen */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700 }}>Öffnungsmessungen</span>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+            <div className="form-grid-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
               <div className="form-group" style={{ margin: 0, minWidth: 0 }}>
                 <label className="form-label" style={{ fontSize: '0.65rem' }}>Länge(m)</label>
                 <input
@@ -646,7 +646,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div className="form-grid-2 photo-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 <button
                   type="button"
                   className="btn-secondary"
@@ -681,7 +681,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
 
               {/* Photos List Grid */}
               {photos.length > 0 && (
-                <div style={{
+                <div className="photo-thumb-grid" style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))',
                   gap: '8px',
@@ -724,8 +724,9 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
 
         </div>
 
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+        {/* Action Buttons. Sticky on mobile so Submit stays reachable without scrolling
+            back down a long form. */}
+        <div className="form-actions" style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
           <button type="button" className="btn-secondary" onClick={onCancel} style={{ flex: 1, padding: '10px', fontSize: '0.8rem' }}>
             {t('Cancel')}
           </button>
