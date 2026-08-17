@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -452,13 +452,17 @@ def _stamp(project_id, start, end):
 
 @app.get("/api/reports/feedback.pdf")
 def report_feedback_pdf(
+    request: Request,
     project_id: Optional[str] = Query(None),
     start: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
     end: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
     db: Session = Depends(get_db),
 ):
     rows, start_dt, end_dt = _report_rows(db, project_id, start, end)
-    pdf = report.build_pdf(rows, project_id, start_dt, end_dt)
+    # The Bild links point back at whichever origin the report was requested from,
+    # so a PDF pulled over the LAN keeps working on that machine.
+    gallery_base = str(request.base_url).rstrip("/")
+    pdf = report.build_pdf(db, rows, project_id, start_dt, end_dt, gallery_base=gallery_base)
     filename = f"oeffnungsmassnahmen-{_stamp(project_id, start, end)}.pdf"
     return Response(
         content=pdf,
@@ -481,6 +485,26 @@ def report_feedback_csv(
         content=("﻿" + report.rows_to_csv(rows)).encode("utf-8"),
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/api/reports/bilder/{feedback_id}", response_class=HTMLResponse)
+def report_photo_gallery(feedback_id: str, db: Session = Depends(get_db)):
+    """Target of the Bild links in the PDF: one standalone page per VM point with
+    every photo of that point and a download link each."""
+    row = (
+        db.query(models.Feedback, models.Anomaly)
+        .join(models.Anomaly, models.Feedback.anomaly_id == models.Anomaly.id)
+        .filter(models.Feedback.id == feedback_id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Kein Datensatz zu dieser Bild-ID.")
+    fb, an = row
+    return HTMLResponse(
+        content=report.photo_gallery_html(fb, an),
+        # Base64 photos are immutable once written, but never let a proxy hold them.
+        headers={"Cache-Control": "no-store"},
     )
 
 
