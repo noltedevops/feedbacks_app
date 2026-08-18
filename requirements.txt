@@ -1,8 +1,12 @@
-fastapi
-uvicorn
-sqlalchemy
-psycopg[binary]
-pydantic
-pydantic-settings
-GeoAlchemy2
-reportlab
+# Pinned to the versions this app is known to run on. Unpinned, a fresh install
+# resolves whatever is newest that day, which for pydantic or reportlab means a
+# major release landing straight in Settings or in PDF generation.
+# To move a pin: bump it here, run the app, then commit the version that worked.
+fastapi==0.136.3
+uvicorn==0.48.0
+SQLAlchemy==2.0.50
+psycopg[binary]==3.3.4
+pydantic==2.13.4
+pydantic-settings==2.14.1
+GeoAlchemy2==0.20.0
+reportlab==5.0.0
