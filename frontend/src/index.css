@@ -284,13 +284,14 @@ body.light-theme select.form-input optgroup {
   color: #0f172a;
 }
 
-/* The calendar glyph is a dark bitmap, invisible on the dark panels. Inverting it is the
-   only reliable way to recolor it; light mode keeps the original. */
+/* The calendar glyph follows color-scheme, declared above: light on the dark panels,
+   dark in light mode. It must NOT be inverted - an earlier invert() was written for a
+   page that had no color-scheme, and once that was declared the same filter turned the
+   now-light glyph dark again, which is what made it vanish into the dark field. */
 input[type="date"].form-input::-webkit-calendar-picker-indicator,
 input[type="datetime-local"].form-input::-webkit-calendar-picker-indicator,
 input[type="month"].form-input::-webkit-calendar-picker-indicator,
 input[type="time"].form-input::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.8);
   opacity: 0.85;
   cursor: pointer;
 }
@@ -302,12 +303,25 @@ input[type="time"].form-input::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
 
-body.light-theme input[type="date"].form-input::-webkit-calendar-picker-indicator,
-body.light-theme input[type="datetime-local"].form-input::-webkit-calendar-picker-indicator,
-body.light-theme input[type="month"].form-input::-webkit-calendar-picker-indicator,
-body.light-theme input[type="time"].form-input::-webkit-calendar-picker-indicator {
-  filter: none;
-  opacity: 1;
+/* Compact form fields: those given an explicit height (the report dialog's 32px rows)
+   cannot also carry .form-input's 10px vertical padding - that leaves a 10px content box
+   for 12px text, which clipped the project name and both dates top and bottom. The height
+   sets the size; the padding only needs to hold the text off the sides. */
+.form-input--compact {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Long project ids end in an ellipsis rather than overflowing the control; the full value
+   stays available through the select's title attribute. */
+select.form-input--compact {
+  text-overflow: ellipsis;
+}
+
+/* The open dropdown is painted by the platform, which otherwise picks its own size; match
+   it to the closed control so the list is not noticeably larger than the field. */
+select.form-input--compact option {
+  font-size: 0.78rem;
 }
 
 /* Base Body Layout */

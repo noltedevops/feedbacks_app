@@ -273,6 +273,32 @@ def require_surface(surface: str):
     return dependency
 
 
+def require_any_surface(*surfaces: str):
+    """Gate an endpoint behind holding at least one of several surfaces.
+
+    For things both apps legitimately offer, such as the CSV export that the
+    field app exposes to crews and the dashboard exposes alongside the PDF.
+    Requiring 'dashboard' there locked collectors out of a button their own
+    screen shows them.
+    """
+    def dependency(user: models.User = Depends(current_user)) -> models.User:
+        _block_until_password_changed(user)
+        if any(getattr(user, SURFACE_FLAG[s], False) for s in surfaces):
+            return user
+        # Name the first surface as the one to request: it is the caller's own
+        # app, so it is the permission that will actually help them.
+        wanted = surfaces[0]
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "surface": wanted,
+                "message": f"Kein Zugriff auf {SURFACE_LABEL[wanted]}. "
+                           f"Bitte Berechtigung beim Administrator anfragen.",
+            },
+        )
+    return dependency
+
+
 def user_payload(user: models.User, token: Optional[str] = None) -> dict:
     payload = {
         "status": "success",
@@ -908,7 +934,8 @@ def report_feedback_csv(
     start: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
     end: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
     db: Session = Depends(get_db),
-    user: models.User = Depends(require_surface("dashboard")),
+    # Both apps offer the CSV export; the PDF report stays dashboard-only.
+    user: models.User = Depends(require_any_surface("field", "dashboard")),
 ):
     rows, _, _ = _report_rows(db, project_id, start, end)
     filename = f"feedback-{_stamp(project_id, start, end)}.csv"

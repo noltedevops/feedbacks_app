@@ -82,7 +82,13 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
   };
 
   const label: React.CSSProperties = { fontSize: '0.68rem', color: '#8c9f96', fontWeight: 700, display: 'block', marginBottom: '4px' };
+  // Height and font only; the vertical padding is dropped by .form-input--compact, which
+  // .form-input would otherwise apply on top of this height and clip the text.
   const field: React.CSSProperties = { fontSize: '0.75rem', height: '32px', width: '100%', boxSizing: 'border-box' };
+
+  const selectedLabel = projectId
+    ? projects.find((p) => p.project_id === projectId)?.project_name
+    : '';
 
   return (
     <div
@@ -108,7 +114,14 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
 
         <div>
           <label style={label}>{t('Project ID')}</label>
-          <select className="form-input" style={field} value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+          <select
+            className="form-input form-input--compact"
+            style={field}
+            value={projectId}
+            // The control can only show so much; hovering gives the whole value back.
+            title={selectedLabel ? `${projectId} — ${selectedLabel}` : projectId || t('All Projects')}
+            onChange={(e) => setProjectId(e.target.value)}
+          >
             <option value="">{t('All Projects')}</option>
             {projects.map((p) => (
               <option key={p.project_id} value={p.project_id}>
@@ -121,11 +134,11 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <div>
             <label style={label}>{t('From')}</label>
-            <input type="date" className="form-input" style={field} value={start} max={end || undefined} onChange={(e) => setStart(e.target.value)} />
+            <input type="date" className="form-input form-input--compact" style={field} value={start} max={end || undefined} onChange={(e) => setStart(e.target.value)} />
           </div>
           <div>
             <label style={label}>{t('To')}</label>
-            <input type="date" className="form-input" style={field} value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} />
+            <input type="date" className="form-input form-input--compact" style={field} value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} />
           </div>
         </div>
 
