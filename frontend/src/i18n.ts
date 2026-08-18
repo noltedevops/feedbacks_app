@@ -223,7 +223,68 @@ const de: Record<string, string> = {
   'Sync aborted: Network is offline.': 'Sync abgebrochen: Netzwerk offline.',
   'Cloud database sync failed.': 'Sync mit der Cloud-Datenbank fehlgeschlagen.',
   'Failed to save feedback findings.': 'Speichern der Erfassung fehlgeschlagen.',
-  'Failed to import GPR points.': 'Import der GPR-Ziele fehlgeschlagen.'
+  'Failed to import GPR points.': 'Import der GPR-Ziele fehlgeschlagen.',
+
+  // --- Access & permissions ---
+  'Permissions': 'Berechtigungen',
+  'Permission requests': 'Berechtigungsanfragen',
+  'Field App - permission required': 'Feld-App - Berechtigung erforderlich',
+  'Dashboard - permission required': 'Dashboard - Berechtigung erforderlich',
+  'You do not have permission to open this area. Request access from your administrator.':
+    'Sie haben keine Berechtigung für diesen Bereich. Bitte fordern Sie den Zugriff beim Administrator an.',
+  'Your request has been sent to the administrator. You will get access once it is approved.':
+    'Ihre Anfrage wurde an den Administrator gesendet. Sie erhalten Zugriff, sobald sie genehmigt wurde.',
+  'Optional: why do you need access?': 'Optional: Wofür benötigen Sie den Zugriff?',
+  'Request permission': 'Berechtigung anfragen',
+  'Sending...': 'Wird gesendet...',
+  'Approve': 'Genehmigen',
+  'Deny': 'Ablehnen',
+  'No pending requests.': 'Keine offenen Anfragen.',
+  'Request sent to the administrator.': 'Anfrage an den Administrator gesendet.',
+  'Could not send the request. Check your connection.':
+    'Anfrage konnte nicht gesendet werden. Bitte Verbindung prüfen.',
+  'Permission granted.': 'Berechtigung erteilt.',
+  'Access granted.': 'Zugriff erteilt.',
+  'Request denied.': 'Anfrage abgelehnt.',
+  'Could not save the decision.': 'Entscheidung konnte nicht gespeichert werden.',
+  'Invalid username or password.': 'Benutzername oder Passwort ist falsch.',
+  'Registration failed.': 'Registrierung fehlgeschlagen.',
+  'Offline: signed in locally. Data will sync when back online.':
+    'Offline: lokal angemeldet. Daten werden synchronisiert, sobald wieder online.',
+  'OFFLINE MODE: your password was not checked. Field app only; data syncs when back online.':
+    'OFFLINE-MODUS: Ihr Passwort wurde nicht geprüft. Nur Feld-App; Daten werden synchronisiert, sobald wieder online.',
+  'No connection, and this account has not signed in on this device before. Connect to the network to sign in.':
+    'Keine Verbindung, und dieses Konto hat sich auf diesem Gerät noch nie angemeldet. Bitte für die Anmeldung mit dem Netzwerk verbinden.',
+  'No connection. Creating an account needs the server; please try again once online.':
+    'Keine Verbindung. Für die Kontoerstellung wird der Server benötigt; bitte erneut versuchen, sobald wieder online.',
+  'You do not have permission to export reports.':
+    'Sie haben keine Berechtigung, Berichte zu exportieren.',
+
+  // --- Users & passwords ---
+  'Users': 'Benutzer',
+  'Administrator': 'Administrator',
+  'Reset password': 'Passwort zurücksetzen',
+  'reset pending': 'Zurücksetzung offen',
+  'Temporary password for': 'Temporäres Passwort für',
+  'Shown once. Pass it on now - it cannot be displayed again.':
+    'Wird nur einmal angezeigt. Bitte jetzt weitergeben - es kann nicht erneut angezeigt werden.',
+  'Done': 'Fertig',
+  'Choose a new password': 'Neues Passwort vergeben',
+  'Your administrator issued a temporary password. Set your own to continue.':
+    'Ihr Administrator hat ein temporäres Passwort vergeben. Bitte vergeben Sie ein eigenes, um fortzufahren.',
+  'Temporary password': 'Temporäres Passwort',
+  'New password': 'Neues Passwort',
+  'Repeat new password': 'Neues Passwort wiederholen',
+  'Save password': 'Passwort speichern',
+  'Password updated.': 'Passwort aktualisiert.',
+  'The new password needs at least 8 characters.':
+    'Das neue Passwort braucht mindestens 8 Zeichen.',
+  'The two new passwords do not match.': 'Die neuen Passwörter stimmen nicht überein.',
+  'Could not change the password.': 'Passwort konnte nicht geändert werden.',
+  'Could not reset the password.': 'Passwort konnte nicht zurückgesetzt werden.',
+  'Could not change access.': 'Zugriff konnte nicht geändert werden.',
+  'Please ask your administrator to reset your password.':
+    'Bitte wenden Sie sich an Ihren Administrator, um Ihr Passwort zurückzusetzen.'
 };
 
 export type Translator = (text: string) => string;

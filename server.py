@@ -8,8 +8,11 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from typing import List, Optional
 from pydantic import BaseModel
 import datetime
+import hashlib
+import hmac
 import os
 import json
+import secrets
 import uuid
 
 from database import init_db, get_db, utm32n_to_latlon
@@ -95,33 +98,243 @@ class UserLogin(BaseModel):
     username: str
     password: str
 
+class PermissionRequestCreate(BaseModel):
+    surface: str                      # 'field' or 'dashboard'
+    message: Optional[str] = None
+
+class PermissionDecision(BaseModel):
+    approve: bool
+
+class UserAccessUpdate(BaseModel):
+    can_field: Optional[bool] = None
+    can_dashboard: Optional[bool] = None
+    is_admin: Optional[bool] = None
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+
+# Passwords: PBKDF2-HMAC-SHA256 via hashlib, so there is no dependency to install
+# on the field laptops. Encoded as pbkdf2_sha256$<iterations>$<salt>$<hash> and
+# stored in users.password_hash, which is String(255) - an encoded value is ~110.
+PBKDF2_ITERATIONS = 240_000
+_HASH_PREFIX = "pbkdf2_sha256"
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), salt.encode("utf-8"), PBKDF2_ITERATIONS
+    )
+    return f"{_HASH_PREFIX}${PBKDF2_ITERATIONS}${salt}${digest.hex()}"
+
+
+def verify_password(password: str, stored: str) -> bool:
+    """Check a password against a stored value.
+
+    Rows written before hashing was introduced hold the password in the clear;
+    those are compared directly so existing accounts keep working, and the caller
+    is expected to re-hash them (see needs_rehash).
+    """
+    if not stored:
+        return False
+    if not stored.startswith(f"{_HASH_PREFIX}$"):
+        return hmac.compare_digest(password, stored)
+    try:
+        _, iterations, salt, expected = stored.split("$", 3)
+        digest = hashlib.pbkdf2_hmac(
+            "sha256", password.encode("utf-8"), salt.encode("utf-8"), int(iterations)
+        )
+    except (ValueError, TypeError):
+        return False
+    return hmac.compare_digest(digest.hex(), expected)
+
+
+def _auth_secret() -> str:
+    """Key that signs session tokens.
+
+    Falls back to a per-process random key so local runs need no configuration;
+    the cost is that restarting the server invalidates outstanding tokens, hence
+    the warning. Set AUTH_SECRET in .env on anything shared.
+    """
+    global _RUNTIME_SECRET
+    if settings.auth_secret:
+        return settings.auth_secret
+    if _RUNTIME_SECRET is None:
+        _RUNTIME_SECRET = secrets.token_hex(32)
+        print("AUTH_SECRET is not set - using a random key; sessions end on restart.")
+    return _RUNTIME_SECRET
+
+
+_RUNTIME_SECRET = None
+TOKEN_TTL = datetime.timedelta(days=30)
+
+
+def issue_token(user: "models.User") -> str:
+    """Stateless token: <user_id>.<expiry>.<signature>.
+
+    Stateless so a field device that has been offline for days keeps its session
+    without the server holding state, and so nothing new has to sync.
+    """
+    expires = int((datetime.datetime.utcnow() + TOKEN_TTL).timestamp())
+    payload = f"{user.id}.{expires}"
+    signature = hmac.new(
+        _auth_secret().encode("utf-8"), payload.encode("utf-8"), hashlib.sha256
+    ).hexdigest()
+    return f"{payload}.{signature}"
+
+
+def read_token(token: str) -> Optional[str]:
+    """Return the user id in a valid, unexpired token, else None."""
+    if not token:
+        return None
+    try:
+        user_id, expires, signature = token.rsplit(".", 2)
+    except ValueError:
+        return None
+    expected = hmac.new(
+        _auth_secret().encode("utf-8"), f"{user_id}.{expires}".encode("utf-8"), hashlib.sha256
+    ).hexdigest()
+    if not hmac.compare_digest(signature, expected):
+        return None
+    try:
+        if int(expires) < datetime.datetime.utcnow().timestamp():
+            return None
+    except ValueError:
+        return None
+    return user_id
+
+
+def needs_rehash(stored: str) -> bool:
+    """True for legacy plaintext rows and for hashes below the current cost."""
+    if not stored or not stored.startswith(f"{_HASH_PREFIX}$"):
+        return True
+    try:
+        return int(stored.split("$", 2)[1]) < PBKDF2_ITERATIONS
+    except (ValueError, IndexError):
+        return True
+
+
+SURFACE_FLAG = {"field": "can_field", "dashboard": "can_dashboard"}
+SURFACE_LABEL = {"field": "Field App", "dashboard": "Dashboard"}
+
+
+def current_user(request: Request, db: Session = Depends(get_db)) -> models.User:
+    """Resolve the caller from the bearer token, or 401."""
+    header = request.headers.get("authorization", "")
+    token = header[7:].strip() if header.lower().startswith("bearer ") else ""
+    user_id = read_token(token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Anmeldung erforderlich.")
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=401, detail="Anmeldung erforderlich.")
+    return user
+
+
+def _block_until_password_changed(user: models.User):
+    """A temporary password opens nothing but the change-password screen."""
+    if user.must_change_password:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "must_change_password": True,
+                "message": "Bitte vergeben Sie zuerst ein eigenes Passwort.",
+            },
+        )
+
+
+def require_admin(user: models.User = Depends(current_user)) -> models.User:
+    _block_until_password_changed(user)
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Nur für Administratoren.")
+    return user
+
+
+def require_surface(surface: str):
+    """Dependency factory gating an endpoint behind one of the app surfaces.
+
+    The 403 body carries the surface so the client knows which permission to
+    offer to request, rather than showing a bare error.
+    """
+    def dependency(user: models.User = Depends(current_user)) -> models.User:
+        _block_until_password_changed(user)
+        if not getattr(user, SURFACE_FLAG[surface], False):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "surface": surface,
+                    "message": f"Kein Zugriff auf {SURFACE_LABEL[surface]}. "
+                               f"Bitte Berechtigung beim Administrator anfragen.",
+                },
+            )
+        return user
+    return dependency
+
+
+def user_payload(user: models.User, token: Optional[str] = None) -> dict:
+    payload = {
+        "status": "success",
+        "id": user.id,
+        "username": user.username,
+        "full_name": user.full_name,
+        "email": user.email,
+        "role": user.role,
+        "can_field": bool(user.can_field),
+        "can_dashboard": bool(user.can_dashboard),
+        "is_admin": bool(user.is_admin),
+        "must_change_password": bool(user.must_change_password),
+    }
+    if token:
+        payload["token"] = token
+    return payload
+
+
 def seed_default_users(db: Session):
+    # Only ever used to fill an empty table. The password comes from the
+    # environment so it is not a literal in a file that gets pushed; without it
+    # each seeded account gets its own random one, which has to be reset rather
+    # than guessed.
     try:
         if db.query(models.User).count() == 0:
+            # settings, not os.getenv: the value lives in .env, which only
+            # pydantic reads - os.environ never sees it.
+            seed_password = settings.seed_password
+            if not seed_password:
+                print("SEED_PASSWORD not set - seeding accounts with random passwords.")
+
+            def seed_hash():
+                return hash_password(seed_password or secrets.token_urlsafe(24))
+
             default_users = [
                 models.User(
                     id="usr-collector-001",
                     full_name="Eric Musonera",
                     username="collector",
                     email="eric.musonera@nolte-geoservices.de",
-                    password_hash="password",
-                    role="collector"
+                    password_hash=seed_hash(),
+                    role="collector",
+                    can_field=True, can_dashboard=False, is_admin=False
                 ),
                 models.User(
                     id="usr-dashboard-001",
                     full_name="Operations Analyst",
                     username="dashboard",
                     email="analytics@nolte-geoservices.de",
-                    password_hash="password",
-                    role="dashboard"
+                    password_hash=seed_hash(),
+                    role="dashboard",
+                    can_field=False, can_dashboard=True, is_admin=False
                 ),
                 models.User(
                     id="usr-eric-001",
                     full_name="Eric Musonera",
                     username="eric.musonera",
                     email="eric.musonera@nolte-geoservices.de",
-                    password_hash="password",
-                    role="collector"
+                    password_hash=seed_hash(),
+                    role="collector",
+                    # Someone has to be able to approve the first request.
+                    can_field=True, can_dashboard=True, is_admin=True
                 )
             ]
             db.add_all(default_users)
@@ -150,38 +363,244 @@ def register_user(payload: UserRegister, db: Session = Depends(get_db)):
         full_name=payload.full_name,
         username=payload.username,
         email=payload.email,
-        password_hash=payload.password,
+        password_hash=hash_password(payload.password),
         role="collector" # Role assigned on database level
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return {
-        "status": "success",
-        "username": new_user.username,
-        "full_name": new_user.full_name,
-        "email": new_user.email,
-        "role": new_user.role
-    }
+    # New accounts start with the field app only; the dashboard is requested.
+    return user_payload(new_user, issue_token(new_user))
 
 @app.post("/api/auth/login")
 def login_user(payload: UserLogin, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == payload.username).first()
-    if not user or user.password_hash != payload.password:
+    if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid username or password")
-    
+
+    # Upgrade legacy plaintext rows on the first successful login, so accounts
+    # migrate as people sign in rather than needing a bulk rewrite.
+    if needs_rehash(user.password_hash):
+        user.password_hash = hash_password(payload.password)
+        db.commit()
+
+    return user_payload(user, issue_token(user))
+
+
+MIN_PASSWORD_LENGTH = 8
+
+
+@app.post("/api/auth/change-password")
+def change_own_password(
+    payload: PasswordChange,
+    user: models.User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    """Set your own password. Deliberately not behind require_surface: someone
+    holding a temporary password has no surfaces yet, and this is their way out."""
+    if not verify_password(payload.current_password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Aktuelles Passwort ist falsch.")
+    if len(payload.new_password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Das neue Passwort braucht mindestens {MIN_PASSWORD_LENGTH} Zeichen.",
+        )
+    if payload.new_password == payload.current_password:
+        raise HTTPException(status_code=400, detail="Bitte ein anderes Passwort wählen.")
+
+    user.password_hash = hash_password(payload.new_password)
+    user.must_change_password = False
+    db.commit()
+    db.refresh(user)
+    # A fresh token, so the change is a clean break from the temporary one.
+    return user_payload(user, issue_token(user))
+
+
+@app.post("/api/admin/users/{user_id}/reset-password")
+def admin_reset_password(
+    user_id: str,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Issue a temporary password and return it once.
+
+    The admin reads it off the screen and passes it on; it is never stored in the
+    clear and cannot be retrieved again. The user is forced to replace it before
+    anything else opens.
+    """
+    target = db.query(models.User).filter(models.User.id == user_id).first()
+    if target is None:
+        raise HTTPException(status_code=404, detail="Benutzer nicht gefunden.")
+
+    temporary = secrets.token_urlsafe(9)
+    target.password_hash = hash_password(temporary)
+    target.must_change_password = True
+    db.commit()
     return {
         "status": "success",
-        "username": user.username,
-        "full_name": user.full_name,
-        "email": user.email,
-        "role": user.role
+        "username": target.username,
+        # Shown once. There is no endpoint that can return it again.
+        "temporary_password": temporary,
     }
+
+
+@app.get("/api/auth/me")
+def read_me(user: models.User = Depends(current_user)):
+    """Re-read the caller's own access, so a client that has been offline picks
+    up permissions granted while it was away."""
+    return user_payload(user)
+
+
+# Permission requests
+@app.post("/api/permissions/request")
+def request_permission(
+    payload: PermissionRequestCreate,
+    user: models.User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    if payload.surface not in SURFACE_FLAG:
+        raise HTTPException(status_code=400, detail="Unbekannter Bereich.")
+    if getattr(user, SURFACE_FLAG[payload.surface], False):
+        return {"status": "already_granted", "surface": payload.surface}
+
+    # One open request per surface, so repeated clicks do not spam the admin.
+    pending = (
+        db.query(models.PermissionRequest)
+        .filter(
+            models.PermissionRequest.user_id == user.id,
+            models.PermissionRequest.surface == payload.surface,
+            models.PermissionRequest.status == "pending",
+        )
+        .first()
+    )
+    if pending:
+        return {"status": "pending", "surface": payload.surface, "request_id": pending.id}
+
+    entry = models.PermissionRequest(
+        id=str(uuid.uuid4()),
+        user_id=user.id,
+        surface=payload.surface,
+        message=(payload.message or "")[:500] or None,
+    )
+    db.add(entry)
+    db.commit()
+    return {"status": "pending", "surface": payload.surface, "request_id": entry.id}
+
+
+@app.get("/api/permissions/requests")
+def list_permission_requests(
+    status: str = Query("pending"),
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    query = db.query(models.PermissionRequest, models.User).join(
+        models.User, models.PermissionRequest.user_id == models.User.id
+    )
+    if status != "all":
+        query = query.filter(models.PermissionRequest.status == status)
+    rows = query.order_by(models.PermissionRequest.created_at.desc()).limit(200).all()
+    return [
+        {
+            "id": req.id,
+            "surface": req.surface,
+            "status": req.status,
+            "message": req.message,
+            "created_at": req.created_at.isoformat() if req.created_at else None,
+            "user": {"id": u.id, "username": u.username, "full_name": u.full_name},
+        }
+        for req, u in rows
+    ]
+
+
+@app.post("/api/permissions/requests/{request_id}/decide")
+def decide_permission_request(
+    request_id: str,
+    payload: PermissionDecision,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    entry = (
+        db.query(models.PermissionRequest)
+        .filter(models.PermissionRequest.id == request_id)
+        .first()
+    )
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Anfrage nicht gefunden.")
+    if entry.status != "pending":
+        raise HTTPException(status_code=409, detail="Anfrage wurde bereits entschieden.")
+
+    entry.status = "approved" if payload.approve else "denied"
+    entry.decided_at = datetime.datetime.utcnow()
+    entry.decided_by = admin.id
+    if payload.approve:
+        target = db.query(models.User).filter(models.User.id == entry.user_id).first()
+        if target is None:
+            raise HTTPException(status_code=404, detail="Benutzer nicht gefunden.")
+        setattr(target, SURFACE_FLAG[entry.surface], True)
+    db.commit()
+    return {"status": entry.status, "request_id": entry.id}
+
+
+# User administration
+@app.get("/api/admin/users")
+def list_users(admin: models.User = Depends(require_admin), db: Session = Depends(get_db)):
+    users = db.query(models.User).order_by(models.User.username).all()
+    return [
+        {
+            "id": u.id,
+            "username": u.username,
+            "full_name": u.full_name,
+            "email": u.email,
+            "role": u.role,
+            "can_field": bool(u.can_field),
+            "can_dashboard": bool(u.can_dashboard),
+            "is_admin": bool(u.is_admin),
+            "must_change_password": bool(u.must_change_password),
+        }
+        for u in users
+    ]
+
+
+@app.patch("/api/admin/users/{user_id}/access")
+def update_user_access(
+    user_id: str,
+    payload: UserAccessUpdate,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    target = db.query(models.User).filter(models.User.id == user_id).first()
+    if target is None:
+        raise HTTPException(status_code=404, detail="Benutzer nicht gefunden.")
+
+    if payload.can_field is not None:
+        target.can_field = payload.can_field
+    if payload.can_dashboard is not None:
+        target.can_dashboard = payload.can_dashboard
+    if payload.is_admin is not None:
+        # Refuse to remove the last admin, otherwise nobody can grant anything.
+        if target.is_admin and not payload.is_admin:
+            remaining = (
+                db.query(models.User)
+                .filter(models.User.is_admin.is_(True), models.User.id != target.id)
+                .count()
+            )
+            if remaining == 0:
+                raise HTTPException(
+                    status_code=409, detail="Der letzte Administrator kann nicht entfernt werden."
+                )
+        target.is_admin = payload.is_admin
+
+    db.commit()
+    db.refresh(target)
+    return user_payload(target)
 
 
 # API Endpoints
 @app.get("/api/points")
-def get_points(db: Session = Depends(get_db)):
+def get_points(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(current_user),   # both surfaces read the points
+):
     anomalies = db.query(models.Anomaly).all()
     result = []
     for p in anomalies:
@@ -265,7 +684,11 @@ def get_points(db: Session = Depends(get_db)):
     return result
 
 @app.post("/api/points/import")
-def import_points(points_list: List[PointCreate], db: Session = Depends(get_db)):
+def import_points(
+    points_list: List[PointCreate],
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(require_admin),
+):
     imported_count = 0
     # Ensure project exists
     project = db.query(models.Project).filter(models.Project.project_id == '11-24-2736').first()
@@ -337,7 +760,11 @@ def _upsert_feedback(db: Session, values: dict, update_teams_tools: bool):
 
 
 @app.post("/api/sync")
-def sync_data(payload: SyncPayload, db: Session = Depends(get_db)):
+def sync_data(
+    payload: SyncPayload,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(require_surface("field")),
+):
     synced_feedback_count = 0
     for fb in payload.feedback:
         # Verify target anomaly exists in anomalies table to prevent foreign key violation
@@ -425,7 +852,10 @@ def sync_data(payload: SyncPayload, db: Session = Depends(get_db)):
 
 
 @app.get("/api/projects")
-def list_projects(db: Session = Depends(get_db)):
+def list_projects(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(current_user),   # used by both surfaces
+):
     """Projects that actually carry anomalies, for the report filter dropdown."""
     rows = (
         db.query(models.Anomaly.project_id, models.Project.project_name)
@@ -457,6 +887,7 @@ def report_feedback_pdf(
     start: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
     end: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
     db: Session = Depends(get_db),
+    user: models.User = Depends(require_surface("dashboard")),
 ):
     rows, start_dt, end_dt = _report_rows(db, project_id, start, end)
     # The Bild links point back at whichever origin the report was requested from,
@@ -477,6 +908,7 @@ def report_feedback_csv(
     start: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
     end: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
     db: Session = Depends(get_db),
+    user: models.User = Depends(require_surface("dashboard")),
 ):
     rows, _, _ = _report_rows(db, project_id, start, end)
     filename = f"feedback-{_stamp(project_id, start, end)}.csv"
@@ -509,7 +941,10 @@ def report_photo_gallery(feedback_id: str, db: Session = Depends(get_db)):
 
 
 @app.get("/api/stats")
-def get_stats(db: Session = Depends(get_db)):
+def get_stats(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(require_surface("dashboard")),
+):
     total_points = db.query(models.Anomaly).count()
     all_points = get_points(db)
     
@@ -544,7 +979,10 @@ def get_stats(db: Session = Depends(get_db)):
     }
 
 @app.post("/api/seed")
-def seed_mock_data(db: Session = Depends(get_db)):
+def seed_mock_data(
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(require_admin),
+):
     # Clear existing tables in dependency order
     db.query(models.Feedback).delete()
     db.query(models.Anomaly).delete()

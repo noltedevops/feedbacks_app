@@ -64,7 +64,48 @@ def init_db():
             logger.info("Verified feedback.teams_tools column exists.")
     except Exception as e:
         logger.error(f"Failed to add feedback.teams_tools column: {e}")
-    
+
+    # Per-surface access flags. Rows created before these existed are backfilled
+    # from role, so nobody loses the access they had: collectors keep the field
+    # app, dashboard users keep the dashboard.
+    user_flags = [
+        ("can_field", "BOOLEAN NOT NULL DEFAULT true", "BOOLEAN NOT NULL DEFAULT 1"),
+        ("can_dashboard", "BOOLEAN NOT NULL DEFAULT false", "BOOLEAN NOT NULL DEFAULT 0"),
+        ("is_admin", "BOOLEAN NOT NULL DEFAULT false", "BOOLEAN NOT NULL DEFAULT 0"),
+        ("must_change_password", "BOOLEAN NOT NULL DEFAULT false", "BOOLEAN NOT NULL DEFAULT 0"),
+    ]
+    try:
+        with engine.connect() as conn:
+            if engine.url.drivername.startswith("postgresql"):
+                existing = {
+                    row[0] for row in conn.execute(text(
+                        "SELECT column_name FROM information_schema.columns WHERE table_name = 'users';"
+                    ))
+                }
+                type_index = 1
+            else:
+                existing = {row[1] for row in conn.execute(text("PRAGMA table_info(users);"))}
+                type_index = 2
+
+            added = [c for c, _, _ in user_flags if c not in existing]
+            for spec in user_flags:
+                if spec[0] not in existing:
+                    conn.execute(text(f"ALTER TABLE users ADD COLUMN {spec[0]} {spec[type_index]};"))
+
+            # Backfill only the columns this run added, so later edits to a user's
+            # access are never overwritten on the next startup.
+            if "can_dashboard" in added:
+                conn.execute(text("UPDATE users SET can_dashboard = true WHERE role = 'dashboard';"))
+            if "can_field" in added:
+                # The column default already granted the field app to everyone;
+                # take it back off the dashboard-only accounts.
+                conn.execute(text("UPDATE users SET can_field = false WHERE role = 'dashboard';"))
+            conn.commit()
+            logger.info("Verified users access-flag columns exist.")
+    except Exception as e:
+        logger.error(f"Failed to add users access-flag columns: {e}")
+
+
     # Create PL/pgSQL triggers for bidirectional sync in PostgreSQL
     if engine.url.drivername.startswith("postgresql"):
         try:

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FileText, Table2, X, Loader2 } from 'lucide-react';
 import { makeT, type AppLang } from '../i18n';
+import { authFetch } from '../auth';
 
 export interface ProjectOption {
   project_id: string;
@@ -53,7 +54,11 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
       if (start) params.set('start', start);
       if (end) params.set('end', end);
 
-      const res = await fetch(`${apiBase}/api/reports/feedback.${kind}?${params.toString()}`);
+      const res = await authFetch(`${apiBase}/api/reports/feedback.${kind}?${params.toString()}`);
+      if (res.status === 403) {
+        setError(t('You do not have permission to export reports.'));
+        return;
+      }
       if (!res.ok) throw new Error(`${res.status}`);
 
       // Read as a blob and click a temporary link so the browser keeps the

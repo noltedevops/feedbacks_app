@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Boolean, DateTime, Integer, ForeignKey, JSON, create_engine
+from sqlalchemy import Column, String, Float, Boolean, DateTime, Integer, ForeignKey, JSON, create_engine, text
 from sqlalchemy.orm import declarative_base, relationship
 from geoalchemy2 import Geometry
 import datetime
@@ -78,4 +78,29 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False, default="collector") # 'collector' or 'dashboard'
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    # Per-surface access. These - not role - decide what a user may open; role is
+    # kept as the landing view and as the label shown in the sidebar.
+    can_field = Column(Boolean, nullable=False, default=True, server_default=text("true"))
+    can_dashboard = Column(Boolean, nullable=False, default=False, server_default=text("false"))
+    is_admin = Column(Boolean, nullable=False, default=False, server_default=text("false"))
+    # Set when an admin issues a temporary password; the user cannot reach any
+    # surface until they have chosen their own.
+    must_change_password = Column(Boolean, nullable=False, default=False, server_default=text("false"))
+
+
+class PermissionRequest(Base):
+    """Raised when a user opens a surface they lack, decided by an admin."""
+    __tablename__ = "permission_requests"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    surface = Column(String(20), nullable=False)          # 'field' or 'dashboard'
+    status = Column(String(20), nullable=False, default="pending")  # pending/approved/denied
+    message = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    decided_at = Column(DateTime, nullable=True)
+    decided_by = Column(String(36), nullable=True)        # users.id of the deciding admin
+
+    user = relationship("User")
 

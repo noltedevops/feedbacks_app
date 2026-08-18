@@ -27,8 +27,16 @@ import {
   ChevronsRight,
   Table2,
   FilePlus2,
-  ListChecks
+  ListChecks,
+  Lock,
+  ShieldCheck,
+  Users
 } from 'lucide-react';
+import {
+  authFetch, getAccess, setSession, clearSession, NO_ACCESS,
+  rememberOnlineLogin, offlineAccessFor,
+  type Access, type Surface,
+} from './auth';
 
 // Same-origin: FastAPI serves this bundle out of static/, so /api/... resolves against
 // whatever host the app was opened from. Lets field devices reach the server by LAN IP
@@ -53,6 +61,27 @@ function newId(): string {
 }
 
 type AppRole = 'collector' | 'dashboard';
+
+interface AdminUserRow {
+  id: string;
+  username: string;
+  full_name: string;
+  email: string | null;
+  role: string;
+  can_field: boolean;
+  can_dashboard: boolean;
+  is_admin: boolean;
+  must_change_password: boolean;
+}
+
+interface PermissionRequestRow {
+  id: string;
+  surface: Surface;
+  status: string;
+  message: string | null;
+  created_at: string | null;
+  user: { id: string; username: string; full_name: string };
+}
 
 // How many target cards the field app's list keeps in the DOM before the user scrolls
 // for more. See visibleTargetPoints.
@@ -208,6 +237,27 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState('');
   const [currentUserFullName, setCurrentUserFullName] = useState('');
   const [userRole, setUserRole] = useState<AppRole>('collector');
+  // What this account may open. Mirrored from the server; the server re-checks.
+  const [access, setAccess] = useState<Access>(NO_ACCESS);
+  // Surface the user tried to open without permission -> drives the request dialog.
+  const [permissionPrompt, setPermissionPrompt] = useState<Surface | null>(null);
+  const [permissionNote, setPermissionNote] = useState('');
+  const [permissionSending, setPermissionSending] = useState(false);
+  const [permissionSent, setPermissionSent] = useState<Surface | null>(null);
+  // Admin-only: pending requests waiting on a decision.
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<PermissionRequestRow[]>([]);
+  // Admin-only: the user list, and the one-time password a reset just produced.
+  const [showUsersPanel, setShowUsersPanel] = useState(false);
+  const [userRows, setUserRows] = useState<AdminUserRow[]>([]);
+  const [issuedPassword, setIssuedPassword] = useState<{ username: string; password: string } | null>(null);
+  // Forced password change after an admin reset.
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNext, setPwNext] = useState('');
+  const [pwRepeat, setPwRepeat] = useState('');
+  const [pwError, setPwError] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
   
   // Theme States
   const [theme, setTheme] = useState<'dark' | 'light'>((localStorage.getItem('theme') as any) || 'dark');
@@ -343,9 +393,30 @@ export default function App() {
       setCurrentUser(sessionUser);
       setUserRole(sessionRole as AppRole);
       setCurrentUserFullName(sessionFullName);
+      setAccess(getAccess());
       setIsLoggedIn(true);
     }
   }, []);
+
+  // Re-read our own access on start, so permission granted while this device was
+  // offline takes effect without making the user sign out and back in.
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    authFetch(`${API_BASE}/api/auth/me`)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (!data) return;
+        const fresh: Access = {
+          can_field: !!data.can_field,
+          can_dashboard: !!data.can_dashboard,
+          is_admin: !!data.is_admin,
+        };
+        setAccess(fresh);
+        setSession(null, fresh);
+        setMustChangePassword(!!data.must_change_password);
+      })
+      .catch(() => { /* offline: keep the cached flags */ });
+  }, [isLoggedIn]);
 
   // Monitor online status
   useEffect(() => {
@@ -412,7 +483,7 @@ export default function App() {
   // Project names for the report filter; best effort, the local ids are the fallback.
   useEffect(() => {
     if (!isOnline) return;
-    fetch(`${API_BASE}/api/projects`)
+    authFetch(`${API_BASE}/api/projects`)
       .then((r) => (r.ok ? r.json() : []))
       .then(setServerProjects)
       .catch(() => setServerProjects([]));
@@ -420,7 +491,7 @@ export default function App() {
 
   const fetchFromServer = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/points`);
+      const res = await authFetch(`${API_BASE}/api/points`);
       if (!res.ok) throw new Error('API server error');
       const serverPoints = await res.json();
       
@@ -482,7 +553,7 @@ export default function App() {
       const sentFeedbackIds = pendingItems.map((i) => i.id);
       const sentPointIds = pendingPoints.map((p) => p.id);
 
-      const res = await fetch(`${API_BASE}/api/sync`, {
+      const res = await authFetch(`${API_BASE}/api/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -667,7 +738,7 @@ export default function App() {
   const handleImportPoints = async (importedPoints: any[]) => {
     try {
       if (isOnline) {
-        const res = await fetch(`${API_BASE}/api/points/import`, {
+        const res = await authFetch(`${API_BASE}/api/points/import`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(importedPoints)
@@ -713,7 +784,7 @@ export default function App() {
   };
 
   const handleSeedRequest = async () => {
-    const res = await fetch(`${API_BASE}/api/seed`, { method: 'POST' });
+    const res = await authFetch(`${API_BASE}/api/seed`, { method: 'POST' });
     if (!res.ok) throw new Error('Seeding failed');
     await fetchFromServer();
   };
@@ -735,37 +806,71 @@ export default function App() {
         const role = (data.role || 'collector') as AppRole;
         const fullname = data.full_name || 'Eric Musonera';
         
+        const granted: Access = {
+          can_field: !!data.can_field,
+          can_dashboard: !!data.can_dashboard,
+          is_admin: !!data.is_admin,
+        };
+
         localStorage.setItem('nolte_user', data.username);
         localStorage.setItem('nolte_role', role);
         localStorage.setItem('nolte_user_fullname', fullname);
-        
+        setSession(data.token, granted);
+        // The server vouched for this account here, which is what later lets it
+        // sign in offline. Recorded under the name the server returned, so a
+        // difference in casing cannot open a second, unverified entry.
+        rememberOnlineLogin(data.username, granted);
+
         setCurrentUser(data.username);
         setCurrentUserFullName(fullname);
-        setUserRole(role);
+        // userRole doubles as the surface on screen, so land on one this account
+        // can actually open: their stored role when allowed, otherwise the other.
+        setUserRole(
+          role === 'dashboard' && granted.can_dashboard ? 'dashboard'
+            : granted.can_field ? 'collector'
+            : 'dashboard'
+        );
+        setAccess(granted);
+        setMustChangePassword(!!data.must_change_password);
         setIsLoggedIn(true);
         showToast('success', `Welcome back, ${fullname}!`);
         return;
       }
+      // The server answered and turned us down. Stop here: falling through to
+      // the offline path below would accept any password whenever the backend
+      // is actually reachable.
+      showToast('error', t('Invalid username or password.'));
+      return;
     } catch (err) {
       console.warn('Backend login unreachable, using local fallback', err);
     }
 
-    // Local fallback for offline/demo
-    let role: AppRole = 'collector';
-    let fullname = 'Eric Musonera';
-    if (usernameClean.toLowerCase() === 'dashboard' || usernameClean.toLowerCase() === 'admin') {
-      role = 'dashboard';
-      fullname = 'Operations Analyst';
+    // Local fallback, reached only when the backend could not be contacted at
+    // all, so crews can keep working offline. Nothing here checks the password -
+    // there is nothing to check it against - so it is limited to accounts the
+    // server has already authenticated on this device, and to the field app.
+    const offlineAccess = offlineAccessFor(usernameClean);
+    if (!offlineAccess) {
+      // Refusing beats a silent local sign-in: an unverified session used to
+      // look exactly like a real one, so a wrong password read as success and
+      // only failed once the backend came back.
+      showToast('error', t('No connection, and this account has not signed in on this device before. Connect to the network to sign in.'));
+      return;
     }
+    const role: AppRole = 'collector';
+    const fullname = localStorage.getItem('nolte_user_fullname') || usernameClean;
+
     localStorage.setItem('nolte_user', usernameClean);
     localStorage.setItem('nolte_role', role);
     localStorage.setItem('nolte_user_fullname', fullname);
-    
+    setSession(null, offlineAccess);
+
     setCurrentUser(usernameClean);
     setCurrentUserFullName(fullname);
     setUserRole(role);
+    setAccess(offlineAccess);
     setIsLoggedIn(true);
-    showToast('success', `Welcome back, ${fullname}!`);
+    showToast('info', t('OFFLINE MODE: your password was not checked. Field app only; data syncs when back online.'));
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -789,40 +894,229 @@ export default function App() {
         const data = await res.json();
         const role = (data.role || 'collector') as AppRole;
         
+        const granted: Access = {
+          can_field: !!data.can_field,
+          can_dashboard: !!data.can_dashboard,
+          is_admin: !!data.is_admin,
+        };
+
         localStorage.setItem('nolte_user', data.username);
         localStorage.setItem('nolte_role', role);
         localStorage.setItem('nolte_user_fullname', data.full_name);
-        
+        setSession(data.token, granted);
+
         setCurrentUser(data.username);
         setCurrentUserFullName(data.full_name);
-        setUserRole(role);
+        setUserRole(granted.can_field ? 'collector' : 'dashboard');
+        setAccess(granted);
         setIsLoggedIn(true);
         setShowAuthModal(false);
         showToast('success', `Account created successfully! Welcome, ${data.full_name}.`);
         return;
       }
+      // Same reasoning as handleLogin: a rejected registration (usually a taken
+      // username) must not hand out a local session for that name.
+      const detail = await res.json().catch(() => null);
+      showToast('error', detail?.detail || t('Registration failed.'));
+      return;
     } catch (err) {
-      console.warn('Backend register unreachable, using local session fallback', err);
+      console.warn('Backend register unreachable; refusing to fake an account', err);
     }
 
-    const role: AppRole = 'collector';
-    localStorage.setItem('nolte_user', usernameClean);
-    localStorage.setItem('nolte_role', role);
-    localStorage.setItem('nolte_user_fullname', fullNameClean);
-    
-    setCurrentUser(usernameClean);
-    setCurrentUserFullName(fullNameClean);
-    setUserRole(role);
-    setIsLoggedIn(true);
-    setShowAuthModal(false);
-    showToast('success', `Account created successfully! Welcome, ${fullNameClean}.`);
+    // No offline fallback here, unlike sign-in. An account only exists once the
+    // server has created it, so the old local session announced "Account created
+    // successfully" for an account that was never created anywhere - and any data
+    // collected under that name synced with an investigator no user row matched.
+    showToast('error', t('No connection. Creating an account needs the server; please try again once online.'));
   };
 
 
   const handleForgot = (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Password reset instructions sent to your email.");
+    // There is no self-service reset: no mail server is configured. This used to
+    // claim an email had been sent, which left people waiting for nothing. An
+    // admin issues a temporary password from the Users panel instead.
+    showToast('info', t('Please ask your administrator to reset your password.'));
     setAuthView('login');
+  };
+
+  // Surface switching goes through here so a user without the permission gets
+  // the request dialog instead of a view they are not allowed to see.
+  const openSurface = (surface: Surface) => {
+    const allowed = surface === 'field' ? access.can_field : access.can_dashboard;
+    if (!allowed) {
+      setPermissionNote('');
+      setPermissionPrompt(surface);
+      return;
+    }
+    if (surface === 'field') {
+      setUserRole('collector');
+      setActiveTab('map');
+    } else {
+      setUserRole('dashboard');
+    }
+  };
+
+  const submitPermissionRequest = async () => {
+    if (!permissionPrompt) return;
+    setPermissionSending(true);
+    try {
+      const res = await authFetch(`${API_BASE}/api/permissions/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ surface: permissionPrompt, message: permissionNote.trim() || null }),
+      });
+      if (!res.ok) throw new Error(`request failed: ${res.status}`);
+      const data = await res.json();
+      if (data.status === 'already_granted') {
+        // An admin approved it while the dialog was open.
+        const fresh = { ...access, [permissionPrompt === 'field' ? 'can_field' : 'can_dashboard']: true };
+        setAccess(fresh);
+        setSession(null, fresh);
+        setPermissionPrompt(null);
+        showToast('success', t('Access granted.'));
+        return;
+      }
+      setPermissionSent(permissionPrompt);
+      showToast('success', t('Request sent to the administrator.'));
+    } catch (err) {
+      console.warn('Permission request failed', err);
+      showToast('error', t('Could not send the request. Check your connection.'));
+    } finally {
+      setPermissionSending(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const res = await authFetch(`${API_BASE}/api/admin/users`);
+      if (!res.ok) return;
+      setUserRows(await res.json());
+    } catch (err) {
+      console.warn('Could not load users', err);
+    }
+  };
+
+  useEffect(() => {
+    if (showUsersPanel && access.is_admin) loadUsers();
+  }, [showUsersPanel, access.is_admin]);
+
+  const updateUserAccess = async (row: AdminUserRow, patch: Partial<AdminUserRow>) => {
+    try {
+      const res = await authFetch(`${API_BASE}/api/admin/users/${row.id}/access`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        // The server refuses to remove the last admin; surface its reason.
+        showToast('error', body?.detail || t('Could not change access.'));
+        return;
+      }
+      setUserRows(prev => prev.map(u => (u.id === row.id ? { ...u, ...patch } : u)));
+      // Changing our own access has to be reflected here too.
+      if (row.username === currentUser) {
+        const fresh = { ...access, ...patch } as Access;
+        setAccess(fresh);
+        setSession(null, fresh);
+      }
+    } catch (err) {
+      console.warn('Could not change access', err);
+      showToast('error', t('Could not change access.'));
+    }
+  };
+
+  const resetUserPassword = async (row: AdminUserRow) => {
+    try {
+      const res = await authFetch(`${API_BASE}/api/admin/users/${row.id}/reset-password`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      const data = await res.json();
+      // Shown once - there is no way to read it back.
+      setIssuedPassword({ username: data.username, password: data.temporary_password });
+      setUserRows(prev => prev.map(u => (u.id === row.id ? { ...u, must_change_password: true } : u)));
+    } catch (err) {
+      console.warn('Could not reset password', err);
+      showToast('error', t('Could not reset the password.'));
+    }
+  };
+
+  const submitPasswordChange = async () => {
+    setPwError('');
+    if (pwNext.length < 8) {
+      setPwError(t('The new password needs at least 8 characters.'));
+      return;
+    }
+    if (pwNext !== pwRepeat) {
+      setPwError(t('The two new passwords do not match.'));
+      return;
+    }
+    setPwSaving(true);
+    try {
+      const res = await authFetch(`${API_BASE}/api/auth/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current_password: pwCurrent, new_password: pwNext }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setPwError(data?.detail || t('Could not change the password.'));
+        return;
+      }
+      const fresh: Access = {
+        can_field: !!data.can_field,
+        can_dashboard: !!data.can_dashboard,
+        is_admin: !!data.is_admin,
+      };
+      setSession(data.token, fresh);
+      setAccess(fresh);
+      setMustChangePassword(false);
+      setPwCurrent(''); setPwNext(''); setPwRepeat('');
+      showToast('success', t('Password updated.'));
+    } catch (err) {
+      console.warn('Could not change password', err);
+      setPwError(t('Could not change the password.'));
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
+  const loadPermissionRequests = async () => {
+    try {
+      const res = await authFetch(`${API_BASE}/api/permissions/requests?status=pending`);
+      if (!res.ok) return;
+      setPendingRequests(await res.json());
+    } catch (err) {
+      console.warn('Could not load permission requests', err);
+    }
+  };
+
+  // Load once when an admin signs in so the sidebar badge is right, then poll
+  // only while the panel is open.
+  useEffect(() => {
+    if (!access.is_admin) return;
+    loadPermissionRequests();
+    if (!showAdminPanel) return;
+    const timer = setInterval(loadPermissionRequests, 20000);
+    return () => clearInterval(timer);
+  }, [showAdminPanel, access.is_admin]);
+
+  const decideRequest = async (id: string, approve: boolean) => {
+    try {
+      const res = await authFetch(`${API_BASE}/api/permissions/requests/${id}/decide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approve }),
+      });
+      if (!res.ok) throw new Error(`decide failed: ${res.status}`);
+      setPendingRequests(prev => prev.filter(r => r.id !== id));
+      showToast('success', approve ? t('Permission granted.') : t('Request denied.'));
+    } catch (err) {
+      console.warn('Could not decide request', err);
+      showToast('error', t('Could not save the decision.'));
+    }
   };
 
   const handlePointPositionChange = (lat: number, lng: number) => {
@@ -838,6 +1132,8 @@ export default function App() {
   };
 
   const handleSignOut = () => {
+    clearSession();
+    setAccess(NO_ACCESS);
     localStorage.removeItem('nolte_user');
     localStorage.removeItem('nolte_role');
     localStorage.removeItem('nolte_user_fullname');
@@ -1652,23 +1948,19 @@ export default function App() {
               {/* Navigation Menu */}
               <nav className="sidebar-menu">
                 <button 
-                  className={`sidebar-item ${userRole === 'collector' && activeTab === 'map' ? 'active' : ''}`}
-                  onClick={() => {
-                    setUserRole('collector');
-                    setActiveTab('map');
-                  }}
-                  title={t('Field App')}
+                  className={`sidebar-item ${userRole === 'collector' && activeTab === 'map' ? 'active' : ''} ${access.can_field ? '' : 'locked'}`}
+                  onClick={() => openSurface('field')}
+                  title={access.can_field ? t('Field App') : t('Field App - permission required')}
                 >
                   <Compass size={20} />
                   <span className="sidebar-item-label">{t('Field App')}</span>
+                  {!access.can_field && <Lock size={12} className="sidebar-item-lock" />}
                 </button>
 
-                <button 
-                  className={`sidebar-item ${userRole === 'dashboard' ? 'active' : ''}`}
-                  onClick={() => {
-                    setUserRole('dashboard');
-                  }}
-                  title={t('Dashboard')}
+                <button
+                  className={`sidebar-item ${userRole === 'dashboard' ? 'active' : ''} ${access.can_dashboard ? '' : 'locked'}`}
+                  onClick={() => openSurface('dashboard')}
+                  title={access.can_dashboard ? t('Dashboard') : t('Dashboard - permission required')}
                 >
                   {/* Bar chart icon */}
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1677,7 +1969,33 @@ export default function App() {
                     <line x1="6" x2="6" y1="20" y2="14" />
                   </svg>
                   <span className="sidebar-item-label">{t('Dashboard')}</span>
+                  {!access.can_dashboard && <Lock size={12} className="sidebar-item-lock" />}
                 </button>
+
+                {access.is_admin && (
+                  <button
+                    className="sidebar-item"
+                    onClick={() => setShowAdminPanel(true)}
+                    title={t('Permission requests')}
+                  >
+                    <ShieldCheck size={20} />
+                    <span className="sidebar-item-label">{t('Permissions')}</span>
+                    {pendingRequests.length > 0 && (
+                      <span className="sidebar-item-badge">{pendingRequests.length}</span>
+                    )}
+                  </button>
+                )}
+
+                {access.is_admin && (
+                  <button
+                    className="sidebar-item"
+                    onClick={() => setShowUsersPanel(true)}
+                    title={t('Users')}
+                  >
+                    <Users size={20} />
+                    <span className="sidebar-item-label">{t('Users')}</span>
+                  </button>
+                )}
 
                 <button 
                   className="sidebar-item"
@@ -2380,6 +2698,218 @@ export default function App() {
       )}
 
       {/* Floating Action Notifications */}
+      {/* Forced password change. No dismiss: the server refuses every surface
+          until this is done, so an escape hatch would only strand the user. */}
+      {isLoggedIn && mustChangePassword && (
+        <div className="permission-overlay">
+          <div className="permission-dialog" onClick={e => e.stopPropagation()}>
+            <div className="permission-dialog-head">
+              <Lock size={18} />
+              <h3>{t('Choose a new password')}</h3>
+            </div>
+            <p>{t('Your administrator issued a temporary password. Set your own to continue.')}</p>
+
+            <input
+              className="permission-note"
+              type="password"
+              autoComplete="current-password"
+              placeholder={t('Temporary password')}
+              value={pwCurrent}
+              onChange={e => setPwCurrent(e.target.value)}
+            />
+            <input
+              className="permission-note"
+              type="password"
+              autoComplete="new-password"
+              placeholder={t('New password')}
+              value={pwNext}
+              onChange={e => setPwNext(e.target.value)}
+            />
+            <input
+              className="permission-note"
+              type="password"
+              autoComplete="new-password"
+              placeholder={t('Repeat new password')}
+              value={pwRepeat}
+              onChange={e => setPwRepeat(e.target.value)}
+            />
+            {pwError && <p className="permission-error">{pwError}</p>}
+
+            <div className="permission-actions">
+              <button className="permission-btn" onClick={handleSignOut}>{t('Sign Out')}</button>
+              <button className="permission-btn primary" onClick={submitPasswordChange} disabled={pwSaving}>
+                {pwSaving ? t('Saving...') : t('Save password')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin: users and their access */}
+      {showUsersPanel && access.is_admin && (
+        <div className="permission-overlay" onClick={() => setShowUsersPanel(false)}>
+          <div className="permission-dialog wide" onClick={e => e.stopPropagation()}>
+            <div className="permission-dialog-head">
+              <Users size={18} />
+              <h3>{t('Users')}</h3>
+            </div>
+
+            {issuedPassword && (
+              <div className="issued-password">
+                <strong>{t('Temporary password for')} @{issuedPassword.username}</strong>
+                <code>{issuedPassword.password}</code>
+                <span>{t('Shown once. Pass it on now - it cannot be displayed again.')}</span>
+                <button className="permission-btn" onClick={() => setIssuedPassword(null)}>
+                  {t('Done')}
+                </button>
+              </div>
+            )}
+
+            <ul className="permission-request-list">
+              {userRows.map(row => (
+                <li key={row.id}>
+                  <div className="permission-request-who">
+                    <strong>{row.full_name || row.username}</strong>
+                    <span>@{row.username}</span>
+                    {row.must_change_password && <span className="pill">{t('reset pending')}</span>}
+                  </div>
+                  <div className="access-toggles">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={row.can_field}
+                        onChange={e => updateUserAccess(row, { can_field: e.target.checked })}
+                      />
+                      {t('Field App')}
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={row.can_dashboard}
+                        onChange={e => updateUserAccess(row, { can_dashboard: e.target.checked })}
+                      />
+                      {t('Dashboard')}
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={row.is_admin}
+                        onChange={e => updateUserAccess(row, { is_admin: e.target.checked })}
+                      />
+                      {t('Administrator')}
+                    </label>
+                    <button className="permission-btn" onClick={() => resetUserPassword(row)}>
+                      {t('Reset password')}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <div className="permission-actions">
+              <button className="permission-btn" onClick={() => setShowUsersPanel(false)}>
+                {t('Close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Permission request dialog - shown when a locked surface is opened */}
+      {permissionPrompt && (
+        <div className="permission-overlay" onClick={() => setPermissionPrompt(null)}>
+          <div className="permission-dialog" onClick={e => e.stopPropagation()}>
+            <div className="permission-dialog-head">
+              <Lock size={18} />
+              <h3>
+                {permissionPrompt === 'field' ? t('Field App') : t('Dashboard')}
+              </h3>
+            </div>
+
+            {permissionSent === permissionPrompt ? (
+              <>
+                <p>{t('Your request has been sent to the administrator. You will get access once it is approved.')}</p>
+                <div className="permission-actions">
+                  <button className="permission-btn primary" onClick={() => setPermissionPrompt(null)}>
+                    {t('Close')}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>
+                  {t('You do not have permission to open this area. Request access from your administrator.')}
+                </p>
+                <textarea
+                  className="permission-note"
+                  rows={3}
+                  placeholder={t('Optional: why do you need access?')}
+                  value={permissionNote}
+                  onChange={e => setPermissionNote(e.target.value)}
+                />
+                <div className="permission-actions">
+                  <button className="permission-btn" onClick={() => setPermissionPrompt(null)}>
+                    {t('Cancel')}
+                  </button>
+                  <button
+                    className="permission-btn primary"
+                    onClick={submitPermissionRequest}
+                    disabled={permissionSending}
+                  >
+                    {permissionSending ? t('Sending...') : t('Request permission')}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Admin: decide pending requests */}
+      {showAdminPanel && access.is_admin && (
+        <div className="permission-overlay" onClick={() => setShowAdminPanel(false)}>
+          <div className="permission-dialog wide" onClick={e => e.stopPropagation()}>
+            <div className="permission-dialog-head">
+              <ShieldCheck size={18} />
+              <h3>{t('Permission requests')}</h3>
+            </div>
+
+            {pendingRequests.length === 0 ? (
+              <p>{t('No pending requests.')}</p>
+            ) : (
+              <ul className="permission-request-list">
+                {pendingRequests.map(req => (
+                  <li key={req.id}>
+                    <div className="permission-request-who">
+                      <strong>{req.user.full_name || req.user.username}</strong>
+                      <span>@{req.user.username}</span>
+                    </div>
+                    <div className="permission-request-what">
+                      {req.surface === 'field' ? t('Field App') : t('Dashboard')}
+                      {req.message && <em>"{req.message}"</em>}
+                    </div>
+                    <div className="permission-actions">
+                      <button className="permission-btn" onClick={() => decideRequest(req.id, false)}>
+                        {t('Deny')}
+                      </button>
+                      <button className="permission-btn primary" onClick={() => decideRequest(req.id, true)}>
+                        {t('Approve')}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="permission-actions">
+              <button className="permission-btn" onClick={() => setShowAdminPanel(false)}>
+                {t('Close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast && (
         <div style={{
           position: 'fixed',
