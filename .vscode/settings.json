@@ -1,0 +1,7 @@
+{
+  // Point the editor at the project venv rather than the global interpreter, so
+  // linting, IntelliSense and the debugger see the pinned versions from
+  // requirements.txt. Relative to the workspace, so it works on any machine.
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+  "python.terminal.activateEnvironment": true
+}
