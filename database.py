@@ -1,6 +1,7 @@
 import logging
 import math
 from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
 from config import settings
 from models import Base
@@ -14,10 +15,25 @@ if db_url.startswith("postgresql://"):
 elif db_url.startswith("postgresql+psycopg2://"):
     db_url = db_url.replace("postgresql+psycopg2://", "postgresql+psycopg://", 1)
 
+def safe_url(url: str) -> str:
+    """The URL with its password masked, for anything that gets logged.
+
+    The connection string carries the database password, and these lines run on
+    every startup - into terminal scrollback, log files and CI output. Rotating
+    the password and keeping it out of git achieves nothing if the app prints it
+    each time it starts.
+    """
+    try:
+        return make_url(url).render_as_string(hide_password=True)
+    except Exception:
+        # Never let logging be the thing that stops the app from starting.
+        return "<unparseable database URL>"
+
+
 engine = None
 
 try:
-    logger.info(f"Attempting to connect to database (mapped URL: {db_url})")
+    logger.info(f"Attempting to connect to database (mapped URL: {safe_url(db_url)})")
     if db_url.startswith("postgresql"):
         engine = create_engine(db_url, connect_args={"connect_timeout": 5})
         with engine.connect() as conn:
@@ -26,7 +42,7 @@ try:
         engine = create_engine(db_url, connect_args={"check_same_thread": False})
         logger.info("Connected to SQLite database.")
 except Exception as e:
-    logger.error(f"Failed to connect to database URL {db_url}. Error: {e}")
+    logger.error(f"Failed to connect to database URL {safe_url(db_url)}. Error: {e}")
     fallback_url = "sqlite:///./uxo_local.db"
     logger.warning(f"Falling back to local SQLite database at: {fallback_url}")
     engine = create_engine(fallback_url, connect_args={"check_same_thread": False})
