@@ -14,5 +14,9 @@ class Settings(BaseSettings):
     
     class Config:
         env_file = ".env"
+        # .env is shared with docker-compose, which reads POSTGRES_* and PGADMIN_*
+        # from the same file. Without this, pydantic rejects every key it does not
+        # recognise and the app refuses to start over settings that are not its own.
+        extra = "ignore"
 
 settings = Settings()
