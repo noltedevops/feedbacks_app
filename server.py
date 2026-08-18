@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from typing import List, Optional
+from contextlib import asynccontextmanager
 from pydantic import BaseModel
 import datetime
 import hashlib
@@ -22,7 +23,30 @@ from config import settings
 
 init_db()
 
-app = FastAPI(title="Nolte Geoservices UXO Target Sync Platform")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown, replacing the deprecated @app.on_event hooks.
+
+    Everything before the yield runs once before the first request; anything
+    after it would run on shutdown, of which this app has none.
+
+    seed_default_users is defined further down the module: the name is looked up
+    when this runs, not when it is declared, so the ordering is fine.
+    """
+    from database import SessionLocal
+    db = SessionLocal()
+    try:
+        seed_default_users(db)
+    finally:
+        db.close()
+    yield
+
+
+app = FastAPI(
+    title="Nolte Geoservices UXO Target Sync Platform",
+    lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -367,15 +391,6 @@ def seed_default_users(db: Session):
             db.commit()
     except Exception as e:
         print("Error seeding default users:", e)
-
-@app.on_event("startup")
-def startup_event():
-    from database import SessionLocal
-    db = SessionLocal()
-    try:
-        seed_default_users(db)
-    finally:
-        db.close()
 
 # Authentication API Endpoints
 @app.post("/api/auth/register")
