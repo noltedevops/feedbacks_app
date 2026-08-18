@@ -8,6 +8,8 @@ venv/
 # Environment / secrets
 .env
 .env.*
+# ...but the template carries no real values and must be committed.
+!.env.example
 
 # Local SQLite fallback, created when the Postgres connection fails
 uxo_local.db
