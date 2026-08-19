@@ -22,6 +22,17 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Without this the database does not come back after a reboot or a Docker
+    # restart, and the app - which is not managed here - fails against nothing.
+    restart: unless-stopped
+    # $$ keeps compose from interpolating these: they are expanded by the shell
+    # inside the container, where the POSTGRES_* values already exist.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -33,8 +44,12 @@ services:
       - "127.0.0.1:8080:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+    restart: unless-stopped
+    # service_started only waits for the container to exist; pgAdmin would come
+    # up against a database still running initdb. Wait for the healthcheck.
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:
