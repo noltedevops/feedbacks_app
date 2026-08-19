@@ -1,6 +1,7 @@
 import logging
 import math
 import os
+import time
 from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
@@ -31,14 +32,53 @@ def safe_url(url: str) -> str:
         return "<unparseable database URL>"
 
 
+def _retry_window() -> float:
+    """How long to keep retrying the first connection, in seconds."""
+    try:
+        return max(0.0, float(os.getenv("DB_CONNECT_RETRY_SECONDS", "30")))
+    except ValueError:
+        return 30.0
+
+
+def _connect_with_retry(url: str, window: float):
+    """Return a connected engine, retrying for `window` seconds before giving up.
+
+    A cold boot starts this process and the database together, and Postgres needs
+    a few seconds before it accepts connections. A failed connection is fatal now,
+    and nothing supervises this process - no restart policy, no service manager -
+    so a single attempt would turn that ordinary race into an outage lasting until
+    somebody restarts the app by hand. Retry for a bounded window, then fail just
+    as loudly as before: this buys time for a slow database, not for a wrong one.
+
+    Set DB_CONNECT_RETRY_SECONDS=0 to fail on the first attempt.
+    """
+    engine = create_engine(url, connect_args={"connect_timeout": 5})
+    deadline = time.monotonic() + window
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            with engine.connect():
+                return engine
+        except Exception:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise
+            logger.warning(
+                "Database not ready (attempt %d); retrying for up to %.0fs more.",
+                attempt,
+                remaining,
+            )
+            time.sleep(min(2.0, remaining))
+
+
 engine = None
 
 try:
     logger.info(f"Attempting to connect to database (mapped URL: {safe_url(db_url)})")
     if db_url.startswith("postgresql"):
-        engine = create_engine(db_url, connect_args={"connect_timeout": 5})
-        with engine.connect() as conn:
-            logger.info("Successfully connected to PostgreSQL database.")
+        engine = _connect_with_retry(db_url, _retry_window())
+        logger.info("Successfully connected to PostgreSQL database.")
     else:
         engine = create_engine(db_url, connect_args={"check_same_thread": False})
         logger.info("Connected to SQLite database.")
