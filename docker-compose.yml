@@ -13,6 +13,11 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      # initdb otherwise writes "trust" for local and 127.0.0.1 connections, so any
+      # process inside this container reaches the database as superuser without a
+      # password. The running volume has been corrected in place; this is what a
+      # freshly created volume needs so it does not come back up trusting.
+      POSTGRES_INITDB_ARGS: "--auth-local=scram-sha-256 --auth-host=scram-sha-256"
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
