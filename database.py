@@ -1,5 +1,6 @@
 import logging
 import math
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
@@ -43,8 +44,26 @@ try:
         logger.info("Connected to SQLite database.")
 except Exception as e:
     logger.error(f"Failed to connect to database URL {safe_url(db_url)}. Error: {e}")
+    # This used to fall through to SQLite unconditionally, which turned a wrong
+    # password or an unreachable server into an app that started cleanly against an
+    # empty database: the data was simply absent and every login failed, with the
+    # real cause buried in one warning line among the startup output. A database
+    # the app cannot reach is not a condition it can paper over, so it now stops.
+    #
+    # The fallback remains for deliberate offline work. It is read from the process
+    # environment and NOT from .env - nothing loads .env into os.environ, so setting
+    # it there has no effect.
+    if os.getenv("ALLOW_SQLITE_FALLBACK") != "1":
+        raise RuntimeError(
+            f"Cannot reach the database at {safe_url(db_url)}: {e}. "
+            "Check that the server is running and that DATABASE_URL is correct. "
+            "To work offline against a local SQLite file instead, set the "
+            "environment variable ALLOW_SQLITE_FALLBACK=1."
+        ) from e
     fallback_url = "sqlite:///./uxo_local.db"
-    logger.warning(f"Falling back to local SQLite database at: {fallback_url}")
+    logger.warning(
+        f"ALLOW_SQLITE_FALLBACK=1 - falling back to local SQLite database at: {fallback_url}"
+    )
     engine = create_engine(fallback_url, connect_args={"check_same_thread": False})
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
