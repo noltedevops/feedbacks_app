@@ -230,6 +230,44 @@ const MapInteractivity: React.FC<{ enabled: boolean }> = ({ enabled }) => {
   return null;
 };
 
+// Leaflet measures its container once, when the map is created, and never notices
+// it changing afterwards. Tiles for the area that was outside the old box are never
+// requested, which is exactly what the grey panels are - the map is not broken, it
+// simply does not know it grew. Every layout change has to say so.
+//
+// Leaflet's own trackResize already covers a window resize. What it cannot see is
+// the container changing while the window does not: the phone reflow moving the map
+// between layers, a drawer opening beside it, a panel stacking below it. A
+// ResizeObserver on the container catches all of those. orientationchange is kept
+// separately because on a phone it can land before the box has settled.
+const MapResizeHandler: React.FC = () => {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+
+    // Coalesce bursts into one call per frame: a rotation fires repeatedly and
+    // invalidateSize forces a synchronous re-layout every time it is called.
+    let frame = 0;
+    const invalidate = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => map.invalidateSize({ animate: false }));
+    };
+
+    const observer = new ResizeObserver(invalidate);
+    observer.observe(container);
+    window.addEventListener('orientationchange', invalidate);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('orientationchange', invalidate);
+    };
+  }, [map]);
+
+  return null;
+};
+
 // Available basemaps
 const BASEMAPS = {
   dark: {
@@ -680,6 +718,7 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
 
         <MapInteractivity enabled={mapInteractive} />
         <MapController points={points} selectedPoint={selectedPoint} />
+        <MapResizeHandler />
 
         {selectedPoint && popupPointId === selectedPoint.id && (
           <Popup
