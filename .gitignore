@@ -12,7 +12,7 @@ venv/
 !.env.example
 
 # Local SQLite fallback, created when the Postgres connection fails
-uxo_local.db
+*.db
 
 # Database dumps - contain the users table, never commit
 backup-*.sql
