@@ -4,9 +4,23 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 
 scratch/
+
+# Vendored Node.js toolchain - 181MB of downloadable runtime, not source.
+# Recreate with: python install_node.py
+# Root-anchored so it can never swallow a source directory named "node".
+/node/
+
+# Node - frontend/.gitignore already covers frontend/; these are the root-level
+# safety net for anything run from the repo root.
+node_modules/
+dist/
+*.log
 
 # Environment / secrets
 .env
@@ -22,6 +36,10 @@ backup-*.sql
 
 # Agent tooling
 .claude/
+
+# Editors
+.idea/
+*.swp
 
 # OS
 .DS_Store
