@@ -61,6 +61,25 @@ function newId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+// Avatar initials. The three call sites used to slice the first two characters off
+// the full name, which turned "Emmy Blaize" into "EM" instead of "EB" - it only ever
+// looked right for people whose first two letters happened to match their initials.
+// A full name gives first-initial + last-initial; a single token (a username, or a
+// mononym) still falls back to its first two letters, which is what those callers
+// relied on for values like "admin".
+// Split on any whitespace run so double spaces do not produce an empty part, and
+// iterate by code point so a name starting outside the BMP is not cut in half.
+function initialsFor(name: string | null | undefined): string {
+  const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'US';
+
+  const first = [...parts[0]];
+  if (parts.length === 1) return first.slice(0, 2).join('').toUpperCase();
+
+  const last = [...parts[parts.length - 1]];
+  return (first[0] + last[0]).toUpperCase();
+}
+
 type AppRole = 'collector' | 'dashboard';
 
 interface AdminUserRow {
@@ -2067,7 +2086,7 @@ export default function App() {
                     fontSize: '0.85rem',
                     fontFamily: 'var(--font-heading)'
                   }}>
-                    {(currentUserFullName || currentUser || 'US').substring(0, 2).toUpperCase()}
+                    {initialsFor(currentUserFullName || currentUser)}
                   </div>
                 </div>
 
@@ -2108,7 +2127,7 @@ export default function App() {
                         fontWeight: 'bold',
                         fontSize: '0.95rem'
                       }}>
-                        {(currentUserFullName || currentUser || 'US').substring(0, 2).toUpperCase()}
+                        {initialsFor(currentUserFullName || currentUser)}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                         <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
@@ -2631,7 +2650,7 @@ export default function App() {
                 fontSize: '0.95rem',
                 flexShrink: 0
               }}>
-                {(currentUserFullName || currentUser || 'US').substring(0, 2).toUpperCase()}
+                {initialsFor(currentUserFullName || currentUser)}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
                 <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
