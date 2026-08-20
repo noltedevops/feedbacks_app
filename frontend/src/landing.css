@@ -374,9 +374,258 @@
   background: rgba(255, 255, 255, 0.22);
 }
 
-@media (max-width: 900px) {
+/* ============================================================================
+   RESPONSIVE
+   ---------------------------------------------------------------------------
+   The landing page's layout lives in inline style attributes on the JSX, and an
+   inline style beats a stylesheet rule at any specificity. That is why this file
+   used to have no layout media queries at all - not because the page was fluid,
+   but because nothing here could reach the geometry. Every override below is
+   therefore !important, the same technique index.css already uses for the
+   dashboard and field app.
+
+   What was actually broken below 1024px:
+     - the header laid brand + nav + auth buttons on one non-wrapping row, so
+       everything past "...GmbH" ran off the right edge;
+     - the showcase column was `flex-shrink: 0; width: 580px`, so at 375px it was
+       pushed to x=397 - fully outside the viewport - and .landing-root's
+       `overflow-x: hidden` then clipped it away silently. That is why the hero
+       photo did not merely squeeze, it vanished.
+
+   Breakpoints match the rest of the app: <=768 phone, 769-1024 tablet. Nothing
+   above 1024px is touched.
+   ========================================================================== */
+
+/* Hidden at every width except the phone tier. `display: none` keeps it out of
+   flex layout entirely, so the desktop header still has exactly three children
+   and its space-between spacing is unchanged. */
+.landing-burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+/* --- Tablet: 769-1024 ---------------------------------------------------- */
+/* The two columns stay side by side, but the showcase stops being rigid so the
+   pair can share whatever width there is. 580 + 580 + 40 gap + 96 padding needs
+   1296px; this tier has at most 1024. */
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* space-between alone runs out of slack at 769px and lets the three groups
+     touch, so the header gets an explicit gap and everything inside it is
+     dialled down until the row has room to breathe again. */
+  .landing-header {
+    padding: 16px 22px !important;
+    gap: 16px !important;
+  }
+
+  .landing-nav { gap: 18px !important; }
+  .landing-actions { gap: 10px !important; }
+  .landing-actions > button { padding: 7px 14px !important; font-size: 0.8rem !important; }
+
+  .landing-header .brand-mark { gap: 10px; min-width: 0; }
+  .landing-header .brand-name { font-size: 0.95rem; }
+  .landing-header .brand-mark img { height: 32px !important; }
+
+  .landing-main {
+    padding: 40px 24px !important;
+    gap: 28px !important;
+    align-items: center !important;
+  }
+
+  /* Both columns become proportional. min-width: 0 is what actually lets a flex
+     item shrink below its content's intrinsic width. */
+  .landing-copy {
+    max-width: none !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+
+  .landing-showcase {
+    flex: 1 1 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: auto !important;
+  }
+
+  .landing-title { font-size: 2.5rem !important; }
+  .landing-sub { font-size: 1rem !important; margin-bottom: 28px !important; }
+  .landing-cta button { padding: 12px 22px !important; font-size: 0.92rem !important; }
+
+  .hero-stage { height: 280px; }
+  .hero-caption { left: 14px; right: 14px; bottom: 14px; padding: 11px 13px; }
+
   .site-footer { padding: 34px 24px 28px; }
-  .hero-stage { height: 300px; }
+}
+
+/* --- Phone: <=768 -------------------------------------------------------- */
+@media (max-width: 768px) {
+
+  /* 100vw counts the scrollbar gutter and is a classic source of a stray
+     horizontal scrollbar - the same swap index.css makes for the app shell. */
+  .landing-root {
+    width: 100% !important;
+    overflow-x: hidden;
+  }
+
+  /* Brand stays on row one; everything else wraps to row two, but only once the
+     drawer is open. */
+  .landing-header {
+    flex-wrap: wrap !important;
+    padding: 12px 16px !important;
+    gap: 10px !important;
+  }
+
+  .landing-burger { display: inline-flex; }
+
+  .landing-header .brand-mark { gap: 9px; min-width: 0; }
+  .landing-header .brand-mark img { height: 30px !important; }
+
+  /* The wordmark is the one thing allowed to truncate rather than push the
+     hamburger off-screen, but at this size it fits without doing so. */
+  .landing-header .brand-name {
+    font-size: 0.98rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Drawer: the nav and the auth cluster are the same DOM nodes as on desktop,
+     simply moved onto their own full-width row and stacked. No duplicate markup
+     means no second copy that could drift out of sync. */
+  .landing-nav,
+  .landing-actions { display: none !important; }
+
+  .landing-header.is-nav-open .landing-nav,
+  .landing-header.is-nav-open .landing-actions {
+    display: flex !important;
+    flex-basis: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+  }
+
+  .landing-header.is-nav-open .landing-actions {
+    gap: 10px !important;
+    padding-bottom: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 12px;
+  }
+
+  .landing-nav .nav-tab {
+    justify-content: space-between;
+    padding: 11px 2px;
+    font-size: 0.98rem;
+  }
+
+  /* In the drawer the dropdown has room to push the rest of the list down
+     instead of floating over it. */
+  .landing-nav-pop {
+    position: static !important;
+    padding-top: 6px !important;
+  }
+
+  .landing-nav-pop .nav-menu {
+    width: 100% !important;
+    animation: none;
+  }
+
+  .landing-actions .lang-switch { align-self: flex-start; }
+  .landing-actions > button { width: 100%; padding: 11px 18px !important; }
+
+  /* Single reading column. This is what stops the showcase being pushed out of
+     the viewport and clipped. */
+  .landing-main {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    padding: 28px 16px 36px !important;
+    gap: 30px !important;
+  }
+
+  .landing-copy {
+    max-width: 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .landing-title {
+    font-size: 2.1rem !important;
+    line-height: 1.14 !important;
+    margin-bottom: 16px !important;
+  }
+
+  .landing-sub {
+    font-size: 1rem !important;
+    margin-bottom: 26px !important;
+  }
+
+  /* The pair still fits on one row for most of this tier; allowing a wrap is what
+     keeps the longer German labels ("Jetzt Zugang anfordern") from being squeezed
+     into "Get Early / Access" the way they were before. */
+  .landing-cta {
+    flex-wrap: wrap !important;
+    width: 100% !important;
+    gap: 12px !important;
+  }
+
+  .landing-cta button {
+    justify-content: center !important;
+    padding: 13px 22px !important;
+  }
+
+  /* The fix for the vanished hero: no rigid width, no fixed height. */
+  .landing-showcase {
+    flex-shrink: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+  }
+
+  /* Taller than the 210px a phone-scaled 360px would give: the caption stacks
+     here and takes ~90px, so the stage has to grow to keep a usable amount of
+     photo visible above it. */
+  .hero-stage { height: 280px; }
+
+  /* The bloom is a blurred overhang; at phone width it would widen the page. */
+  .hero-stage::before { inset: -14% -6%; }
+
+  /* Title, description and the slide counter cannot share one row at 375px. */
+  .hero-caption {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    padding: 9px 11px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .landing-dots { margin-top: 18px !important; justify-content: center; }
+
+  .site-footer { padding: 28px 16px 24px; }
+  .footer-links { flex-wrap: wrap; justify-content: center; }
+}
+
+/* --- Narrow phones ------------------------------------------------------- */
+/* Below ~600px the two CTAs can no longer share a row without one of them
+   getting a two-line label, so they go full-bleed and stack - the usual phone
+   pattern. Above this they keep their natural widths and do not look stretched. */
+@media (max-width: 600px) {
+  .landing-cta {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .landing-cta button {
+    width: 100% !important;
+    padding: 14px 20px !important;
+  }
 }
 
 /* Respect reduced-motion: keep the colours, drop the movement */

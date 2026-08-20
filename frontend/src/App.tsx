@@ -30,7 +30,8 @@ import {
   ListChecks,
   Lock,
   ShieldCheck,
-  Users
+  Users,
+  Menu
 } from 'lucide-react';
 import {
   authFetch, getAccess, setSession, clearSession, NO_ACCESS,
@@ -290,6 +291,12 @@ export default function App() {
   const [lang, setLang] = useState<AppLang>((localStorage.getItem('nolte_lang') as AppLang) || 'EN');
   const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
   const [activeFieldImg, setActiveFieldImg] = useState(0);
+
+  // Landing header on phones: the brand, the two nav tabs, the language switch and
+  // both auth buttons cannot share one row at 375px, so everything but the brand
+  // moves into a drawer. The trigger and the drawer are hidden by a media query
+  // rather than by `isMobile`, so the desktop render is byte-identical to before.
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Remember the chosen language across sessions and keep <html lang> in sync
   useEffect(() => {
@@ -1370,7 +1377,7 @@ export default function App() {
       
       {/* 1. Sentry-Inspired Landing Page View */}
       {!isLoggedIn ? (
-        <div style={{
+        <div className="landing-root" style={{
           display: 'flex',
           flexDirection: 'column',
           minHeight: '100vh',
@@ -1383,7 +1390,7 @@ export default function App() {
         }}>
           
           {/* Top Header Navigation Bar */}
-          <header style={{
+          <header className={mobileNavOpen ? 'landing-header is-nav-open' : 'landing-header'} style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -1401,8 +1408,19 @@ export default function App() {
               <span className="brand-name">Nolte Geoservices GmbH</span>
             </div>
 
+            {/* Hamburger — hidden above 768px, so it costs the desktop header nothing */}
+            <button
+              type="button"
+              className="landing-burger"
+              aria-label={lang === 'EN' ? 'Menu' : 'Menü'}
+              aria-expanded={mobileNavOpen}
+              onClick={() => setMobileNavOpen(open => !open)}
+            >
+              {mobileNavOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+
             {/* Middle Nav Links: ONLY Platform (with dropdown) and Company */}
-            <nav style={{ display: 'flex', alignItems: 'center', gap: '36px', position: 'relative' }}>
+            <nav className="landing-nav" style={{ display: 'flex', alignItems: 'center', gap: '36px', position: 'relative' }}>
               
               {/* Platform Tab with Dropdown */}
               <div
@@ -1421,7 +1439,7 @@ export default function App() {
 
                 {/* Dropdown Menu on Hover — labels only, no icons or descriptions */}
                 {showPlatformDropdown && (
-                  <div style={{
+                  <div className="landing-nav-pop" style={{
                     position: 'absolute',
                     top: '100%',
                     left: '-14px',
@@ -1453,8 +1471,8 @@ export default function App() {
             </nav>
 
             {/* Right Controls: Translator & Auth Buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              
+            <div className="landing-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+
               {/* Language Switcher (English <-> Deutsch) */}
               <LangSwitch lang={lang} onChange={setLang} />
 
@@ -1506,7 +1524,7 @@ export default function App() {
           </header>
 
           {/* Hero Section Container */}
-          <main style={{
+          <main className="landing-main" style={{
             display: 'flex',
             flexGrow: 1,
             alignItems: 'center',
@@ -1517,12 +1535,12 @@ export default function App() {
             width: '100%',
             gap: '40px'
           }}>
-            
+
             {/* Left Hero Text Content */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '580px', zIndex: 2 }}>
-              
+            <div className="landing-copy" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '580px', zIndex: 2 }}>
+
               {/* Hero Main Headline */}
-              <h1 style={{
+              <h1 className="landing-title" style={{
                 fontSize: '3.5rem',
                 fontWeight: 800,
                 color: '#ffffff',
@@ -1541,7 +1559,7 @@ export default function App() {
               </h1>
 
               {/* Sub-headline Description */}
-              <p style={{
+              <p className="landing-sub" style={{
                 fontSize: '1.15rem',
                 color: '#94a3b8',
                 lineHeight: 1.6,
@@ -1554,7 +1572,7 @@ export default function App() {
               </p>
 
               {/* Hero CTA Action Buttons */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div className="landing-cta" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <button
                   onClick={() => {
                     setShowAuthModal(true);
@@ -1612,7 +1630,7 @@ export default function App() {
             </div>
 
             {/* Right Side Visual Showcase: Field Operations Carousel */}
-            <div style={{
+            <div className="landing-showcase" style={{
               flexShrink: 0,
               width: '580px',
               height: '420px',
@@ -1678,7 +1696,7 @@ export default function App() {
               </div>
 
               {/* Carousel Navigation Indicators */}
-              <div style={{
+              <div className="landing-dots" style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '10px',
