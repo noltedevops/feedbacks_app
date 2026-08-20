@@ -953,7 +953,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     }}>
 
       {/* 1. Horizontal top-floating Dashboard Section Header */}
-      <div className="glass-panel" style={{
+      <div className="glass-panel dashboard-header-bar" style={{
         position: 'absolute',
         top: '12px',
         left: '12px',
@@ -983,7 +983,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
       </div>
 
       {/* 2. LEFT COLUMN: Floating analytics widgets & stacked charts */}
-      <div style={{
+      <div className="dashboard-col-left" style={{
         position: 'absolute',
         top: '90px',
         left: '12px',
@@ -1002,7 +1002,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
       </div>
 
       {/* 3. RIGHT COLUMN: Target Clearance Log points listing and charts stacked vertically */}
-      <div style={{
+      <div className="dashboard-col-right" style={{
         position: 'absolute',
         top: '12px',
         right: '12px',

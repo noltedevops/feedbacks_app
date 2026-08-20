@@ -1072,6 +1072,41 @@ body.light-theme .lang-switch-option.active {
    background layer and into the reading order; useIsMobile() handles that,
    keyed to this same 768px.
    ========================================================================== */
+/* ===========================================================================
+   TABLET: 769-1024px
+
+   Between the phone reflow and the desktop layout. Desktop is untouched above
+   1024px - these rules exist only because both surfaces were built for a wide
+   viewport and simply run out of room before the mobile breakpoint is reached.
+
+   Everything here needs !important. The desktop geometry lives in inline style
+   attributes on the components, and an inline style beats a stylesheet rule at
+   any specificity - the same reason the mobile block below is written this way.
+   ========================================================================== */
+@media (min-width: 769px) and (max-width: 1024px) {
+
+  /* Dashboard: two 360px columns plus their gutters occupy 744px, which at 769px
+     leaves 25px of map visible between them - the map may as well not be there.
+     Narrowing both to 264px gives back 192px at the low end and 480px at 1024px,
+     so the map remains a map. The columns keep their own vertical stacking, so
+     the charts inside them stay full-width and stacked. */
+  .dashboard-col-left,
+  .dashboard-col-right {
+    width: 264px !important;
+  }
+
+  /* Tracks the right column: its width plus both 12px gutters. */
+  .dashboard-header-bar {
+    right: 288px !important;
+  }
+
+  /* Field App: the 380px panel leaves ~350px of map at 769px, and the panel does
+     not need that width for a project picker and a target list. */
+  .collector-sidebar {
+    width: 300px !important;
+  }
+}
+
 @media (max-width: 768px) {
 
   /* The bottom nav bar's content height. Everything that has to clear it - the page's
