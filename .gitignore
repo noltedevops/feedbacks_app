@@ -34,6 +34,10 @@ dist/
 # Database dumps - contain the users table, never commit
 backup-*.sql
 
+# Generated slide decks - deliverables built from a script, not source. Kept
+# wherever they are needed rather than tracked here.
+*.pptx
+
 # Agent tooling
 .claude/
 
