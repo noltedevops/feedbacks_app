@@ -1,0 +1,1267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Nolte Geoservices UXO Target Sync Platform — Project Documentation</title>
+<style>
+  @page { size: A4 portrait; margin: 16mm 14mm 14mm 14mm; }
+
+  :root {
+    --ink: #1a1f2b;
+    --muted: #5b6577;
+    --rule: #d4d9e2;
+    --accent: #0f3b6b;
+    --band: #eef2f7;
+    --code-bg: #f5f6f8;
+    --warn-bg: #fff6e8;
+    --warn-rule: #d9a441;
+    --note-bg: #eef4fb;
+    --note-rule: #4a7fb5;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 9.1pt;
+    line-height: 1.45;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  h1, h2, h3, h4 { color: var(--accent); margin: 0; font-weight: 600; }
+
+  h2 {
+    font-size: 14pt;
+    margin: 0 0 7px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid var(--accent);
+    break-after: avoid;
+  }
+  h3 { font-size: 10.5pt; margin: 13px 0 5px; break-after: avoid; }
+  h4 { font-size: 9.4pt; margin: 10px 0 4px; color: var(--ink); break-after: avoid; }
+
+  p { margin: 0 0 7px; }
+  ul, ol { margin: 0 0 7px; padding-left: 17px; }
+  li { margin-bottom: 3px; }
+
+  code, kbd {
+    font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+    font-size: 8.4pt;
+    background: var(--code-bg);
+    padding: 0.5px 3px;
+    border-radius: 2px;
+  }
+
+  pre {
+    font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+    font-size: 7.9pt;
+    line-height: 1.34;
+    background: var(--code-bg);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    padding: 7px 9px;
+    margin: 0 0 8px;
+    white-space: pre;
+    overflow: hidden;
+    break-inside: avoid;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  pre.diagram {
+    font-size: 6.5pt;
+    line-height: 1.2;
+    border-left-width: 1px;
+    background: #fbfcfd;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 9px;
+    font-size: 8.3pt;
+    break-inside: auto;
+  }
+  th {
+    background: var(--band);
+    text-align: left;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  th, td {
+    border: 1px solid var(--rule);
+    padding: 3.5px 5px;
+    vertical-align: top;
+  }
+  tr { break-inside: avoid; }
+  td code { font-size: 7.8pt; }
+  .c1 { width: 22%; } .c2 { width: 20%; } .c3 { width: 16%; }
+
+  .callout {
+    background: var(--note-bg);
+    border-left: 3px solid var(--note-rule);
+    padding: 7px 10px;
+    margin: 0 0 9px;
+    break-inside: avoid;
+  }
+  .callout.warn { background: var(--warn-bg); border-left-color: var(--warn-rule); }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout .label { font-weight: 600; color: var(--accent); }
+  .callout.warn .label { color: #8a5a00; }
+
+  /* Sections flow freely, as in the previous revision — only the cover, the table
+     of contents and section 1 start a page of their own. Headings never orphan. */
+  .section { margin-top: 15px; }
+  .section:first-of-type, .newpage { break-before: page; margin-top: 0; }
+
+  /* ---- Cover ---- */
+  .cover {
+    height: 247mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+  .cover .org { font-size: 12pt; letter-spacing: 3.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .cover h1 { font-size: 27pt; line-height: 1.16; margin-bottom: 8px; }
+  .cover .sub { font-size: 12.5pt; color: var(--muted); margin-bottom: 4px; }
+  .cover .doctype { font-size: 14pt; font-weight: 600; color: var(--ink); margin: 22px 0 26px; }
+  .cover hr { width: 90px; border: none; border-top: 2px solid var(--accent); margin: 0 auto 26px; }
+  .cover .meta { font-size: 9.5pt; color: var(--muted); line-height: 1.85; }
+  .cover .meta strong { color: var(--ink); font-weight: 600; }
+
+  /* ---- TOC ---- */
+  .toc { columns: 2; column-gap: 26px; font-size: 9.3pt; }
+  .toc div { margin-bottom: 5px; break-inside: avoid; }
+  .toc .n { display: inline-block; width: 20px; color: var(--accent); font-weight: 600; }
+
+  .footer-note {
+    margin-top: 16px;
+    padding-top: 7px;
+    border-top: 1px solid var(--rule);
+    font-size: 7.7pt;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .lede { font-size: 9.6pt; color: var(--muted); margin-bottom: 10px; }
+  .tag {
+    display: inline-block; font-size: 7.2pt; font-weight: 600;
+    padding: 0.5px 4px; border-radius: 2px; text-transform: uppercase;
+    letter-spacing: 0.3px; white-space: nowrap;
+  }
+  .tag.open   { background: #e6e9ee; color: #47506a; }
+  .tag.auth   { background: #e3eefb; color: #1c5591; }
+  .tag.field  { background: #e3f3e6; color: #256b34; }
+  .tag.dash   { background: #f3e9fb; color: #6a3595; }
+  .tag.admin  { background: #fde8e8; color: #a02c2c; }
+  .new { color: #256b34; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ============================ COVER ============================ -->
+<div class="cover">
+  <div class="org">Nolte Geoservices</div>
+  <h1>UXO Target Sync Platform</h1>
+  <div class="sub">Target Tracker &amp; Data Visualization Platform</div>
+  <div class="doctype">Complete Project Documentation</div>
+  <hr>
+  <div class="meta">
+    Project: <strong>11-24-2736 — Wilhelmshaven Rüstersieler Seedeich</strong><br>
+    Repository: <strong>C:\Apps\feedbackapp</strong> (branch: <strong>main</strong>)<br>
+    Generated: <strong>21 August 2026</strong>
+  </div>
+</div>
+
+<!-- ============================ TOC ============================ -->
+<div class="section newpage">
+  <h2>Table of Contents</h2>
+  <div class="toc">
+    <div><span class="n">1.</span>What Is This Project? (Plain-Language Overview)</div>
+    <div><span class="n">2.</span>Key Concepts &amp; Glossary</div>
+    <div><span class="n">3.</span>System Architecture</div>
+    <div><span class="n">4.</span>Technology Stack</div>
+    <div><span class="n">5.</span>Project Folder Structure</div>
+    <div><span class="n">6.</span>The Database (Data Model)</div>
+    <div><span class="n">7.</span>The Backend Server (FastAPI)</div>
+    <div><span class="n">8.</span>API Reference</div>
+    <div><span class="n">9.</span>Coordinate Systems &amp; Conversions</div>
+    <div><span class="n">10.</span>The Data Ingestion Pipeline</div>
+    <div><span class="n">11.</span>The Frontend Web Application (React)</div>
+    <div><span class="n">12.</span>Offline-First Design &amp; Synchronization</div>
+    <div><span class="n">13.</span>Status Classification Logic</div>
+    <div><span class="n">14.</span>How to Run the Project</div>
+    <div><span class="n">15.</span>Configuration Reference</div>
+    <div><span class="n">16.</span>Troubleshooting</div>
+    <div><span class="n">17.</span>Known Limitations &amp; Notes for Future Development</div>
+  </div>
+
+  <div class="callout" style="margin-top:18px">
+    <p><span class="label">About this revision.</span> This document was last generated on 16 July 2026 from
+    branch <code>backendtest</code>. It has been reconciled against branch <code>main</code> as of
+    21 August 2026. The largest change since then is that <strong>authentication is now real</strong> —
+    the previous revision described client-side login theatre with no server-side checks, which is no
+    longer true (§11.1). The database layer also now <strong>fails loudly</strong> instead of silently
+    falling back to SQLite (§7, §16).</p>
+    <p>This document is <strong>internal engineering and handover documentation</strong>, not a client
+    deliverable. §17 is deliberately candid about what is still wrong.</p>
+    <p>Companion Markdown docs live in the repository and are the maintained day-to-day reference:
+    <code>README.md</code>, <code>docs/ARCHITECTURE.md</code>, <code>docs/DATA_PIPELINE.md</code>,
+    <code>docs/OPERATIONS.md</code> and <code>docs/PROJECT_OVERVIEW.md</code>. Where this PDF and those
+    files disagree, the Markdown is newer.</p>
+  </div>
+</div>
+
+<!-- ============================ 1 ============================ -->
+<div class="section newpage">
+  <h2>1. What Is This Project? (Plain-Language Overview)</h2>
+
+  <p>This project is a field data-collection and visualization platform built for Nolte Geoservices GmbH,
+  a German geophysics company. Its purpose is to support UXO clearance work — the process of finding and
+  safely removing unexploded ordnance (old wartime bombs, mines, and munitions) buried in the ground
+  before construction work begins.</p>
+
+  <p>The concrete use case is a real project: “11-24-2736 — Wilhelmshaven Rüstersieler Seedeich”, a
+  sea-dike site in Wilhelmshaven, northern Germany. The workflow it supports looks like this:</p>
+
+  <ol>
+    <li><strong>Survey phase</strong> (already done, outside this app). Geophysicists scan the site with
+    two instruments — georadar (ground-penetrating radar, GPR) and magnetometers. Each suspicious
+    underground signal is recorded as an <em>anomaly</em> (also called a <em>target</em>): a point with
+    coordinates and an estimated depth. These results arrive as CSV exports
+    (<code>Radar_data.csv</code>, <code>Magnetic_data.csv</code>).</li>
+
+    <li><strong>Loading targets into the platform.</strong> A Python script
+    (<code>ingest_anomalies.py</code>) cleans, merges, and loads the anomalies from both instruments into
+    a central PostgreSQL/PostGIS database. The raw CSVs contain ~2,430 magnetic rows and ~45 radar rows;
+    after dropping rows with missing or duplicate coordinates, the live database currently holds 1,583
+    anomalies and 61 feedback records.</li>
+
+    <li><strong>Field investigation.</strong> A field worker opens the web app on site, sees all targets
+    on an interactive map, walks/digs to each one, and records what was actually found: the excavated
+    depth, dimensions of the hole, the object found (iron bar, wire, nothing, etc.), photos, notes, and
+    the crew and equipment used. This works even without an internet connection — entries are stored in
+    the browser and synced later.</li>
+
+    <li><strong>Office monitoring.</strong> Back at the office, an analyst sees live progress: how many
+    targets are investigated, what was found, charts comparing predicted vs. actual depths, excavated
+    volume, and a map coloured by status. The same surface exports the official
+    <em>Öffnungsmaßnahmen</em> report as PDF or CSV.</li>
+  </ol>
+
+  <p><strong>In one sentence:</strong> it is an offline-capable “ArcGIS Field Maps”-style web app plus
+  backend, purpose-built for tracking the investigation of suspected UXO targets and syncing field
+  findings with a central geospatial database.</p>
+
+  <h3>1.1 Who may see what</h3>
+  <p>Access is granted <strong>per surface</strong>, not per job title. Every account carries three
+  independent flags — <code>can_field</code>, <code>can_dashboard</code> and <code>is_admin</code> — and
+  the server re-checks them on every request. A user who opens a surface they lack is offered a
+  permission request, which an administrator approves or denies in the app. The older <code>role</code>
+  value survives only as the landing view and the label shown in the sidebar; it no longer decides
+  anything.</p>
+</div>
+
+<!-- ============================ 2 ============================ -->
+<div class="section">
+  <h2>2. Key Concepts &amp; Glossary</h2>
+  <table>
+    <tr><th class="c1">Term</th><th>Meaning in this project</th></tr>
+    <tr><td>UXO</td><td>Unexploded Ordnance — buried explosive remnants (bombs, mines, shells) that must be located and removed.</td></tr>
+    <tr><td>Anomaly / Target / Point</td><td>A single suspicious spot detected by a survey instrument. The three words are used interchangeably in the code. Stored in the <code>anomalies</code> database table.</td></tr>
+    <tr><td>Georadar / GPR</td><td>Ground-Penetrating Radar — an instrument that images the shallow subsurface with radar pulses.</td></tr>
+    <tr><td>Magnetic / Magnetometer</td><td>An instrument that detects buried ferrous (iron-containing) metal by its magnetic field.</td></tr>
+    <tr><td>Feedback</td><td>The record a field worker creates after physically investigating one target (what was found, how deep, photos, notes, crew). Stored in the <code>feedback</code> table.</td></tr>
+    <tr><td>VM Nr.</td><td>“Verdachtsmoment-Nummer” — a human-friendly sequential target label like <code>2736-17</code> (project short-code + running number).</td></tr>
+    <tr><td><code>target_id</code></td><td>A stable, unique string built from project id + coordinates, e.g. <code>11-24-2736-442972.981-5937097.795</code>. Used to derive a deterministic UUID for each anomaly.</td></tr>
+    <tr><td>Fundstück (German)</td><td>“Found object” — what the excavation uncovered, e.g. Eisenstange (iron bar), Eisendraht (iron wire), <em>ohne Fund</em> (nothing found).</td></tr>
+    <tr><td>Sohle / Sohle status (German)</td><td>“Pit floor.” <em>Frei</em> = cleared to the bottom; <em>Nicht Frei</em> = could not be fully cleared (e.g. blocked by a utility pipe).</td></tr>
+    <tr><td>Tiefe / Länge / Breite / m³</td><td>German for depth / length / width / cubic metres — the dimensions of the excavation opening.</td></tr>
+    <tr><td>Trupp &amp; Geräte</td><td>“Crew and equipment” — the block on the field form recording Truppführer, Maschinenführer, Suchfeld, Messgerät and Sondierer. Stored as JSON in <code>feedback.teams_tools</code> and printed in the report header.</td></tr>
+    <tr><td>Surface</td><td>One of the two application faces: the <em>Field App</em> and the <em>Dashboard</em>. Permissions are granted per surface.</td></tr>
+    <tr><td>UTM 32N (EPSG:32632)</td><td>The metric map-projection coordinate system used by German surveyors (easting/northing in metres). The web map instead needs WGS84 latitude/longitude (EPSG:4326), so the code converts between the two.</td></tr>
+    <tr><td>PostGIS</td><td>A PostgreSQL extension that adds geospatial data types (<code>GEOMETRY</code>) and functions, letting GIS tools like QGIS/ArcGIS read the database directly.</td></tr>
+    <tr><td>Offline-first</td><td>A design where the app keeps working with no network: data lives in the browser (IndexedDB) and is pushed to the server when connectivity returns.</td></tr>
+  </table>
+</div>
+
+<!-- ============================ 3 ============================ -->
+<div class="section">
+  <h2>3. System Architecture</h2>
+  <p>The system has three tiers plus a one-off data pipeline:</p>
+
+<pre class="diagram"> ┌──────────────────────────────────────────────────────────────────────┐
+ │                        BROWSER (field tablet / office PC)            │
+ │  React + TypeScript single-page app (Vite build, served from         │
+ │  ./static by the backend).  Layout reflows: phone / tablet / desktop  │
+ │                                                                      │
+ │   ┌───────────┐  ┌────────────┐  ┌──────────────┐  ┌─────────────┐   │
+ │   │ FieldMap  │  │ Feedback   │  │  Dashboard   │  │ ImportExport│   │
+ │   │ (Leaflet) │  │ Form       │  │  (Recharts)  │  │ (CSV/seed)  │   │
+ │   └───────────┘  └────────────┘  └──────────────┘  └─────────────┘   │
+ │           │                │                                         │
+ │           ▼                ▼                                         │
+ │   ┌────────────────────────────────────────┐  ┌───────────────────┐  │
+ │   │  IndexedDB via Dexie ("NolteFieldDb")  │  │  Service worker   │  │
+ │   │  points / pendingFeedback /            │  │  sw.js — app      │  │
+ │   │  pendingPointUpdates                   │  │  shell precache   │  │
+ │   │        ← offline cache + queue         │  │  (uxo-tracker-v2) │  │
+ │   └────────────────────────────────────────┘  └───────────────────┘  │
+ └───────────────────────────┬──────────────────────────────────────────┘
+                             │  HTTP/JSON, same-origin  (Bearer token)
+                             ▼
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │                    BACKEND — FastAPI (server.py)                     │
+ │   /api/auth/*   /api/points   /api/sync   /api/stats                 │
+ │   /api/admin/*  /api/permissions/*   /api/reports/*                  │
+ │   PBKDF2 password hashing + HMAC-signed tokens                       │
+ │   Per-surface guards: field / dashboard / admin                      │
+ │   + serves ./static                                                  │
+ └───────────────────────────┬──────────────────────────────────────────┘
+                             │  SQLAlchemy (psycopg driver)
+                             ▼
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │        DATABASE — PostgreSQL 16 + PostGIS 3.4 (Docker container)     │
+ │   projects ── anomalies ── feedback     users ── permission_requests │
+ │   + PL/pgSQL trigger keeping geom ↔ easting/northing ↔ lat/lon       │
+ │     in sync (so QGIS/ArcGIS edits and web edits stay consistent)     │
+ │   Unreachable → the app STOPS (opt-in SQLite fallback only)          │
+ │   Admin UI: pgAdmin 4 container on http://127.0.0.1:8080             │
+ └──────────────────────────────────────────────────────────────────────┘
+    One-off pipeline:  Radar_data.csv + Magnetic_data.csv
+                       └─► ingest_anomalies.py (pandas) ─► anomalies table</pre>
+
+  <h3>Why this shape?</h3>
+  <ul>
+    <li>The field has poor connectivity, so the browser keeps its own full copy of all targets in
+    IndexedDB and queues unsent work. The server is the single source of truth once syncing succeeds.</li>
+    <li>The office uses professional GIS tools (QGIS, ArcGIS Pro) that talk to PostGIS directly. Database
+    triggers make sure a point moved in QGIS updates lat/lon for the web app, and a point dragged on the
+    web map updates the PostGIS geometry — bidirectionally.</li>
+    <li>One deployable unit: the built React app is written into <code>./static</code> and served by
+    FastAPI itself, so a single <code>python server.py</code> serves both the API and the UI on port 8000.
+    Because both come from one origin, the frontend calls <code>/api/...</code> with an empty base URL and
+    there is no host to configure.</li>
+    <li><span class="new">The asymmetry is deliberate:</span> the field app is built to survive with no
+    network; the dashboard is not. Analytics and reports are read straight from the server, because a
+    stale dashboard is worse than an unavailable one. The crew's own work is never blocked that way.</li>
+  </ul>
+</div>
+
+<!-- ============================ 4 ============================ -->
+<div class="section">
+  <h2>4. Technology Stack</h2>
+  <table>
+    <tr><th class="c3">Layer</th><th class="c2">Technology</th><th>Role</th></tr>
+    <tr><td rowspan="6">Backend</td><td>Python 3.13</td><td>Language</td></tr>
+    <tr><td>FastAPI + Uvicorn</td><td>Web framework and ASGI server (port 8000)</td></tr>
+    <tr><td>SQLAlchemy 2 (+ psycopg 3)</td><td>ORM / database access</td></tr>
+    <tr><td>GeoAlchemy2</td><td>Maps the PostGIS <code>GEOMETRY</code> column into SQLAlchemy models</td></tr>
+    <tr><td>Pydantic + pydantic-settings</td><td>Request validation and <code>.env</code> configuration</td></tr>
+    <tr><td><span class="new">hashlib (PBKDF2-HMAC-SHA256)</span></td><td>Password hashing and token signing — standard library only, so there is no crypto dependency to install on a field laptop</td></tr>
+    <tr><td rowspan="3">Database</td><td>PostgreSQL 16 + PostGIS 3.4</td><td>Primary store, run via Docker Compose (<code>postgis/postgis:16-3.4</code>)</td></tr>
+    <tr><td>pgAdmin 4</td><td>Web-based database admin UI (<code>dpage/pgadmin4</code>, port 8080), also in the compose file</td></tr>
+    <tr><td>SQLite</td><td><span class="new">Opt-in</span> local fallback (<code>uxo_local.db</code>) for deliberate offline work — <strong>no longer automatic</strong>, see §7</td></tr>
+    <tr><td rowspan="7">Frontend</td><td>React 19 + TypeScript</td><td>UI framework</td></tr>
+    <tr><td>Vite 8</td><td>Dev server and production bundler (outputs directly to <code>../static</code>)</td></tr>
+    <tr><td>Leaflet + react-leaflet 5</td><td>Interactive map with switchable basemaps</td></tr>
+    <tr><td>Recharts 3</td><td>Dashboard charts (bar, pie, area)</td></tr>
+    <tr><td>Dexie 4</td><td>Friendly wrapper around browser IndexedDB (offline storage)</td></tr>
+    <tr><td>lucide-react</td><td>Icon set</td></tr>
+    <tr><td>PWA assets (<code>manifest.json</code>, <code>sw.js</code>)</td><td>Installable app and service-worker offline shell, sourced from <code>frontend/public/</code></td></tr>
+    <tr><td>Reporting</td><td><span class="new">reportlab</span></td><td><code>report.py</code> — the Öffnungsmaßnahmen PDF and the CSV export</td></tr>
+    <tr><td>Pipeline</td><td>pandas</td><td>CSV cleaning and bulk ingestion (<code>ingest_anomalies.py</code>)</td></tr>
+    <tr><td>Tooling</td><td>Docker Compose, Node.js 22 (fetched by <code>install_node.py</code>), ESLint</td><td>Infrastructure and code quality</td></tr>
+  </table>
+
+  <div class="callout">
+    <p><span class="label">Dependency pinning.</span> <code>requirements.txt</code> is pinned to the
+    versions this app is known to run on. Unpinned, a fresh install resolves whatever is newest that day,
+    which for pydantic or reportlab means a major release landing straight in <code>Settings</code> or in
+    PDF generation. To move a pin: bump it, run the app, then commit the version that worked.</p>
+  </div>
+</div>
+
+<!-- ============================ 5 ============================ -->
+<div class="section">
+  <h2>5. Project Folder Structure</h2>
+<pre>C:\Apps\feedbackapp\
+├── server.py             ← FastAPI backend: auth, API endpoints, reports, static serving
+├── models.py             ← SQLAlchemy tables (Project, Anomaly, Feedback, User, PermissionRequest)
+├── database.py           ← DB connection, retry/fallback, table init, PostGIS trigger, UTM↔lat/lon
+├── config.py             ← Settings from .env; warns on POSTGRES_PASSWORD / DATABASE_URL mismatch
+├── report.py             ← CSV + Öffnungsmaßnahmen PDF generation (reportlab)
+├── ingest_anomalies.py   ← CSV → PostgreSQL bulk-ingestion pipeline (pandas)
+├── manage_access.py      ← CLI: list / grant / revoke / set-password
+├── install_node.py       ← Helper that downloads a portable Node.js into .\node
+├── test_utm.py           ← Standalone sanity check for the UTM conversion math
+├── requirements.txt      ← Python dependencies (pinned)
+├── docker-compose.yml    ← PostgreSQL/PostGIS + pgAdmin, both bound to 127.0.0.1
+├── .env                  ← Live configuration (NOT committed)
+├── .env.example          ← Committed template and the source of truth for every setting
+├── .gitignore            ← Excludes .env, *.db, node/, __pycache__, backup-*.sql, scratch/
+├── Radar_data.csv        ← Raw georadar survey export (~45 targets)
+├── Magnetic_data.csv     ← Raw magnetometer survey export (~2,400 targets)
+├── reportTemplate.pdf    ← The Excel-exported layout report.py reproduces
+├── scripts\
+│   └── doctor.py         ← Read-only diagnostics for the database, credentials and pgAdmin
+├── sql\                  ← One-off migration SQL for bringing in additional projects
+├── docs\                 ← This PDF plus ARCHITECTURE / DATA_PIPELINE / OPERATIONS / OVERVIEW
+├── static\               ← Production build of the React app (served at "/"), committed
+│   ├── index.html, assets\, logo.png, manifest.json, sw.js ...
+└── frontend\             ← React + TypeScript source code
+    ├── package.json, vite.config.ts, tsconfig*.json
+    ├── public\                      ← Static assets copied verbatim into the build, incl. sw.js
+    └── src\
+        ├── App.tsx                  ← Root component: login, surfaces, sync logic, admin dialogs
+        ├── auth.ts                  ← Token storage, access flags, authFetch, offline-login policy
+        ├── i18n.ts                  ← EN/DE translation layer
+        ├── useIsMobile.ts           ← Shared 768px breakpoint for the JS-driven reflow
+        ├── db\indexedDb.ts          ← Dexie schema + status-resolution helper
+        └── components\
+            ├── FieldMap.tsx         ← Leaflet map, markers, basemaps, resize handling
+            ├── FeedbackForm.tsx     ← Investigation entry form incl. camera capture
+            ├── Dashboard.tsx        ← Analyst dashboard with charts and KPIs
+            ├── FilterBar.tsx        ← VM-Nr. / instrument / status filtering
+            ├── ImportExport.tsx     ← CSV paste-import and demo-data seeding
+            └── ReportDialog.tsx     ← Project + date range for the CSV/PDF exports</pre>
+
+  <div class="callout">
+    <p><span class="label">The <code>node\</code> folder is no longer tracked.</span> The repository used
+    to carry two full portable Node.js distributions — 4,963 of its 5,046 files and 181 MB of the 190 MB.
+    They were untracked and ignored on 20 August 2026, and the superseded v22.11.0 copy was deleted from
+    disk. Recreate the toolchain with <code>python install_node.py</code>; nothing else in the repository
+    refers to the directory. Note that this did not shrink <code>.git</code> — the blobs remain in
+    history, which would need a rewrite to reclaim.</p>
+  </div>
+</div>
+
+<!-- ============================ 6 ============================ -->
+<div class="section">
+  <h2>6. The Database (Data Model)</h2>
+  <p>Five tables, defined in <code>models.py</code>. The core chain is one-to-many: a project has many
+  anomalies, and each anomaly can have many feedback records (though in practice the app shows only the
+  latest one). Two further tables carry accounts and access requests.</p>
+
+  <h3>6.1 projects</h3>
+  <table>
+    <tr><th class="c1">Column</th><th class="c2">Type</th><th>Description</th></tr>
+    <tr><td><code>project_id</code></td><td>VARCHAR(50), PK</td><td>e.g. <code>11-24-2736</code></td></tr>
+    <tr><td><code>project_name</code></td><td>VARCHAR(255)</td><td>e.g. “Wilhemshaven Rüstersieler Seedeich”</td></tr>
+    <tr><td><code>created_at</code> / <code>updated_at</code></td><td>TIMESTAMP</td><td>Audit timestamps</td></tr>
+  </table>
+
+  <h3>6.2 anomalies — the survey targets</h3>
+  <table>
+    <tr><th class="c1">Column</th><th class="c2">Type</th><th>Description</th></tr>
+    <tr><td><code>id</code></td><td>VARCHAR(36), PK</td><td>Deterministic UUIDv5 derived from <code>target_id</code> (see box below)</td></tr>
+    <tr><td><code>project_id</code></td><td>FK → projects</td><td>Cascade delete</td></tr>
+    <tr><td><code>instrument</code></td><td>VARCHAR(50)</td><td><code>georadar</code> or <code>magnetic</code></td></tr>
+    <tr><td><code>geom</code></td><td>PostGIS POINT, SRID 32632</td><td>Geospatial geometry for GIS tools</td></tr>
+    <tr><td><code>easting</code> / <code>northing</code></td><td>FLOAT</td><td>UTM 32N metres (survey coordinates)</td></tr>
+    <tr><td><code>latitude</code> / <code>longitude</code></td><td>FLOAT</td><td>WGS84 degrees (for the web map)</td></tr>
+    <tr><td><code>vm_nr</code></td><td>VARCHAR(50)</td><td>Sequential label, e.g. <code>2736-17</code></td></tr>
+    <tr><td><code>category</code></td><td>VARCHAR(50)</td><td><code>Kat-1</code> from the CSV ingestion; the SQL migrations carry the source category through</td></tr>
+    <tr><td><code>layer</code></td><td>VARCHAR(255)</td><td>Source survey layer, e.g. <code>Stoerkoerper Magnetik Nord</code></td></tr>
+    <tr><td><code>status</code></td><td>VARCHAR(50)</td><td><code>pending</code> → <code>investigated</code></td></tr>
+    <tr><td><code>target_id</code></td><td>VARCHAR(100), UNIQUE</td><td><code>{project}-{easting}-{northing}</code></td></tr>
+    <tr><td><code>evaluated_depth</code></td><td>FLOAT</td><td>Depth predicted by the survey instrument (m)</td></tr>
+  </table>
+
+  <div class="callout">
+    <p><span class="label">Stable IDs — a deliberate design choice.</span> Anomaly IDs are not random.
+    They are <code>uuid5(NAMESPACE_DNS, target_id)</code>, i.e. a hash of the project + coordinates.
+    Re-running the ingestion or the seed always produces the same IDs, so feedback recorded against a
+    target never becomes orphaned when the target list is reloaded. (Commit <code>b39c85b</code>
+    introduced this.) <code>models.py</code> also declares a <code>uuid4</code> default on the column, but
+    no insert path reaches it — every one passes an explicit uuid5. Verified in
+    <code>sql/append_anomalie_1_to_anomalies.sql</code>: recomputing the rule for all 1,583 stored rows
+    reproduced every id with zero mismatches.</p>
+  </div>
+
+  <h3>6.3 feedback — field investigation results</h3>
+  <table>
+    <tr><th class="c1">Column</th><th class="c2">Type</th><th>Description</th></tr>
+    <tr><td><code>id</code></td><td>VARCHAR(36), PK</td><td>Created client-side so offline entries have an identity</td></tr>
+    <tr><td><code>anomaly_id</code></td><td>FK → anomalies</td><td>Which target this report belongs to</td></tr>
+    <tr><td><code>visited</code></td><td>BOOLEAN</td><td>Was the target physically visited</td></tr>
+    <tr><td><code>visit_date</code></td><td>TIMESTAMP</td><td>When it was logged — also the guard that stops a stale queued copy overwriting a newer visit</td></tr>
+    <tr><td><code>tief</code></td><td>FLOAT</td><td>Actual excavated depth (m)</td></tr>
+    <tr><td><code>laenge</code> / <code>breite</code> / <code>m_cube</code></td><td>FLOAT</td><td>Opening length, width (m) and volume (m³)</td></tr>
+    <tr><td><code>fundstueck</code></td><td>VARCHAR(255)</td><td>What was found (“Eisenteil”, “ohne Fund”, …)</td></tr>
+    <tr><td><code>sohle_status</code></td><td>VARCHAR(50)</td><td><em>Frei</em> / <em>Nicht Frei</em></td></tr>
+    <tr><td><code>bilder_n</code></td><td>INTEGER</td><td>Number of photos</td></tr>
+    <tr><td><code>photos</code></td><td>TEXT</td><td>JSON array of base64-encoded images</td></tr>
+    <tr><td><code>notes</code> / <code>other</code></td><td>TEXT</td><td>Free-text remarks / “Sonstige” description</td></tr>
+    <tr><td><code>investigator</code> / <code>investigator_username</code></td><td>VARCHAR(100)</td><td>Who logged it</td></tr>
+    <tr><td><code>target_id</code></td><td>VARCHAR(100)</td><td>Denormalized copy for traceability — nothing joins on it</td></tr>
+    <tr><td><code><span class="new">teams_tools</span></code></td><td>JSON</td><td>The Trupp &amp; Geräte block: <code>need_update</code>, <code>truppfuehrer</code>, <code>maschinenfuehrer</code>, <code>bez_suchfeld</code>, <code>messgeraet</code>, <code>sondierer</code>. Travels as one column and drives the report header.</td></tr>
+  </table>
+
+  <h3>6.4 <span class="new">users</span> — accounts and per-surface access</h3>
+  <table>
+    <tr><th class="c1">Column</th><th class="c2">Type</th><th>Description</th></tr>
+    <tr><td><code>id</code></td><td>VARCHAR(36), PK</td><td>UUID</td></tr>
+    <tr><td><code>full_name</code> / <code>username</code> / <code>email</code></td><td>VARCHAR</td><td><code>username</code> is unique and indexed</td></tr>
+    <tr><td><code>password_hash</code></td><td>VARCHAR(255)</td><td><code>pbkdf2_sha256$&lt;iterations&gt;$&lt;salt&gt;$&lt;hash&gt;</code> — an encoded value is ~110 characters</td></tr>
+    <tr><td><code>role</code></td><td>VARCHAR(50)</td><td><code>collector</code> or <code>dashboard</code>. Landing view and sidebar label only — it does <strong>not</strong> grant access.</td></tr>
+    <tr><td><code>can_field</code></td><td>BOOLEAN, default true</td><td>May open the Field App</td></tr>
+    <tr><td><code>can_dashboard</code></td><td>BOOLEAN, default false</td><td>May open the Dashboard</td></tr>
+    <tr><td><code>is_admin</code></td><td>BOOLEAN, default false</td><td>May administer users and decide permission requests</td></tr>
+    <tr><td><code>must_change_password</code></td><td>BOOLEAN, default false</td><td>Set when an admin issues a temporary password; blocks every surface until the user chooses their own</td></tr>
+  </table>
+
+  <h3>6.5 <span class="new">permission_requests</span></h3>
+  <p>Raised when a user opens a surface they lack, and decided by an administrator. Columns:
+  <code>user_id</code> (FK → users), <code>surface</code> (<code>field</code> or <code>dashboard</code>),
+  <code>status</code> (<code>pending</code> / <code>approved</code> / <code>denied</code>),
+  <code>message</code>, <code>created_at</code>, <code>decided_at</code>, and <code>decided_by</code>
+  (the deciding admin's user id).</p>
+
+  <h3>6.6 Additive migrations</h3>
+  <p><code>create_all</code> creates missing tables but never alters existing ones, so columns added after
+  a database was first seeded have to be added explicitly. <code>init_db()</code> does this by hand for
+  <code>feedback.teams_tools</code> and for the four user flags, checking
+  <code>information_schema</code> (or <code>PRAGMA table_info</code> on SQLite) first. The backfill runs
+  only for columns that particular run added — dashboard-only accounts lose <code>can_field</code> and
+  gain <code>can_dashboard</code> once — so a later edit to somebody's access is never overwritten on the
+  next startup.</p>
+
+  <h3>6.7 The spatial synchronization trigger</h3>
+  <p><code>database.py</code> → <code>init_db()</code> installs a PL/pgSQL trigger
+  (<code>sync_anomaly_geom_and_coordinates</code>) that fires before every insert/update on
+  <code>anomalies</code> and keeps all three coordinate representations consistent, whichever one was
+  edited:</p>
+  <ul>
+    <li><strong>Case 1 — <code>geom</code> changed</strong> (e.g. a point moved in QGIS/ArcGIS Pro):
+    recompute easting/northing and, via <code>ST_Transform(..., 4326)</code>, latitude/longitude.</li>
+    <li><strong>Case 2 — easting/northing changed</strong> (e.g. edited numerically): rebuild
+    <code>geom</code> and lat/lon.</li>
+    <li><strong>Case 3 — latitude/longitude changed</strong> (e.g. a marker dragged on the web map):
+    rebuild <code>geom</code> in UTM 32N and easting/northing.</li>
+  </ul>
+  <p>Case 2 is why an insert that supplies its own lat/lon but leaves <code>geom</code> null will have
+  those values recomputed from SRID 32632 — intentional, so every row obtains its coordinates the same
+  way. See <code>sql/append_anomalie_1_to_anomalies.sql</code>, which measured the resulting divergence at
+  at most 0.0069 m.</p>
+</div>
+
+<!-- ============================ 7 ============================ -->
+<div class="section">
+  <h2>7. The Backend Server (FastAPI)</h2>
+  <p><code>server.py</code> is the whole backend — about 1,210 lines. On startup it:</p>
+  <ol>
+    <li>Calls <code>init_db()</code>: connects to the database, enables PostGIS, creates missing tables,
+    applies the additive column migrations, and installs the sync trigger.</li>
+    <li>Creates the FastAPI app titled “Nolte Geoservices UXO Target Sync Platform”.</li>
+    <li>Runs a <strong>lifespan hook</strong> — replacing the deprecated <code>@app.on_event</code>
+    handlers — which seeds the default accounts, but <strong>only into an empty users table</strong>.</li>
+    <li>Enables fully-open CORS (any origin/method/header) — convenient for development, still to be
+    tightened for production (§17).</li>
+    <li>Mounts <code>./static</code> at <code>/</code>, so the compiled React app is served by the same
+    process.</li>
+  </ol>
+
+  <h3>7.1 <span class="new">Connecting to the database: fail loudly</span></h3>
+  <p>This behaviour was inverted on 19 August 2026 and is the single most important operational change in
+  this revision.</p>
+  <ul>
+    <li><strong>The first connection is retried</strong> for <code>DB_CONNECT_RETRY_SECONDS</code>
+    (default 30). A cold boot starts this process and the database together, and Postgres needs a few
+    seconds before it accepts connections; nothing supervises this process, so a single attempt would turn
+    an ordinary race into an outage lasting until somebody restarted the app by hand. Set it to
+    <code>0</code> to fail on the first attempt.</li>
+    <li><strong>A failed connection is now fatal.</strong> The app previously fell through to SQLite
+    unconditionally, which turned a wrong password or an unreachable server into an app that started
+    cleanly against an empty database: the data was simply absent, every login failed, and the real cause
+    sat in one warning line among the startup output.</li>
+    <li><strong>The SQLite fallback is opt-in</strong>, for deliberate offline work only, via
+    <code>ALLOW_SQLITE_FALLBACK=1</code>. See the gotcha in §15 — it is read from the process environment,
+    not from <code>.env</code>.</li>
+    <li><strong>The connection URL is masked</strong> in every log line
+    (<code>safe_url()</code>). These lines run on every startup into terminal scrollback, log files and CI
+    output; rotating a password and keeping it out of git achieves nothing if the app prints it each time
+    it starts.</li>
+  </ul>
+  <p><code>config.py</code> additionally compares <code>POSTGRES_PASSWORD</code> against the password
+  inside <code>DATABASE_URL</code> and prints a warning when they disagree — percent-decoding the URL's
+  copy first, so an escaped password does not read as a mismatch. It warns rather than fails, because a
+  volume whose password was rotated with <code>ALTER USER</code> sits in that state legitimately.</p>
+
+  <h3>7.2 <span class="new">Authentication and authorization</span></h3>
+  <p>Passwords are hashed with PBKDF2-HMAC-SHA256 from the standard library — no external crypto
+  dependency to install on a field laptop — and stored as
+  <code>pbkdf2_sha256$&lt;iterations&gt;$&lt;salt&gt;$&lt;hash&gt;</code>. Stored hashes are transparently
+  re-hashed on login when the iteration count moves. Session tokens are HMAC-signed with
+  <code>AUTH_SECRET</code>; if that is unset a random key is generated per process, so every restart signs
+  everyone out.</p>
+  <p>Authorization is enforced by four FastAPI dependencies:</p>
+  <table>
+    <tr><th class="c1">Dependency</th><th>Effect</th></tr>
+    <tr><td><code>current_user</code></td><td>A valid bearer token is required.</td></tr>
+    <tr><td><code>require_surface("field"|"dashboard")</code></td><td>The matching access flag is required. The 403 body carries the surface name, so the client can offer to request that permission rather than showing a bare error.</td></tr>
+    <tr><td><code>require_any_surface(...)</code></td><td>At least one of several surfaces. Used for the CSV export, which both apps legitimately offer — requiring <code>dashboard</code> there locked collectors out of a button their own screen shows them.</td></tr>
+    <tr><td><code>require_admin</code></td><td><code>is_admin</code> is required.</td></tr>
+  </table>
+  <p>Every one of them first blocks a user whose <code>must_change_password</code> flag is set. Request
+  and response shapes remain Pydantic models: <code>UserRegister</code>, <code>UserLogin</code>,
+  <code>FeedbackCreate</code>, <code>PointCreate</code>, <code>PointUpdate</code>,
+  <code>SyncPayload</code>, <code>TeamsTools</code>, <code>UserAccessUpdate</code> and
+  <code>PermissionRequestCreate</code>.</p>
+
+  <h3>7.3 Default accounts</h3>
+  <p>Seeded only into an empty users table, and given the password in <code>SEED_PASSWORD</code>. If that
+  is unset, each account receives its own random password, which has to be reset rather than guessed.
+  Once any account exists, <code>SEED_PASSWORD</code> has no effect at all.</p>
+  <table>
+    <tr><th class="c1">Username</th><th class="c2">Access</th><th>Purpose</th></tr>
+    <tr><td><code>collector</code></td><td>field</td><td>Field App demo account</td></tr>
+    <tr><td><code>dashboard</code></td><td>dashboard</td><td>Analyst demo account</td></tr>
+    <tr><td><code>eric.musonera</code></td><td>field + dashboard + admin</td><td>Somebody has to be able to approve the first permission request</td></tr>
+  </table>
+</div>
+
+<!-- ============================ 8 ============================ -->
+<div class="section">
+  <h2>8. API Reference</h2>
+  <p>Guards: <span class="tag open">open</span> no token needed &middot;
+  <span class="tag auth">auth</span> any signed-in user &middot;
+  <span class="tag field">field</span> <span class="tag dash">dash</span> the matching surface flag &middot;
+  <span class="tag admin">admin</span> <code>is_admin</code>.</p>
+
+  <h3>8.1 Authentication</h3>
+  <table>
+    <tr><th class="c2">Method &amp; Path</th><th class="c3">Guard</th><th>Behaviour</th></tr>
+    <tr><td><code>POST /api/auth/register</code></td><td><span class="tag open">open</span></td><td>Creates an account; rejects a duplicate username with HTTP 400.</td></tr>
+    <tr><td><code>POST /api/auth/login</code></td><td><span class="tag open">open</span></td><td>Verifies the password, re-hashes it if the iteration count has moved, and returns a signed token plus the caller's access flags.</td></tr>
+    <tr><td><code>POST /api/auth/change-password</code></td><td><span class="tag auth">auth</span></td><td>Sets the caller's own password and clears <code>must_change_password</code>.</td></tr>
+    <tr><td><code>GET /api/auth/me</code></td><td><span class="tag auth">auth</span></td><td>Re-reads the caller's own access, so a client that has been offline picks up permissions granted while it was away.</td></tr>
+  </table>
+
+  <h3>8.2 Access administration</h3>
+  <table>
+    <tr><th class="c2">Method &amp; Path</th><th class="c3">Guard</th><th>Behaviour</th></tr>
+    <tr><td><code>GET /api/admin/users</code></td><td><span class="tag admin">admin</span></td><td>Every account with its flags.</td></tr>
+    <tr><td><code>PATCH /api/admin/users/{id}/access</code></td><td><span class="tag admin">admin</span></td><td>Flips <code>can_field</code> / <code>can_dashboard</code> / <code>is_admin</code>. Returns HTTP 409 rather than removing the last administrator — otherwise nobody could grant anything again.</td></tr>
+    <tr><td><code>POST /api/admin/users/{id}/reset-password</code></td><td><span class="tag admin">admin</span></td><td>Issues a temporary password, returns it <strong>once</strong>, and sets <code>must_change_password</code>. It is never stored in the clear and no endpoint can return it again; the admin reads it off the screen and passes it on.</td></tr>
+    <tr><td><code>POST /api/permissions/request</code></td><td><span class="tag auth">auth</span></td><td>Raises a request for a surface the caller lacks, with an optional message.</td></tr>
+    <tr><td><code>GET /api/permissions/requests</code></td><td><span class="tag admin">admin</span></td><td>The decision queue.</td></tr>
+    <tr><td><code>POST /api/permissions/requests/{id}/decide</code></td><td><span class="tag admin">admin</span></td><td>Approves or denies; approval sets the corresponding access flag.</td></tr>
+  </table>
+
+  <h3>8.3 Targets and synchronization</h3>
+  <table>
+    <tr><th class="c2">Method &amp; Path</th><th class="c3">Guard</th><th>Behaviour</th></tr>
+    <tr><td><code>GET /api/points</code></td><td><span class="tag auth">auth</span></td><td>Fetches every target with its latest feedback. For each anomaly, finds the newest feedback row (by <code>visit_date</code>), derives a display status (§13), parses the photos JSON, and returns one combined object per target. This is what the frontend caches into IndexedDB. Both surfaces read it.</td></tr>
+    <tr><td><code>POST /api/sync</code></td><td><span class="tag field">field</span></td><td>Accepts <code>{feedback: [...], point_updates: [...]}</code>. Each feedback item is <strong>upserted</strong> by primary key with a dialect-specific <code>ON CONFLICT DO UPDATE</code>: a re-send of an unchanged record is a no-op, an edited record overwrites the stored one, and an id already present can no longer fail its batch mates with a duplicate-key error. A <code>WHERE visit_date &lt;= :visit_date</code> guard keeps a stale copy sitting in an offline queue from clobbering a newer visit. Items whose parent anomaly does not exist are skipped with a warning. Incoming ISO-8601 <code>Z</code> timestamps are normalised to naive UTC to match the column type. Marks each anomaly <code>investigated</code>, applies coordinate updates, and responds with counts plus a fresh full point list so the client refreshes its cache in the same round-trip. On commit failure it rolls back and returns HTTP 400.</td></tr>
+    <tr><td><code>POST /api/points/import</code></td><td><span class="tag admin">admin</span></td><td>Imports targets from the UI's CSV tool. Ensures project <code>11-24-2736</code> exists, converts each row's UTM coordinates to lat/lon in Python, assigns the next <code>vm_nr</code> sequence numbers and deterministic UUIDs, and inserts them as <code>georadar</code> anomalies. Additive, not destructive.</td></tr>
+    <tr><td><code>GET /api/projects</code></td><td><span class="tag auth">auth</span></td><td>Projects that actually carry anomalies, for the report filter dropdown.</td></tr>
+  </table>
+
+  <h3>8.4 <span class="new">Reports</span></h3>
+  <table>
+    <tr><th class="c2">Method &amp; Path</th><th class="c3">Guard</th><th>Behaviour</th></tr>
+    <tr><td><code>GET /api/reports/feedback.pdf</code></td><td><span class="tag dash">dash</span></td><td>The Öffnungsmaßnahmen report for an optional project and date range, laid out after <code>reportTemplate.pdf</code>.</td></tr>
+    <tr><td><code>GET /api/reports/feedback.csv</code></td><td><span class="tag field">field</span> <span class="tag dash">dash</span></td><td>The same rows as CSV, written with a BOM so Excel renders the umlauts correctly.</td></tr>
+    <tr><td><code>GET /api/reports/bilder/{feedback_id}</code></td><td><span class="tag open">open</span></td><td>The target of the <em>Bild</em> links inside the PDF: a standalone page with every photo of one VM point and a download link each. Served <code>no-store</code>.</td></tr>
+  </table>
+
+  <h3>8.5 Analytics, demo data and the web app</h3>
+  <table>
+    <tr><th class="c2">Method &amp; Path</th><th class="c3">Guard</th><th>Behaviour</th></tr>
+    <tr><td><code>GET /api/stats</code></td><td><span class="tag dash">dash</span></td><td>Total/visited/unvisited counts, completion percentage, and a distribution over the statuses <code>clear</code> / <code>scrap</code> / <code>uxo</code> / <code>false_alarm</code> / <code>unvisited</code>.</td></tr>
+    <tr><td><code>POST /api/seed</code></td><td><span class="tag admin">admin</span></td><td><strong>Destructive.</strong> Wipes feedback, anomalies and projects; re-creates the project; inserts 29 hard-coded real targets transcribed from an Excel report; then pre-fills 4 of them with example feedback (a cleared iron bar, scrap metal, a false alarm, and a “PMN-2 landmine” UXO case) so all marker colours are demonstrable.</td></tr>
+    <tr><td><code>GET /</code></td><td><span class="tag open">open</span></td><td>Serves <code>static/index.html</code> (the built React app), or a JSON status message if <code>static/</code> is absent.</td></tr>
+  </table>
+</div>
+
+<!-- ============================ 9 ============================ -->
+<div class="section">
+  <h2>9. Coordinate Systems &amp; Conversions</h2>
+  <p>Two coordinate systems coexist, and the project converts between them in three places:</p>
+  <table>
+    <tr><th class="c2">System</th><th>Used by</th><th class="c3">Example</th></tr>
+    <tr><td>UTM Zone 32N (EPSG:32632) — metres</td><td>Surveyors, CSVs, PostGIS geometry, excavation reports</td><td>E 442 972.981, N 5 937 097.795</td></tr>
+    <tr><td>WGS84 (EPSG:4326) — degrees</td><td>Leaflet web map, GPS</td><td>53.57° N, 8.14° E</td></tr>
+  </table>
+  <ul>
+    <li><strong>Python</strong> — <code>database.py</code> implements <code>utm32n_to_latlon()</code> and
+    <code>latlon_to_utm32n()</code> from scratch using the standard Transverse-Mercator series expansion
+    on the WGS84 ellipsoid (no external geodesy library). <code>test_utm.py</code> is a small standalone
+    script for sanity-checking the math.</li>
+    <li><strong>TypeScript</strong> — the same formulas are ported to JS:
+    <code>utm32nToLatLonJS()</code> in <code>ImportExport.tsx</code> (imports) and
+    <code>latLonToUtm32nJS()</code> in <code>FeedbackForm.tsx</code> (converting a dragged marker's new
+    lat/lon back to easting/northing while offline).</li>
+    <li><strong>SQL</strong> — the PostGIS trigger uses <code>ST_Transform</code> for the same conversions
+    server-side (the authoritative version).</li>
+  </ul>
+  <p>Four implementations of the same math is a known liability; see §17.</p>
+</div>
+
+<!-- ============================ 10 ============================ -->
+<div class="section">
+  <h2>10. The Data Ingestion Pipeline (ingest_anomalies.py)</h2>
+  <p>This script performs the initial bulk load of survey results into PostgreSQL. Steps:</p>
+  <ol>
+    <li><strong>Read</strong> <code>Radar_data.csv</code> (georadar) and <code>Magnetic_data.csv</code>
+    (magnetometer) with pandas, auto-detecting whether the separator is <code>;</code> or <code>,</code>.
+    It prefers <code>georadar.csv</code> / <code>magnetic.csv</code> if those exist, so a newer export can
+    be dropped in without renaming.</li>
+    <li><strong>Tag &amp; merge:</strong> add an <code>instrument</code> discriminator column to each set,
+    concatenate them, and rename the German survey columns (<code>Rechtswert</code>→<code>easting</code>,
+    <code>Hochwert</code>→<code>northing</code>, <code>Tiefe [m]</code>→<code>evaluated_depth</code>).</li>
+    <li><strong>Clean:</strong> drop rows missing coordinates; fix a known systematic coordinate error in
+    the “Stoerkoerper Magnetik Sued 2” layer (easting short by 397,000 m, northing off by +21,000 m); drop
+    duplicate coordinates, since <code>target_id</code> is derived from the position and is UNIQUE.</li>
+    <li><strong>Enrich:</strong> assign <code>project_id</code>, <code>status='pending'</code>,
+    <code>category='Kat-1'</code>, sequential <code>vm_nr</code> labels, coordinate-derived
+    <code>target_id</code> strings, deterministic UUIDv5 ids, and WKT point geometry text.</li>
+    <li><strong>Load:</strong> drops and rebuilds the three data tables (destructive!), re-creates them
+    via <code>init_db()</code> (which also reinstalls the trigger), seeds the project row, bulk-stages the
+    DataFrame into a temp table with <code>to_sql</code>, then inserts into <code>anomalies</code>
+    converting WKT to PostGIS geometry with <code>ST_GeomFromText(..., 32632)</code>.</li>
+  </ol>
+
+  <div class="callout warn">
+    <p><span class="label">Warning.</span> Both <code>ingest_anomalies.py</code> and
+    <code>POST /api/seed</code> erase existing anomalies and feedback before loading. Never run them
+    against a database holding real field data you want to keep. Take a dump first — see §16.</p>
+  </div>
+
+  <div class="callout warn">
+    <p><span class="label">Two things that will bite you.</span> The script resolves
+    <code>Magnetic_data.csv</code>, <code>Radar_data.csv</code> <em>and</em> <code>.env</code> as bare
+    relative paths against the current working directory, so it must be run from the repository root and
+    the CSVs must stay there. It also imports <strong>pandas, which
+    <code>requirements.txt</code> does not pin</strong> — install it separately.</p>
+  </div>
+
+  <h3>10.1 The other ingestion paths</h3>
+  <p><code>POST /api/points/import</code> is the additive alternative, backing the Import tab in the UI.
+  <code>POST /api/seed</code> loads demo data only. Both hardcode project <code>11-24-2736</code>.</p>
+
+  <h3>10.2 <span class="new">SQL migrations (sql\)</span></h3>
+  <p>Hand-written, single-purpose SQL for bringing an additional project's data into
+  <code>public.anomalies</code> — records of specific migrations that were run, not a migration framework.
+  <code>anomalie_1_from_picks.sql</code> builds a staging table shaped like <code>public.anomalies</code>
+  from a <code>picks</code> table; <code>append_anomalie_1_to_anomalies.sql</code> appends those 127 rows
+  in one transaction, with <code>ON CONFLICT DO NOTHING</code> so a re-run is a no-op.</p>
+  <p>The second file is worth reading before writing anything similar. Two of its findings generalise:
+  Postgres <strong>cannot compute UUIDv5</strong> here (it needs SHA-1, which core Postgres lacks, and
+  neither <code>pgcrypto</code> nor <code>uuid-ossp</code> is installed), so the ids are precomputed in
+  Python and carried in a CTE rather than installing an extension on production; and the BEFORE INSERT
+  trigger <strong>overwrites any lat/lon you supply</strong> when <code>geom</code> is null (§6.7).</p>
+</div>
+
+<!-- ============================ 11 ============================ -->
+<div class="section">
+  <h2>11. The Frontend Web Application (React)</h2>
+  <p>The UI is a single-page app with two surfaces, both sharing one collapsible sidebar (theme toggle,
+  EN/DE language toggle, navigation, sync button, online/offline indicator, user avatar, sign-out). Which
+  surfaces a user may open is decided by their access flags, not by a role picked at login.</p>
+
+  <h3>11.1 <span class="new">Login / landing page</span></h3>
+  <div class="callout">
+    <p><span class="label">Changed since the previous revision.</span> The 16 July 2026 edition of this
+    document stated that “authentication is demo-grade only: any username/password is accepted… There is
+    no server-side auth at all.” <strong>That is no longer true.</strong></p>
+  </div>
+  <p>A full-screen landing page styled after ArcGIS Field Maps: company logo, project description, and a
+  Sign-in modal with login and sign-up views. Authentication is now real:</p>
+  <ul>
+    <li>Credentials are checked <strong>server-side</strong> against a PBKDF2 hash, and a signed token is
+    returned. <code>auth.ts</code> attaches it as a bearer token on every API call via
+    <code>authFetch</code>.</li>
+    <li>The access flags mirrored into <code>localStorage</code> decide only what the UI
+    <em>offers</em> — the server re-checks them on every request, so a flag flipped in devtools buys
+    nothing.</li>
+    <li>Opening a surface the account lacks raises a <strong>permission request dialog</strong> instead of
+    an error; an administrator decides it in the app.</li>
+    <li>A user carrying <code>must_change_password</code> gets a <strong>non-dismissible</strong> password
+    dialog — the server refuses every surface until it is done.</li>
+    <li>Admins additionally get a user-administration dialog (flags, temporary passwords) and the
+    permission-request queue.</li>
+  </ul>
+  <h4>Signing in with no network</h4>
+  <p>Nobody can verify a password offline, so <code>auth.ts</code> records every account the server
+  <em>has</em> authenticated on this device. Offline, only such an account may sign in, and it is granted
+  the <strong>field app only</strong> — the dashboard and admin screens are server-backed and could
+  otherwise display data the person is no longer allowed to see. That record deliberately outlives
+  sign-out: it describes what this device has learned, not who is signed in now, and signing out must not
+  turn the device back into one that will accept an unknown name offline.</p>
+
+  <h3>11.2 Field App surface</h3>
+  <ul>
+    <li><strong>Target list panel:</strong> search box, filters by VM number, instrument, project and
+    status, and a scrollable card list showing each target's VM number, instrument/layer, finding, and
+    evaluated depth.</li>
+    <li><strong>Map (<code>FieldMap.tsx</code>):</strong> a Leaflet map with three switchable basemaps
+    (dark CartoDB, streets OSM, satellite Esri), circle markers coloured by status, popups, an auto-zoom
+    controller that fits the filtered points, and a toolbar.</li>
+    <li><strong>Feedback form (<code>FeedbackForm.tsx</code>):</strong> opened by selecting a target.
+    Records opening length/width/depth, computed volume, Fundstück (from the standard German list), Sohle
+    status, notes, the Trupp &amp; Geräte block, and photos — either uploaded (client-side compressed) or
+    captured live with the device camera (<code>getUserMedia</code> + canvas snapshot). It also supports an
+    edit-location mode where the marker becomes draggable; the new position is converted back to UTM and
+    queued as a point update.</li>
+    <li><strong>Import tab (<code>ImportExport.tsx</code>):</strong> paste or upload CSV to import GPR
+    targets, plus a button to trigger the demo seed endpoint.</li>
+    <li><strong>Report dialog:</strong> project and date range for the CSV export.</li>
+  </ul>
+
+  <h3>11.3 Dashboard surface</h3>
+  <p>A full-screen map with floating translucent panels (<code>Dashboard.tsx</code>) showing KPI tiles
+  (total targets, investigated vs. pending, project count, excavated volume against a 250 m³ target
+  capacity), a Fundstück bar chart, a Sohle <em>Frei</em>/<em>Nicht Frei</em> split, and a predicted
+  (<code>evaluated_depth</code>) vs. actual (<code>tief</code>) depth comparison with a mean depth-error
+  KPI. The same status/instrument filters are wired to the shared map, and the report dialog here also
+  offers the PDF.</p>
+
+  <h3>11.4 <span class="new">Responsive layout</span></h3>
+  <p>Field crews bring whatever tablet or phone they own, so all three views — landing page, field app and
+  dashboard — now reflow. Three tiers:</p>
+  <table>
+    <tr><th class="c2">Tier</th><th class="c3">Breakpoint</th><th>Behaviour</th></tr>
+    <tr><td>Desktop</td><td>&gt; 1024px</td><td>The original layout: sidebar, side-by-side panels, dashboard panels floating over a full-bleed map.</td></tr>
+    <tr><td>Tablet</td><td>769–1024px</td><td>Intermediate tier — narrower panels and reduced chrome, rather than jumping straight from desktop to phone.</td></tr>
+    <tr><td>Phone</td><td>≤ 768px</td><td>Everything reflows into a single scrolling column.</td></tr>
+  </table>
+  <p>Three implementation notes worth keeping in mind before editing the layout:</p>
+  <ul>
+    <li><strong>One breakpoint, two languages.</strong> <code>useIsMobile.ts</code> exports
+    <code>MOBILE_BREAKPOINT = 768</code> and the CSS overrides key off the same number, so a layout can
+    never be half-switched. The hook exists only because the dashboard's desktop layout floats
+    absolutely-positioned panels over the map: the map is not a sibling in the flow, so no media query can
+    reorder it into a reading column. It uses <code>useSyncExternalStore</code> over a single shared
+    <code>matchMedia</code> object, so the first render already sees the correct breakpoint instead of
+    painting the desktop layout and correcting it.</li>
+    <li><strong>The landing page needed inline styles overridden.</strong> Its layout lived in inline
+    <code>style</code> attributes, which beat any stylesheet rule at any specificity — which is why
+    <code>landing.css</code> had no layout media queries at all. At 375px the showcase column was laid out
+    fully outside the viewport and then clipped by <code>overflow-x: hidden</code>, so the carousel was
+    missing rather than merely squeezed.</li>
+    <li><strong>Leaflet has to be told its container changed.</strong> Leaflet measures its container once,
+    at creation, and never notices it changing; tiles for the area outside the original box are never
+    requested, which is what the grey panels were — the map was not broken, it did not know it had grown.
+    <code>invalidateSize</code> was called nowhere in the codebase. A <code>ResizeObserver</code> on the
+    container now catches the phone reflow, a drawer opening beside the map and a panel stacking below it;
+    <code>orientationchange</code> is listened for separately because on a phone it can arrive before the
+    box has settled. Calls are coalesced to one per animation frame, since a rotation fires the listeners
+    repeatedly and <code>invalidateSize</code> forces a synchronous re-layout every time.</li>
+  </ul>
+  <div class="callout warn">
+    <p><span class="label">Do not remove the <code>cssTarget</code> pin in <code>vite.config.ts</code>.</span>
+    Left unpinned, esbuild minifies media queries into range syntax —
+    <code>@media (max-width: 768px)</code> becomes <code>@media (width&lt;=768px)</code> — which Chrome
+    &lt;104, Safari &lt;16.4 and Firefox &lt;102 do not parse. Those browsers discard the whole at-rule,
+    which silently takes every mobile rule in <code>index.css</code> with it and leaves a phone rendering
+    the desktop layout. The landing page survives it because it is fluid by default; the dashboard and
+    field app do not.</p>
+  </div>
+
+  <h3>11.5 <span class="new">Small fixes worth recording</span></h3>
+  <ul>
+    <li><strong>Avatar initials.</strong> All three call sites built initials by slicing the first two
+    characters off one string, so “Emmy Blaize” rendered as <em>EM</em> instead of <em>EB</em>, and the
+    seeded “Operations Analyst” as <em>OP</em>. It only ever looked right for people whose first two
+    letters happened to match their initials. A single <code>initialsFor()</code> helper now takes first
+    initial + last initial for a full name and keeps the first-two-letters behaviour for a single token,
+    which the username fallback relies on for values like <code>admin</code>. Whitespace runs are
+    collapsed before splitting, and the string is walked by code point so a name starting outside the BMP
+    is not cut in half.</li>
+    <li><strong>EN/DE translation.</strong> <code>i18n.ts</code> is a lightweight lookup where the English
+    string <em>is</em> the key: <code>t('Field App')</code> returns the German text in DE mode and falls
+    back to the key itself when no translation exists.</li>
+  </ul>
+</div>
+
+<!-- ============================ 12 ============================ -->
+<div class="section">
+  <h2>12. Offline-First Design &amp; Synchronization</h2>
+  <p>This is the heart of the app. Two <strong>independent</strong> mechanisms are involved, and they are
+  easy to confuse: the service worker caches the application shell so the app <em>opens</em> offline; Dexie
+  caches the data so it is <em>usable</em> offline.</p>
+
+  <h3>12.1 The browser database (Dexie / IndexedDB)</h3>
+  <p><code>indexedDb.ts</code>, database name <code>NolteFieldDb</code>, version 2, three tables:</p>
+  <table>
+    <tr><th class="c2">Table</th><th>Contents</th></tr>
+    <tr><td><code>points</code></td><td>The full local mirror of all targets (+ their latest feedback), refreshed from the server whenever online.</td></tr>
+    <tr><td><code>pendingFeedback</code></td><td>Outbound queue: feedback entries created while offline, or not yet accepted by the server.</td></tr>
+    <tr><td><code>pendingPointUpdates</code></td><td>Outbound queue: coordinate corrections from dragged markers.</td></tr>
+  </table>
+  <p>Reads always come from Dexie, never directly from the API, so the UI has no online path to
+  special-case.</p>
+
+  <h3>12.2 The synchronization lifecycle</h3>
+  <ol>
+    <li><strong>On login (online):</strong> <code>fetchFromServer()</code> pulls
+    <code>GET /api/points</code> and rewrites the local <code>points</code> table.</li>
+    <li><strong>Recording feedback:</strong> <code>handleSaveFeedback()</code> always writes to the
+    pending queues and optimistically updates the local point — the marker turns green immediately,
+    network or not.</li>
+    <li><strong>Connectivity monitoring:</strong> the app listens to the browser's
+    <code>online</code>/<code>offline</code> events and shows a toast plus an indicator in the sidebar.</li>
+    <li><strong>Auto-sync:</strong> whenever the app is online, logged in, and the pending count &gt; 0,
+    <code>handleSync()</code> fires automatically (also available as a manual sidebar button with a badge
+    showing the queue size). Background runs are <strong>silent</strong> — the crew did not ask for them,
+    and a failure is harmless because the records stay queued.</li>
+    <li><strong>Snapshot semantics:</strong> the run captures the ids it is sending and, on success,
+    deletes <strong>only those</strong>. A record queued while the request was in flight survives for the
+    next cycle, and an accepted record is never re-sent.</li>
+    <li><strong>Coalescing:</strong> saving a record starts a sync <em>and</em> bumps the counter the
+    auto-sync effect watches, so two cycles used to POST the same row concurrently and the loser came back
+    as a duplicate-key HTTP 400. A run now in flight absorbs whatever was queued behind it.</li>
+    <li><strong>Conflict handling:</strong> the server upserts per feedback id and refuses to let an older
+    <code>visit_date</code> overwrite a newer one, and silently skips feedback whose target no longer
+    exists (logging a warning).</li>
+  </ol>
+
+  <h3>12.3 <span class="new">The service worker (app shell)</span></h3>
+  <p><code>frontend/public/sw.js</code>, cache <code>uxo-tracker-v2</code>. Registered from
+  <code>main.tsx</code> on window load.</p>
+  <ul>
+    <li><strong>Install</strong> precaches <code>/</code>, <code>/index.html</code>,
+    <code>/manifest.json</code>, <code>/favicon.svg</code> and the Google Fonts stylesheet.</li>
+    <li><strong>Activate</strong> deletes every cache whose name is not <code>CACHE_NAME</code>, and
+    claims open clients. Renaming the cache is therefore how a bad one is evicted — bump it whenever the
+    precache list changes.</li>
+    <li><strong>Fetch:</strong> <code>/api/</code> always goes to the network and is never cached.
+    Everything else is stale-while-revalidate — a cached response is served immediately and refreshed in
+    the background; a miss goes to the network and is cached if it is a basic 200, which is what captures
+    Vite's hash-named JS and CSS. A failed navigation falls back to <code>/index.html</code>.</li>
+  </ul>
+  <div class="callout">
+    <p><span class="label">Why offline mode was broken, and what fixed it (19 August 2026).</span>
+    <code>cache.addAll()</code> is atomic: a single failed request rejects the whole call, which rejects
+    the <code>waitUntil</code> promise, which fails the install event, so the worker never activates and
+    <strong>nothing at all is cached</strong>. The precache list carried a stale
+    <code>/favicon.ico</code> — inherited boilerplate; there has never been a <code>.ico</code> in this
+    repository, <code>index.html</code> has always shipped an SVG favicon. That one 404 was silently
+    costing the app its entire offline mode while <code>register()</code> still resolved and logged
+    success in the page.</p>
+    <p>The fix removes the stale entry and switches to caching each asset individually with
+    <code>Promise.allSettled</code>, logging <code>Precache skipped:</code> for any that fail. One
+    unreachable URL now costs only that asset. This matters beyond the favicon: the font stylesheet is
+    cross-origin, so a crew installing the app somewhere with no signal would otherwise end up with no
+    offline shell at all — the exact situation this app exists for. The cache was renamed from
+    <code>v1</code> to <code>v2</code> so the activate handler drops the empty cache already sitting on
+    installed devices.</p>
+  </div>
+  <p>Map tiles are third-party and are <strong>not</strong> precached: only tiles already fetched while
+  online remain available. Target markers come from IndexedDB and work regardless.</p>
+</div>
+
+<!-- ============================ 13 ============================ -->
+<div class="section">
+  <h2>13. Status Classification Logic</h2>
+  <p>A target's display status is <strong>derived, not stored</strong>. The same rule set exists in Python
+  (<code>GET /api/points</code>) and TypeScript (<code>getResolvedStatus()</code>) so an offline device
+  classifies its own records identically. Evaluated top-down on the latest feedback:</p>
+  <table>
+    <tr><th class="c3">Order</th><th>Rule</th><th class="c3">Status</th><th class="c2">Meaning / colour</th></tr>
+    <tr><td>0</td><td>No feedback, or not visited</td><td><code>unvisited</code></td><td>Red marker — still to do</td></tr>
+    <tr><td>1</td><td>Fundstück = “ohne Fund” (nothing found)</td><td><code>false_alarm</code></td><td>The instrument signal had no physical cause</td></tr>
+    <tr><td>2</td><td>Notes/other text contains “uxo”, “mine”, “bomb”, “munition”, or “pmn”</td><td><code>uxo</code></td><td>Live ordnance — highest priority</td></tr>
+    <tr><td>3</td><td>Sohle status = “Nicht Frei”</td><td><code>scrap</code></td><td>Something found, pit not fully cleared</td></tr>
+    <tr><td>4</td><td>Otherwise</td><td><code>clear</code></td><td>Investigated and resolved (green marker)</td></tr>
+  </table>
+  <p>Rule 2 is a keyword search over free text and is fragile; see §17.</p>
+</div>
+
+<!-- ============================ 14 ============================ -->
+<div class="section">
+  <h2>14. How to Run the Project</h2>
+
+  <h3>Prerequisites</h3>
+  <ul>
+    <li>Python 3.13 with pip (the repository uses a virtualenv at <code>.venv</code>)</li>
+    <li>Docker Desktop, for PostgreSQL/PostGIS and pgAdmin. <strong>No longer optional</strong> — the app
+    refuses to start without a reachable database unless you deliberately opt into the SQLite
+    fallback.</li>
+    <li>Node.js 22 — only needed to rebuild the frontend, since <code>static/</code> is committed. Run
+    <code>python install_node.py</code> to fetch a portable copy into <code>.\node</code>.</li>
+  </ul>
+
+  <h3>Step 1 — Configure</h3>
+  <p>Copy the committed template and fill it in:</p>
+<pre>copy .env.example .env</pre>
+  <p><strong><code>.env.example</code> is the source of truth for every setting.</strong> It carries the
+  explanation next to each key, and this document deliberately does not restate values. <code>.env</code>
+  is gitignored and is read by two different consumers: pydantic-settings (the application) and
+  docker-compose (the containers). Read §15 before choosing passwords — there are three of them and they
+  are not interchangeable.</p>
+
+  <h3>Step 2 — Start the database (and pgAdmin)</h3>
+<pre>cd C:\Apps\feedbackapp
+docker compose up -d
+# starts two containers, both bound to loopback only:
+#   feedback_postgres_db  → PostgreSQL 16 + PostGIS 3.4 on 127.0.0.1:5432
+#   nolte-pgadmin         → pgAdmin 4 web UI on http://127.0.0.1:8080</pre>
+  <p>Credentials for both come from <code>.env</code>; compose uses the <code>${VAR:?message}</code> form,
+  so a missing value fails the command with that message instead of quietly falling back to a well-known
+  default. Inside pgAdmin, register a server with host <code>db</code> (the compose service name), port
+  5432, and the user and password from your <code>DATABASE_URL</code>.</p>
+
+  <h3>Step 3 — Install Python dependencies and start the backend</h3>
+<pre>.venv\Scripts\pip install -r requirements.txt
+.venv\Scripts\pip install pandas          # needed only for the ingestion script
+.venv\Scripts\python server.py            # serves API + web app on http://localhost:8000</pre>
+
+  <h3>Step 4 — Load data (choose one; skip if the Docker volume already holds data)</h3>
+<pre># Option A: full survey ingestion (~1,583 targets after cleaning) — DESTRUCTIVE
+#   must be run from the repository root; see §10
+.venv\Scripts\python ingest_anomalies.py
+
+# Option B: small demo set (29 targets, 4 pre-investigated) — DESTRUCTIVE
+#   requires an admin bearer token, see §8.5</pre>
+
+  <h3>Step 5 — Open the app</h3>
+  <p>Browse to <code>http://localhost:8000</code> and sign in. On a database seeded from empty, the
+  accounts are <code>collector</code>, <code>dashboard</code> and <code>eric.musonera</code> with the
+  password from <code>SEED_PASSWORD</code> — or with individual random passwords if that was unset, in
+  which case reset one with:</p>
+<pre>.venv\Scripts\python manage_access.py set-password eric.musonera</pre>
+
+  <h3>Step 6 — Check the setup is sane (optional but recommended)</h3>
+<pre>.venv\Scripts\python scripts\doctor.py</pre>
+  <p>Read-only diagnostics — see §16.</p>
+
+  <h3>Frontend development mode (optional)</h3>
+<pre>cd frontend
+npm install
+npm run dev        # Vite dev server with hot reload, proxies /api to :8000
+npm run build      # production build, written directly into ..\static</pre>
+  <p>The dev server binds <code>host: true</code>, so a tablet on the same network can reach it for
+  real-device testing. <code>vite build</code> uses <code>emptyOutDir</code>: everything in
+  <code>static\</code> is deleted and rewritten, so nothing the build does not produce may live there.
+  Because <code>static\</code> is committed, keep asset rebuilds in their own commit.</p>
+</div>
+
+<!-- ============================ 15 ============================ -->
+<div class="section">
+  <h2>15. Configuration Reference</h2>
+  <p>All settings live in <code>.env</code>, which is gitignored. The committed
+  <code>.env.example</code> documents every key and is the source of truth; no live values are reproduced
+  here.</p>
+  <table>
+    <tr><th class="c2">Setting</th><th class="c3">Read by</th><th>Notes</th></tr>
+    <tr><td><code>DATABASE_URL</code></td><td>the app, <code>ingest_anomalies.py</code>, <code>doctor.py</code></td><td><strong>The password inside this URL is the one that actually connects.</strong> <code>postgresql://</code> and <code>postgresql+psycopg2://</code> prefixes are auto-rewritten to the psycopg 3 driver. Unreachable → the app stops (§7.1).</td></tr>
+    <tr><td><code>AUTH_SECRET</code></td><td>the app</td><td>Signs session tokens. Unset → a random key per process, so every restart signs everyone out. Changing it does the same, once. Generate with <code>python -c "import secrets; print(secrets.token_hex(32))"</code>.</td></tr>
+    <tr><td><code>SEED_PASSWORD</code></td><td>the app</td><td>Given to the default accounts, and <strong>only</strong> when the users table is seeded empty. No effect once any account exists.</td></tr>
+    <tr><td><code>POSTGRES_USER</code> / <code>POSTGRES_PASSWORD</code> / <code>POSTGRES_DB</code></td><td>docker-compose → Postgres</td><td><code>POSTGRES_PASSWORD</code> is applied <strong>only when the <code>postgres_data</code> volume is first created</strong>. On an existing volume it is inert; rotate with <code>ALTER USER</code> and update <code>DATABASE_URL</code> to match.</td></tr>
+    <tr><td><code>PGADMIN_DEFAULT_EMAIL</code> / <code>PGADMIN_DEFAULT_PASSWORD</code></td><td>docker-compose → pgAdmin</td><td>Applied only when the <code>pgadmin_data</code> volume is first created. On an existing volume, change it from inside pgAdmin.</td></tr>
+    <tr><td><code>ALLOW_SQLITE_FALLBACK</code></td><td><code>database.py</code>, <strong>process environment only</strong></td><td><code>1</code> permits the SQLite fallback for deliberate offline work. See the gotcha below.</td></tr>
+    <tr><td><code>DB_CONNECT_RETRY_SECONDS</code></td><td><code>database.py</code>, <strong>process environment only</strong></td><td>How long to retry the first connection. Default 30; <code>0</code> fails on the first attempt.</td></tr>
+    <tr><td>Host / port</td><td><code>config.py</code></td><td><code>0.0.0.0:8000</code>, also hard-coded in <code>server.py</code>'s <code>__main__</code> block.</td></tr>
+    <tr><td><code>API_BASE</code></td><td><code>frontend/src/App.tsx</code></td><td>Now the empty string — the frontend is served by the backend, so every call is same-origin and there is no host to configure. (It was hard-coded to <code>http://localhost:8000</code> in the previous revision.)</td></tr>
+  </table>
+
+  <h3>15.1 <span class="new">The three passwords</span></h3>
+  <p>Three different things that happen to look alike, and confusing them has cost real time:</p>
+  <table>
+    <tr><th class="c2">Password</th><th class="c2">Consumer</th><th>Effective when</th></tr>
+    <tr><td><code>POSTGRES_PASSWORD</code></td><td>Postgres <code>initdb</code>, via compose</td><td>First creation of the <code>postgres_data</code> volume only. Inert thereafter.</td></tr>
+    <tr><td>the password inside <code>DATABASE_URL</code></td><td>the application</td><td><strong>Every connection.</strong> This is the one that makes logins work.</td></tr>
+    <tr><td><code>PGADMIN_DEFAULT_PASSWORD</code></td><td>pgAdmin, via compose</td><td>First creation of the <code>pgadmin_data</code> volume only.</td></tr>
+  </table>
+  <p><code>config.py</code> warns when the first two disagree. It warns rather than fails, because a
+  rotated volume legitimately sits in that state — but it still matters, because a <em>recreated</em>
+  volume would be initialised with <code>POSTGRES_PASSWORD</code> and the app would then be unable to
+  connect with the <code>DATABASE_URL</code> it has.</p>
+
+  <div class="callout warn">
+    <p><span class="label"><code>ALLOW_SQLITE_FALLBACK</code> is not read from <code>.env</code>.</span>
+    <code>database.py</code> reads it with <code>os.getenv</code>, and <strong>nothing in this project
+    loads <code>.env</code> into <code>os.environ</code></strong> — the application reads that file only
+    through pydantic-settings. Putting the variable in <code>.env</code> therefore has no effect
+    whatsoever. Set it in the shell instead:</p>
+<pre>$env:ALLOW_SQLITE_FALLBACK = "1"</pre>
+    <p>The same is true of <code>DB_CONNECT_RETRY_SECONDS</code>. (<code>ingest_anomalies.py</code> is the
+    one exception in the repository: it has its own hand-rolled loader that <em>does</em> populate
+    <code>os.environ</code>.)</p>
+  </div>
+
+  <h3>15.2 pg_hba and trust authentication</h3>
+  <p><code>initdb</code> writes <code>trust</code> for local and <code>127.0.0.1</code> connections by
+  default, meaning any process inside the container reaches the database as superuser with no password.
+  The compose file therefore sets <code>POSTGRES_INITDB_ARGS: "--auth-local=scram-sha-256
+  --auth-host=scram-sha-256"</code>, so a freshly created volume comes up requiring a password. The
+  existing running volume was corrected in place — that setting cannot retroactively change a volume that
+  already exists. <code>doctor.py</code> re-checks this on every run.</p>
+</div>
+
+<!-- ============================ 16 ============================ -->
+<div class="section">
+  <h2>16. Troubleshooting</h2>
+
+  <div class="callout">
+    <p><span class="label">Run this first.</span> <code>.venv\Scripts\python scripts\doctor.py</code> —
+    whenever the app will not start, logins fail, accounts appear to be missing, or pgAdmin refuses you.
+    It codifies the checks that were previously done by hand, one shell command at a time, the last time
+    nobody could log in; that session turned up three separate causes at once — a stale
+    <code>POSTGRES_PASSWORD</code>, a pgAdmin password that had never been applied, and
+    <code>pg_hba</code> still on <code>trust</code> — none of which announced themselves.</p>
+    <p>It is read-only: it connects, reads and reports, and changes nothing. It prints no password; where
+    one must be identified it is named by origin (“DATABASE_URL”), never by value. pgAdmin is inspected by
+    reading its database, never by attempting a login, which would count against the lockout threshold and
+    could lock the very account being diagnosed. Exit status is 1 if any check fails, so it can gate a
+    deploy or run in CI.</p>
+  </div>
+  <table>
+    <tr><th class="c2">Check</th><th>Catches</th></tr>
+    <tr><td><code>POSTGRES_PASSWORD</code> vs <code>DATABASE_URL</code></td><td>A rotation applied to only one of them.</td></tr>
+    <tr><td>Which credential Postgres accepts</td><td>A wrong password, distinguished from nothing listening on the port at all.</td></tr>
+    <tr><td>App startup target</td><td>Silently running on the SQLite fallback instead of PostgreSQL.</td></tr>
+    <tr><td><code>pg_hba</code> trust rules</td><td>A volume still authenticating without a password.</td></tr>
+    <tr><td>pgAdmin account state</td><td>Locked accounts and accumulated failed attempts.</td></tr>
+  </table>
+
+  <h3>Logins fail, or the accounts are gone</h3>
+  <p>Almost always the database connection, not the accounts. In order of likelihood: the app is running
+  against the <strong>SQLite fallback</strong> — an empty database with no users, which
+  <code>doctor.py</code> reports explicitly; <code>DATABASE_URL</code> carries a password Postgres does not
+  accept; <code>AUTH_SECRET</code> is unset or was changed, so existing sessions no longer verify; or the
+  account genuinely lacks that surface. To get back in without the web app:</p>
+<pre>.venv\Scripts\python manage_access.py list
+.venv\Scripts\python manage_access.py grant &lt;username&gt; --admin --dashboard
+.venv\Scripts\python manage_access.py set-password &lt;username&gt;</pre>
+  <p>The CLI refuses to revoke the last administrator, needs an interactive terminal for
+  <code>set-password</code> (it will say so rather than hang on a pipe), strips the trailing carriage
+  return MinTTY can hand back — hashing that would store a password nobody could ever type again — and
+  re-reads the row afterwards to verify the new password against the stored hash.</p>
+
+  <h3>The app refuses to start: “Cannot reach the database at …”</h3>
+  <p>Working as intended (§7.1). Fix the connection; run <code>doctor.py</code>. Only set
+  <code>ALLOW_SQLITE_FALLBACK=1</code> for deliberate offline work, and remember it is read from the
+  process environment. If the app instead pauses at startup logging “Database not ready (attempt N)”, that
+  is the bounded retry window — it buys time for a slow database, not for a wrong one.</p>
+
+  <h3>“database files are incompatible with server” on docker compose up</h3>
+<pre>FATAL:  database files are incompatible with server
+DETAIL: The data directory was initialized by PostgreSQL version 16,
+        which is not compatible with this version 15.x</pre>
+  <p><strong>Cause:</strong> the Docker volume keeps the database files between runs, stamped with the
+  PostgreSQL major version that created them. If the <code>image:</code> tag points at an older major
+  version than the volume's <code>PG_VERSION</code>, PostgreSQL refuses to start.</p>
+  <p><strong>Fix (non-destructive, preferred):</strong> set the image to the major version matching the
+  data — currently <code>postgis/postgis:16-3.4</code> — and <code>docker compose up -d</code> again. Check
+  what the volume holds with:</p>
+<pre>docker run --rm -v feedbackapp_postgres_data:/data alpine cat /data/PG_VERSION</pre>
+  <p><strong>Fix (destructive):</strong> if the data is disposable, <code>docker compose down -v</code>
+  and let the pinned image re-initialize — this erases both the database and pgAdmin volumes.</p>
+
+  <h3>Sync fails with HTTP 400 “database has not been seeded with targets yet”</h3>
+  <p><code>POST /api/sync</code> returns this when the commit fails — most commonly because feedback
+  references anomalies that do not exist in the current database (it was wiped, re-ingested, or you are on
+  the SQLite fallback). Load targets first, then sync again; queued items are preserved in the browser
+  until a sync succeeds. Check the server log for <code>Skipping sync of feedback log …</code> lines,
+  which name the orphaned records.</p>
+
+  <h3>Map shows no points after login</h3>
+  <p>Usual causes, in order: the backend is not running; the database is empty (seed or ingest); or active
+  filters exclude everything — reset them to “All”.</p>
+
+  <h3>Offline mode is not working</h3>
+  <p>Open DevTools → Application → Service Workers; confirm the worker is activated and look for
+  <code>Precache skipped:</code> warnings in the console. Remember that renaming <code>CACHE_NAME</code>
+  is what evicts a bad cache (§12.3), and that map tiles are never precached. A hard reload with “Update
+  on reload” checked is the fastest way to get a clean worker.</p>
+
+  <h3>Mobile layout looks like the desktop one</h3>
+  <p>Check that the <code>cssTarget</code> pin in <code>vite.config.ts</code> is still there (§11.4).</p>
+
+  <h3>Taking a backup</h3>
+  <p>The database holds the <code>users</code> table, so dumps are sensitive; <code>.gitignore</code>
+  excludes <code>backup-*.sql</code> for that reason, so keep that naming. Take one before anything
+  destructive:</p>
+<pre>docker exec feedback_postgres_db pg_dump -U postgres nolte_geoservices &gt; backup-nolte_geoservices-&lt;timestamp&gt;.sql</pre>
+</div>
+
+<!-- ============================ 17 ============================ -->
+<div class="section">
+  <h2>17. Known Limitations &amp; Notes for Future Development</h2>
+  <p class="lede">This section is deliberately blunt. It is a handover document; the candour is the
+  point.</p>
+
+  <h3>17.1 Resolved since the previous revision (16 July 2026)</h3>
+  <table>
+    <tr><th class="c2">Was</th><th>Now</th></tr>
+    <tr><td>“No real authentication. Login is client-side theatre: passwords are never checked, roles live in localStorage, and every API endpoint is unauthenticated.”</td><td>Server-side PBKDF2 auth, signed tokens, per-surface access flags, forced password change, an admin-decided permission-request flow, and a deliberate offline sign-in policy (§7.2, §11.1).</td></tr>
+    <tr><td>“Destructive endpoints are exposed: anyone who can reach the server can call <code>POST /api/seed</code> and wipe all data.”</td><td><strong>Partly resolved.</strong> <code>/api/seed</code> now requires <code>is_admin</code>. It is still destructive and still unguarded beyond that — see 17.2.</td></tr>
+    <tr><td>“A <code>.gitignore</code> would help. The <code>node/</code> folder (two full Node distributions) makes the repo heavy.”</td><td>Both done. <code>.gitignore</code> covers <code>.env</code>, <code>*.db</code>, <code>__pycache__</code>, <code>backup-*.sql</code>, <code>scratch/</code> and a root-anchored <code>/node/</code>; the 181 MB of vendored Node was untracked and the superseded copy deleted. Note the blobs remain in <code>.git</code> history.</td></tr>
+    <tr><td>Silent SQLite fallback masking an unreachable database.</td><td>Fatal by default, opt-in via <code>ALLOW_SQLITE_FALLBACK</code>, with a bounded connect retry, a masked URL in logs, a credential-mismatch warning, and <code>scripts/doctor.py</code> (§7.1, §16).</td></tr>
+    <tr><td>Desktop-only layout.</td><td>Three responsive tiers across landing, field app and dashboard, plus the Leaflet <code>invalidateSize</code> handling and the <code>cssTarget</code> pin (§11.4).</td></tr>
+    <tr><td>Offline mode silently broken — the service worker never completed installation, so nothing was cached.</td><td>Fixed: stale favicon entry removed, per-asset caching via <code>allSettled</code>, cache renamed to <code>uxo-tracker-v2</code> (§12.3).</td></tr>
+  </table>
+
+  <h3>17.2 Still live — worth fixing</h3>
+  <ul>
+    <li><strong><code>POST /api/seed</code> wipes the database on one call.</strong> It is admin-gated now,
+    but that is the only thing between a careless click or a borrowed admin session and every excavation
+    record in the system. It deserves a confirmation token, or simply not being reachable in a production
+    build.</li>
+    <li><strong>Open CORS.</strong> <code>allow_origins=["*"]</code> with <code>allow_credentials=True</code>
+    — convenient in development, wrong anywhere else. Any page on any origin can call this API; the only
+    thing standing in the way is possession of a bearer token.</li>
+    <li><strong>N+1 query pattern.</strong> <code>GET /api/points</code> runs one feedback query per
+    anomaly — fine for hundreds of targets, slow for the full ~2,400-target magnetic dataset. Worse than it
+    first looks, because <code>/api/stats</code> and <code>/api/sync</code> both call it internally, so
+    every sync round-trip pays the cost. A join or eager-load would fix it.</li>
+    <li><strong>Photos as base64 in the database</strong> will bloat rows quickly; object storage with
+    references and thumbnails would scale better. They also travel inside the sync payload, which is the
+    slowest part of a field upload.</li>
+    <li><strong>Keyword-based UXO detection.</strong> Searching notes for “mine”, “bomb”, … is fragile — a
+    note reading “nothing resembling a mine” classifies as UXO. An explicit status chosen by the
+    investigator would be more reliable, and this is the one classification where a false negative is a
+    safety matter.</li>
+    <li><strong>Single hard-coded project.</strong> <code>11-24-2736</code> is baked into the import and
+    seed paths and into <code>ingest_anomalies.py</code>. Multi-project support is scaffolded (the projects
+    table, the dropdown, the SQL migrations for <code>11-26-5151</code>) but not finished.</li>
+    <li><strong>Duplicated conversion math</strong> in Python, TypeScript (twice) and SQL — four
+    implementations to keep consistent. The Python/TS versions also ignore the small geoid differences a
+    library like pyproj/proj4js would handle.</li>
+    <li><strong>No automated tests and no CI.</strong> Only ad-hoc UTM conversion scripts exist
+    (<code>test_utm.py</code>, <code>scratch/</code>). <code>doctor.py</code> is CI-ready and would be a
+    reasonable first gate.</li>
+    <li><strong>PostGIS extension errors are only logged.</strong> The enable step in
+    <code>init_db()</code> catches and logs on failure, so a failed PostGIS setup continues silently into
+    a broken trigger installation.</li>
+    <li><strong>Deployment.</strong> Everything runs locally — uvicorn plus Docker, no HTTPS, no process
+    supervision, and no backup or retention policy for the Postgres volume.</li>
+  </ul>
+
+  <h3>17.3 Setup gotchas — the things that actually cost time</h3>
+  <ul>
+    <li><strong>Three unrelated passwords</strong> (§15.1). <code>POSTGRES_PASSWORD</code> is inert on an
+    existing volume; the password inside <code>DATABASE_URL</code> is the one that connects; pgAdmin's is a
+    third thing entirely.</li>
+    <li><strong><code>ALLOW_SQLITE_FALLBACK</code> is read from the process environment, not
+    <code>.env</code></strong> (§15.1). Putting it in <code>.env</code> does nothing at all.</li>
+    <li><strong>The sample CSVs must stay at the repository root</strong> (§10).
+    <code>ingest_anomalies.py</code> resolves them — and <code>.env</code> — as bare relative paths against
+    the working directory.</li>
+    <li><strong>pandas is not in <code>requirements.txt</code></strong> although
+    <code>ingest_anomalies.py</code> imports it. Install it separately, or the ingestion fails at import.
+    <em>Known gap; to be pinned.</em></li>
+    <li><strong><code>install_node.py</code> hardcodes its target directory</strong> as
+    <code>c:\Apps\feedbackapp\node</code>. On any other machine, edit <code>TARGET_DIR</code> or install
+    Node yourself. <em>Known gap; to be made relative to the script.</em></li>
+    <li><strong><code>static/</code> is committed build output.</strong> Frontend changes are only live
+    after <code>npm run build</code>, and that rebuild belongs in its own commit.</li>
+    <li><strong><code>SEED_PASSWORD</code> only applies to an empty users table.</strong> After that it is
+    ignored, which reads as “it did nothing”.</li>
+  </ul>
+
+  <div class="footer-note">
+    Nolte Geoservices UXO Target Sync Platform — Project Documentation — generated 21 August 2026 from the
+    source code at C:\Apps\feedbackapp (branch main).<br>
+    Companion Markdown documentation: README.md, docs/ARCHITECTURE.md, docs/DATA_PIPELINE.md,
+    docs/OPERATIONS.md, docs/PROJECT_OVERVIEW.md
+  </div>
+</div>
+
+</body>
+</html>
