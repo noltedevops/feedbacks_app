@@ -295,6 +295,18 @@ export default function App() {
       document.body.classList.remove('light-theme');
     }
   }, [theme]);
+
+  // Three controls now flip the theme - the rail, the mobile sheet and the landing
+  // header - and each was repeating the same setState-then-write. One of them
+  // forgetting the localStorage line is the kind of bug that only shows up as "the
+  // landing page forgot my theme" after a reload, so the pair lives here once.
+  const toggleTheme = useCallback(() => {
+    setTheme((current) => {
+      const next = current === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('theme', next);
+      return next;
+    });
+  }, []);
   
   // Auth Form State
   const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot'>('login');
@@ -1392,7 +1404,7 @@ export default function App() {
   );
 
   return (
-    <div className="app-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: '#090d16' }}>
+    <div className="app-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: 'var(--landing-bg)' }}>
       
       {/* 1. Sentry-Inspired Landing Page View */}
       {!isLoggedIn ? (
@@ -1401,9 +1413,9 @@ export default function App() {
           flexDirection: 'column',
           minHeight: '100vh',
           width: '100vw',
-          backgroundColor: '#090d16',
+          backgroundColor: 'var(--landing-bg)',
           backgroundImage: 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 130, 32, 0.15), rgba(9, 13, 22, 1)), radial-gradient(circle at 80% 60%, rgba(56, 189, 248, 0.08), transparent 50%)',
-          color: '#ffffff',
+          color: 'var(--landing-text)',
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
           overflowX: 'hidden'
         }}>
@@ -1415,7 +1427,7 @@ export default function App() {
             justifyContent: 'space-between',
             padding: '18px 48px',
             borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-            backgroundColor: 'rgba(9, 13, 22, 0.75)',
+            backgroundColor: 'var(--landing-header-bg)',
             backdropFilter: 'blur(16px)',
             position: 'sticky',
             top: 0,
@@ -1495,15 +1507,26 @@ export default function App() {
               {/* Language Switcher (English <-> Deutsch) */}
               <LangSwitch lang={lang} onChange={setLang} />
 
+              {/* Same control, same state and same stored key as the rail inside the
+                  app, so the choice made here is the one the app opens with. */}
+              <button
+                className="landing-theme-toggle"
+                onClick={toggleTheme}
+                title={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
+                aria-label={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
+              >
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
+
               <button
                 onClick={() => {
                   setShowAuthModal(true);
                   setAuthView('login');
                 }}
                 style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                  color: '#ffffff',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  backgroundColor: 'var(--landing-chip)',
+                  color: 'var(--landing-text)',
+                  border: '1px solid var(--landing-hairline)',
                   borderRadius: '6px',
                   padding: '8px 18px',
                   fontSize: '0.85rem',
@@ -1511,8 +1534,8 @@ export default function App() {
                   cursor: 'pointer',
                   transition: 'all 0.15s'
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)')}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--landing-chip-hover)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--landing-chip)')}
               >
                 {lang === 'EN' ? 'Sign in' : 'Anmelden'}
               </button>
@@ -2183,11 +2206,7 @@ export default function App() {
                   {/* Theme Toggle Button placed where Logout button was */}
                   <button
                     className="sidebar-logout"
-                    onClick={() => {
-                      const newTheme = theme === 'dark' ? 'light' : 'dark';
-                      setTheme(newTheme);
-                      localStorage.setItem('theme', newTheme);
-                    }}
+                    onClick={toggleTheme}
                     title={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
                   >
                     {theme === 'dark' ? <Sun size={18} color="#f58220" /> : <Moon size={18} color="#0f172a" />}
@@ -2686,9 +2705,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => {
-                  const newTheme = theme === 'dark' ? 'light' : 'dark';
-                  setTheme(newTheme);
-                  localStorage.setItem('theme', newTheme);
+                  toggleTheme();
                 }}
                 title={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
                 style={{
