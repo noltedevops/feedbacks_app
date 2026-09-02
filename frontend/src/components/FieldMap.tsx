@@ -268,24 +268,73 @@ const MapResizeHandler: React.FC = () => {
   return null;
 };
 
-// Available basemaps
+// Available basemaps.
+//
+// All three are keyless raster. CARTO began stamping an "API KEY REQUIRED" watermark
+// into every dark_all tile - served as a normal HTTP 200, so nothing here errored and
+// only the pixels showed it - and has said the raster service is being retired in
+// favour of vector tiles, so a key would only have bought time.
+//
+// The replacement is Esri's Dark Gray Canvas rather than a vector basemap. Vector was
+// tried first and lost: MapLibre needs a WebGL context plus a separately bundled web
+// worker, and when that worker 404s the map still initialises, still paints its
+// background, and renders nothing else - a black rectangle with no error thrown. On a
+// field app that runs on whatever tablet a crew owns, a basemap that can fail silently
+// and invisibly is worse than one that is merely coarse.
 const BASEMAPS = {
   dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; CartoDB'
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    // Esri splits the dark canvas in two: geometry in the base service above, and every
+    // place and street name in this separate transparent overlay. dark_all carried its
+    // labels inline, so without this second layer the map loses every name on it.
+    labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, and the GIS user community',
+    // Real data stops at z16 worldwide - z17 and beyond serve an identical 2.5KB blank
+    // tile, checked over both the survey area and dense urban centres. Capping the
+    // native zoom here makes Leaflet upscale the z16 tile instead of laying blank ones
+    // over the map at exactly the zoom a surveyor works at.
+    maxNativeZoom: 16,
+    className: 'basemap-dark-base',
+    labelsClassName: 'basemap-dark-labels'
   },
   streets: {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenStreetMap'
+    attribution: '&copy; OpenStreetMap',
+    maxNativeZoom: 19
   },
   satellite: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+    maxNativeZoom: 19
   }
-};
+} as const;
 
 type BasemapKey = keyof typeof BASEMAPS;
 
+const BasemapLayer: React.FC<{ basemap: BasemapKey }> = ({ basemap }) => {
+  const config = BASEMAPS[basemap];
+  const labelsUrl = 'labelsUrl' in config ? config.labelsUrl : undefined;
+
+  return (
+    <>
+      <TileLayer
+        attribution={config.attribution}
+        url={config.url}
+        maxZoom={22}
+        maxNativeZoom={config.maxNativeZoom}
+        className={'className' in config ? config.className : undefined}
+      />
+      {labelsUrl && (
+        <TileLayer
+          url={labelsUrl}
+          maxZoom={22}
+          maxNativeZoom={config.maxNativeZoom}
+          className={'labelsClassName' in config ? config.labelsClassName : undefined}
+        />
+      )}
+    </>
+  );
+};
 
 const MapToolbar: React.FC<{
   viewMode: 'collector' | 'dashboard';
@@ -707,12 +756,7 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
         doubleClickZoom={mapInteractive}
         scrollWheelZoom={mapInteractive}
       >
-        <TileLayer
-          attribution={BASEMAPS[activeBasemap].attribution}
-          url={BASEMAPS[activeBasemap].url}
-          maxZoom={22}
-          maxNativeZoom={19}
-        />
+        <BasemapLayer key={activeBasemap} basemap={activeBasemap} />
 
         {markers}
 

@@ -112,6 +112,26 @@ h1, h2, h3, h4, h5, h6 {
   background-color: #0b0f19 !important;
 }
 
+/* Esri's Dark Gray Canvas replaced CARTO's dark_all, which now watermarks unkeyed
+   tiles. Esri's is a mid grey - measured about five times brighter than dark_all -
+   so on its own it reads as a light map dropped into a dark app. Contrast runs
+   first to hold the roads apart from the ground, then brightness pulls the whole
+   thing down toward the #0b0f19 the map sits on; the order matters, since running
+   brightness first leaves contrast to lift it straight back up.
+
+   Esri's canvas is lower contrast at source than dark_all was, so the roads stay
+   softer than they used to be. That is the cost of a basemap that needs no API key. */
+.basemap-dark-base {
+  filter: contrast(1.9) brightness(0.45);
+}
+
+/* Labels ship as a separate transparent overlay drawn in dark grey, meant to sit on
+   Esri's lighter canvas. Over the darkened base they would disappear, so invert them
+   to light type. Inverting only this layer keeps it out of the base's filter. */
+.basemap-dark-labels {
+  filter: invert(1);
+}
+
 .leaflet-bar {
   border: none !important;
   box-shadow: var(--shadow-lg) !important;
