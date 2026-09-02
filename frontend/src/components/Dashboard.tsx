@@ -598,7 +598,9 @@ const DashboardImpl: React.FC<DashboardProps> = ({
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
               <XAxis dataKey="name" stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
               <YAxis stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
-              <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: isMobile ? 11 : 8 }} />
+              <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: isMobile ? 11 : 8 }}
+              itemStyle={{ color: 'var(--surface-text)' }}
+              labelStyle={{ color: 'var(--surface-text-muted)' }} />
               <Bar dataKey="count" name={t('Frequency')} fill="#fa5f1c" radius={[3, 3, 0, 0]} isAnimationActive={!isMobile} />
             </BarChart>
           </ResponsiveContainer>
@@ -625,7 +627,9 @@ const DashboardImpl: React.FC<DashboardProps> = ({
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
               <XAxis dataKey="name" stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
               <YAxis stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
-              <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: isMobile ? 11 : 8 }} />
+              <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: isMobile ? 11 : 8 }}
+              itemStyle={{ color: 'var(--surface-text)' }}
+              labelStyle={{ color: 'var(--surface-text-muted)' }} />
               <Legend verticalAlign="top" height={isMobile ? 22 : 16} iconSize={isMobile ? 9 : 6} wrapperStyle={{ fontSize: legendFontSize }} />
               <Bar dataKey="Frei" name={t('Frei (Clear)')} fill="#10b981" stackId="sohle" isAnimationActive={!isMobile} />
               <Bar dataKey="Nicht Frei" name={t('Nicht Frei')} fill="#ef4444" stackId="sohle" isAnimationActive={!isMobile} />
@@ -819,7 +823,9 @@ const DashboardImpl: React.FC<DashboardProps> = ({
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
             <XAxis dataKey="limit" stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
             <YAxis stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
-            <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: isMobile ? 11 : 8 }} />
+            <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: isMobile ? 11 : 8 }}
+              itemStyle={{ color: 'var(--surface-text)' }}
+              labelStyle={{ color: 'var(--surface-text-muted)' }} />
             <Legend verticalAlign="top" height={isMobile ? 22 : 16} iconSize={isMobile ? 9 : 6} wrapperStyle={{ fontSize: legendFontSize }} />
             <Area type="monotone" dataKey="Evaluated (Sensor)" name={t('Evaluated (Sensor)')} stroke="#fa5f1c" fillOpacity={1} fill="url(#colorEval)" strokeWidth={1.2} isAnimationActive={!isMobile} />
             {hasExcavationData && (
@@ -873,7 +879,9 @@ const DashboardImpl: React.FC<DashboardProps> = ({
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
               <XAxis dataKey="name" stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
               <YAxis stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
-              <Tooltip contentStyle={{ backgroundColor: '#0a1612', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: isMobile ? 11 : 8 }} />
+              <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: isMobile ? 11 : 8 }}
+              itemStyle={{ color: 'var(--surface-text)' }}
+              labelStyle={{ color: 'var(--surface-text-muted)' }} />
               <Legend verticalAlign="top" height={isMobile ? 30 : 16} iconSize={isMobile ? 9 : 6} wrapperStyle={{ fontSize: legendFontSize }} />
               <Bar dataKey="Depth (m)" name={t('Depth (m)')} fill="#fa5f1c" stackId="metrics" isAnimationActive={!isMobile} />
               <Bar dataKey="Length (m)" name={t('Length (m)')} fill="#38bdf8" stackId="metrics" isAnimationActive={!isMobile} />

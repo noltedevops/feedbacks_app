@@ -275,6 +275,53 @@ h1, h2, h3, h4, h5, h6 {
   color-scheme: dark;
 }
 
+/* Theme tokens.
+ *
+ * The --*-dark / --*-light pairs above are raw palette entries: both exist at once
+ * and neither changes when the theme does, so every themed surface had to be written
+ * out a second time as a `body.light-theme .foo` override. That works for anything
+ * styled by a class, and not at all for the inline styles the React components set -
+ * a stylesheet cannot reach those, which is why chart tooltips and the map widgets
+ * stayed dark in light mode however many override rules were added.
+ *
+ * These tokens are the missing layer: one name per role, resolved differently under
+ * body.light-theme. Because custom properties inherit through the DOM, an inline
+ * style can read them - `backgroundColor: 'var(--surface)'` follows the theme with no
+ * `theme` prop threaded through the component tree. Same switch as before, still the
+ * body class; components can just see it now.
+ */
+:root {
+  --surface: hsl(var(--card-dark));
+  --surface-raised: hsl(163 37% 16%);
+  --surface-sunken: rgba(255, 255, 255, 0.04);
+  --surface-border: hsl(var(--border-dark));
+  --surface-text: #e2e8f0;
+  --surface-text-muted: #94a3b8;
+  --surface-text-strong: #f8fafc;
+
+  /* Floating chrome over the map: toolbar, legend, basemap switcher. Kept separate
+   * from --surface because it sits on imagery and needs to stay legible over it. */
+  --overlay: rgba(17, 24, 39, 0.95);
+  --overlay-border: rgba(255, 255, 255, 0.1);
+  --overlay-text: #e2e8f0;
+
+  --accent: #fa5f1c;
+}
+
+body.light-theme {
+  --surface: hsl(var(--card-light));
+  --surface-raised: #ffffff;
+  --surface-sunken: rgba(15, 23, 42, 0.04);
+  --surface-border: hsl(var(--border-light));
+  --surface-text: #0f172a;
+  --surface-text-muted: #64748b;
+  --surface-text-strong: #020617;
+
+  --overlay: rgba(255, 255, 255, 0.97);
+  --overlay-border: rgba(15, 23, 42, 0.12);
+  --overlay-text: #0f172a;
+}
+
 body.light-theme {
   color-scheme: light;
 }

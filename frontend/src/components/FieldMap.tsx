@@ -404,8 +404,8 @@ const MapToolbar: React.FC<{
             position: 'absolute',
             left: '46px',
             bottom: '0px',
-            backgroundColor: 'rgba(17, 24, 39, 0.95)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            backgroundColor: 'var(--overlay)',
+            border: '1px solid var(--overlay-border)',
             padding: '8px',
             borderRadius: 'var(--radius-md)',
             boxShadow: 'var(--shadow-lg)',
@@ -471,8 +471,8 @@ const MapToolbar: React.FC<{
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: 'rgba(17, 24, 39, 0.95)',
-        border: '1px solid rgba(255, 255, 255, 0.12)',
+        backgroundColor: 'var(--overlay)',
+        border: '1px solid var(--overlay-border)',
         borderRadius: '10px',
         boxShadow: 'var(--shadow-lg)',
         overflow: 'hidden',
@@ -484,8 +484,8 @@ const MapToolbar: React.FC<{
           style={{
             background: 'none',
             border: 'none',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            color: '#fff',
+            borderBottom: '1px solid var(--overlay-border)',
+            color: 'var(--overlay-text)',
             width: '36px',
             height: '36px',
             fontSize: '1.2rem',
@@ -506,8 +506,8 @@ const MapToolbar: React.FC<{
           style={{
             background: 'none',
             border: 'none',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            color: '#fff',
+            borderBottom: '1px solid var(--overlay-border)',
+            color: 'var(--overlay-text)',
             width: '36px',
             height: '36px',
             fontSize: '1.2rem',
@@ -528,8 +528,8 @@ const MapToolbar: React.FC<{
           style={{
             background: 'none',
             border: 'none',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            color: '#fff',
+            borderBottom: '1px solid var(--overlay-border)',
+            color: 'var(--overlay-text)',
             width: '36px',
             height: '36px',
             cursor: 'pointer',
@@ -549,7 +549,7 @@ const MapToolbar: React.FC<{
             background: 'none',
             border: 'none',
             borderBottom: viewMode === 'dashboard' && onAddDataClick ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
-            color: '#fff',
+            color: 'var(--overlay-text)',
             width: '36px',
             height: '36px',
             cursor: 'pointer',
@@ -592,7 +592,7 @@ const MapToolbar: React.FC<{
         gap: isMobile ? '8px' : '12px',
         padding: isMobile ? '5px 10px' : '6px 14px',
         borderRadius: '9999px',
-        border: '1px solid rgba(255,255,255,0.1)',
+        border: '1px solid var(--surface-border)',
         boxShadow: 'var(--shadow-lg)',
         maxWidth: '100%',
         flexWrap: 'wrap'
@@ -600,12 +600,12 @@ const MapToolbar: React.FC<{
         {/* The "MAP LEGEND" caption is the first thing to go on a 380px screen - the two
             colour chips next to it already say what it says. */}
         {!isMobile && (
-          <span style={{ fontWeight: 800, color: '#fff', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.04em', borderRight: '1px solid rgba(255,255,255,0.15)', paddingRight: '10px' }}>
+          <span style={{ fontWeight: 800, color: 'var(--surface-text)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.04em', borderRight: '1px solid var(--surface-border)', paddingRight: '10px' }}>
             {t('Map Legend')}
           </span>
         )}
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.7rem', color: '#cbd5e1', fontWeight: 600 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.7rem', color: 'var(--surface-text-muted)', fontWeight: 600 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', border: '0.75px solid white' }}></div>
             <span>{t('Investigated')}</span>
@@ -951,7 +951,7 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
             borderRadius: '9999px',
             fontSize: '0.65rem',
             fontWeight: 800,
-            color: '#fff',
+            color: 'var(--surface-text)',
             letterSpacing: '0.02em',
             pointerEvents: 'none'
           }}>

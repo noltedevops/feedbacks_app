@@ -560,23 +560,23 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                 fontSize: '0.75rem',
                 height: '32px',
                 padding: '0 8px',
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                borderColor: 'rgba(255, 255, 255, 0.25)',
-                color: '#ffffff',
+                backgroundColor: 'var(--surface-sunken)',
+                borderColor: 'var(--surface-border)',
+                color: 'var(--surface-text)',
                 fontWeight: 600,
                 width: '100%',
                 cursor: 'pointer'
               }}
               required
             >
-              <option value="ohne Fund" style={{ background: '#1e293b', color: '#fff' }}>ohne Fund</option>
-              <option value="Eisenteil" style={{ background: '#1e293b', color: '#fff' }}>Eisenteil</option>
-              <option value="Eisenstange / Eisenstab" style={{ background: '#1e293b', color: '#fff' }}>Eisenstange / Eisenstab</option>
-              <option value="Eisendraht" style={{ background: '#1e293b', color: '#fff' }}>Eisendraht</option>
-              <option value="Eisenseil" style={{ background: '#1e293b', color: '#fff' }}>Eisenseil</option>
-              <option value="Eisennägel" style={{ background: '#1e293b', color: '#fff' }}>Eisennägel</option>
-              <option value="Steine" style={{ background: '#1e293b', color: '#fff' }}>Steine</option>
-              <option value="Sonstige" style={{ background: '#1e293b', color: '#fff' }}>Sonstige</option>
+              <option value="ohne Fund" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>ohne Fund</option>
+              <option value="Eisenteil" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Eisenteil</option>
+              <option value="Eisenstange / Eisenstab" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Eisenstange / Eisenstab</option>
+              <option value="Eisendraht" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Eisendraht</option>
+              <option value="Eisenseil" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Eisenseil</option>
+              <option value="Eisennägel" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Eisennägel</option>
+              <option value="Steine" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Steine</option>
+              <option value="Sonstige" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Sonstige</option>
             </select>
           </div>
 
@@ -688,11 +688,11 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   maxHeight: '130px',
                   overflowY: 'auto',
                   padding: '6px',
-                  backgroundColor: 'rgba(0,0,0,0.2)',
+                  backgroundColor: 'var(--surface-sunken)',
                   borderRadius: 'var(--radius-sm)'
                 }}>
                   {photos.map((base64Src, idx) => (
-                    <div key={idx} style={{ position: 'relative', width: '100%', height: '54px', borderRadius: '4px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div key={idx} style={{ position: 'relative', width: '100%', height: '54px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--surface-border)' }}>
                       <img src={base64Src} alt={`Attachment ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       <button
                         type="button"

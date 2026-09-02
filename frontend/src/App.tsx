@@ -1312,7 +1312,7 @@ export default function App() {
         fontWeight: 700,
         height: '28px',
         padding: '0 8px',
-        backgroundColor: 'rgba(10, 22, 18, 0.6)',
+        backgroundColor: 'var(--surface-sunken)',
         borderColor: 'rgba(255, 255, 255, 0.06)',
         color: '#fff',
         width: '100%',
@@ -1334,7 +1334,7 @@ export default function App() {
         value={filterVmNr}
         onChange={(e) => setFilterVmNr(e.target.value)}
         title={t('All VM Nr.')}
-        style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'rgba(10,22,18,0.4)', borderColor: 'rgba(255,255,255,0.06)' }}
+        style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'var(--surface-sunken)', borderColor: 'var(--surface-border)' }}
       >
         <option value="all">{t('All VM Nr.')}</option>
         {allVmNumbers.map(vm => (
@@ -1352,7 +1352,7 @@ export default function App() {
         value={filterInstrument}
         onChange={(e) => setFilterInstrument(e.target.value)}
         title={t('All Instruments')}
-        style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'rgba(10,22,18,0.4)', borderColor: 'rgba(255,255,255,0.06)' }}
+        style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'var(--surface-sunken)', borderColor: 'var(--surface-border)' }}
       >
         <option value="all">{t('All Instruments')}</option>
         <option value="georadar">{t('Georadar')}</option>
@@ -1368,8 +1368,8 @@ export default function App() {
       onChange={(e) => setFilterStatus(e.target.value)}
       title={t('Status filter')}
       style={isMobile
-        ? { width: '100%', fontSize: '0.75rem', background: 'rgba(10, 22, 18, 0.6)', borderColor: 'rgba(255,255,255,0.06)' }
-        : { width: '120px', fontSize: '0.7rem', height: '24px', padding: '0 4px', background: 'rgba(10, 22, 18, 0.6)', borderColor: 'rgba(255,255,255,0.06)' }}
+        ? { width: '100%', fontSize: '0.75rem', background: 'var(--surface-sunken)', borderColor: 'var(--surface-border)' }
+        : { width: '120px', fontSize: '0.7rem', height: '24px', padding: '0 4px', background: 'var(--surface-sunken)', borderColor: 'var(--surface-border)' }}
     >
       <option value="all">{t('All Targets')}</option>
       <option value="investigated">{t('Investigated')}</option>
@@ -1784,7 +1784,7 @@ export default function App() {
                 position: 'relative',
                 animation: 'modal-scale-up 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                 textAlign: 'left',
-                backgroundColor: '#0f172a',
+                backgroundColor: 'var(--surface)',
                 borderRadius: '14px'
               }}>
                 
@@ -2099,8 +2099,8 @@ export default function App() {
                     position: 'absolute',
                     bottom: '50px',
                     left: '60px',
-                    backgroundColor: '#0f172a',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    backgroundColor: 'var(--surface)',
+                    border: '1px solid var(--surface-border)',
                     borderRadius: '12px',
                     padding: '16px',
                     width: '240px',
@@ -2236,7 +2236,7 @@ export default function App() {
             <main className="collector-main" style={{ display: 'flex', flexGrow: 1, padding: '16px', gap: '16px', height: '100vh', overflow: 'hidden' }}>
               
               {/* Left sidebar collector control panel */}
-              <section className="glass-panel collector-sidebar" style={{ width: '380px', display: 'flex', flexDirection: 'column', flexShrink: 0, padding: '16px', overflow: 'hidden', border: 'none', background: 'rgba(15, 34, 28, 0.4)' }}>
+              <section className="glass-panel collector-sidebar" style={{ width: '380px', display: 'flex', flexDirection: 'column', flexShrink: 0, padding: '16px', overflow: 'hidden', border: 'none', background: 'var(--surface-sunken)' }}>
                 
                 {formPoint ? (
                   <FeedbackForm
@@ -2306,7 +2306,7 @@ export default function App() {
                               value={searchQuery}
                               onChange={(e) => setSearchQuery(e.target.value)}
                               placeholder={t('Search targets...')}
-                              style={{ width: '100%', paddingLeft: '30px', fontSize: '0.8rem', backgroundColor: 'rgba(10,22,18,0.4)', borderColor: 'rgba(255,255,255,0.06)' }}
+                              style={{ width: '100%', paddingLeft: '30px', fontSize: '0.8rem', backgroundColor: 'var(--surface-sunken)', borderColor: 'var(--surface-border)' }}
                             />
                           </div>
 
