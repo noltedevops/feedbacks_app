@@ -1,6 +1,6 @@
 // Bumped from v1: that cache exists on installed devices but is empty, because the
 // install below never completed. Renaming lets the activate handler drop it.
-const CACHE_NAME = 'uxo-tracker-v2';
+const CACHE_NAME = 'uxo-tracker-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -60,9 +60,43 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
+  // Extensions in the user's browser issue requests through the page, and the
+  // Cache API only accepts http(s) - cache.put on a chrome-extension:// request
+  // throws. The rejection was detached from the response, so it never broke the
+  // page, it just filled the console and buried real errors.
+  if (!url.protocol.startsWith('http')) {
+    return;
+  }
+
   // Bypass caching for backend REST API endpoints
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // The document itself is network-first.
+  //
+  // Vite names every asset by content hash, so a new build is only reachable
+  // through the new index.html that references it. Serving that document from
+  // cache first - which is what the generic handler below does - pinned the app
+  // to whichever build the cache last held: the revalidation updated the cache
+  // for next time, so a reload always ran the previous build, and a stale enough
+  // one still referenced bundles from before the basemap was raster at all. That
+  // is the black map, and why clearing the cache by hand appeared to fix things.
+  //
+  // Cache still answers when the network does not, so offline is unaffected.
+  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
+    );
     return;
   }
 
