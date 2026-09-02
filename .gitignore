@@ -31,6 +31,11 @@ dist/
 # Local SQLite fallback, created when the Postgres connection fails
 *.db
 
+# Ad-hoc local probe: connects to the dev database as a named role to check that
+# login works. Throwaway despite the name - it is not a test and nothing runs it.
+# It carries a real database username, so it should never reach the remote.
+user_test.py
+
 # Database dumps - contain the users table, never commit
 backup-*.sql
 
