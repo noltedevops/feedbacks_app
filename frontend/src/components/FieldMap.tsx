@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 're
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { type LocalPoint, getResolvedStatus } from '../db/indexedDb';
-import { Layers, FolderPlus, Home, FileSpreadsheet, FileText } from 'lucide-react';
+import { Layers, FolderPlus, Home, ChevronLeft, ChevronRight, Download, X } from 'lucide-react';
 import { makeT, type AppLang, type Translator } from '../i18n';
 
 interface FieldMapProps {
@@ -20,174 +20,151 @@ interface FieldMapProps {
   isMobile?: boolean;
 }
 
-// CSV Exporter for single point report
-const downloadSingleCSV = (selectedPoint: LocalPoint) => {
-  const feedback = selectedPoint.feedback;
-  
-  const headers = [
-    'Project ID', 'Target ID', 'VM Nr.', 'Easting (X)', 'Northing (Y)', 'Evaluated Depth (m)', 
-    'Instrument', 'Layer', 'Sohle Status', 'Fundstück', 'Other', 'Actual Depth (m)', 
-    'Investigator', 'Logged At', 'Bilder Number', 'Notes'
-  ];
-  
-  const rows = [
-    [
-      selectedPoint.project_id || '11-24-2736',
-      selectedPoint.target_id || '',
-      selectedPoint.vm_nr,
-      selectedPoint.easting,
-      selectedPoint.northing,
-      selectedPoint.evaluated_depth || 'N/A',
-      selectedPoint.instrument || 'georadar',
-      selectedPoint.layer || '',
-      feedback?.sohle_status || 'N/A',
-      feedback?.fundstueck || 'N/A',
-      feedback?.other || '',
-      feedback?.actual_depth || 'N/A',
-      feedback?.investigator || 'N/A',
-      feedback?.logged_at || 'N/A',
-      feedback?.bilder_n || 0,
-      feedback?.notes || ''
-    ]
-  ];
-  
-  const csvContent = "data:text/csv;charset=utf-8," 
-    + [headers.join(','), ...rows.map(e => e.map(val => `"${val}"`).join(","))].join("\n");
-    
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `Target_VM_${selectedPoint.vm_nr}_Report.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+
+const STATUS_COLOURS: Record<string, string> = {
+  clear: '#10b981',
+  uxo: '#ef4444',
+  scrap: '#f59e0b',
+  false_alarm: '#8b5cf6'
 };
 
-// HTML Print / PDF Exporter
-const downloadSinglePDF = (selectedPoint: LocalPoint) => {
-  const feedback = selectedPoint.feedback;
+/* Popup shown when a target marker is clicked.
+ *
+ * Photos are base64 strings already held in IndexedDB, so both the carousel and
+ * the download work entirely client-side - nothing here calls the API, and the
+ * download needs no endpoint. Only one image is mounted at a time; the previous
+ * version rendered every attachment as a thumbnail, which on a target with a
+ * dozen field photos meant decoding all of them to show a strip 46px tall.
+ *
+ * Colours come from the theme tokens rather than the literals this popup used
+ * before, so it is legible in light and dark alike. */
+const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t }) => {
+  const photos = useMemo<string[]>(
+    () => (Array.isArray(point.feedback?.photos) ? point.feedback.photos : []),
+    [point.feedback?.photos]
+  );
+  const [index, setIndex] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
 
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
+  // A different target can be selected while this stays mounted; without the
+  // reset the carousel would open on the previous point's photo number.
+  useEffect(() => { setIndex(0); }, [point.id]);
 
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>Nolte Geoservices Platforms - Target Report VM-${selectedPoint.vm_nr}</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
-          .header { display: flex; justify-content: space-between; border-bottom: 2px solid #f97316; padding-bottom: 20px; margin-bottom: 30px; }
-          .title { font-size: 24px; font-weight: bold; color: #1e293b; }
-          .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
-          .meta-item { border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; }
-          .meta-label { font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase; }
-          .meta-value { font-size: 16px; margin-top: 4px; font-weight: bold; color: #0f172a; }
-          .photos-section { margin-top: 30px; }
-          .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
-          .photo-card { border: 1px solid #e2e8f0; padding: 6px; border-radius: 6px; }
-          .photo-card img { width: 100%; height: 150px; object-fit: cover; border-radius: 4px; }
-          .footer { border-top: 1px solid #e2e8f0; margin-top: 50px; padding-top: 15px; font-size: 12px; color: #94a3b8; text-align: center; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div>
-            <div class="title">TARGET TRACKER FEEDBACK</div>
-            <div style="font-size: 14px; color: #64748b; margin-top: 4px;">Nolte Geoservices Platforms GmbH | Field Operations</div>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-size: 18px; font-weight: bold; color: #f97316;">VM Nr. ${selectedPoint.vm_nr}</div>
-            <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Date Exported: ${new Date().toLocaleDateString()}</div>
-          </div>
+  const status = getResolvedStatus(point);
+  const statusColour = STATUS_COLOURS[status] ?? '#64748b';
+  const feedback = point.feedback;
+
+  const step = (delta: number) => {
+    if (photos.length === 0) return;
+    setIndex((i) => (i + delta + photos.length) % photos.length);
+  };
+
+  const downloadCurrent = () => {
+    const src = photos[index];
+    if (!src) return;
+    const a = document.createElement('a');
+    a.href = src;
+    a.download = `VM_${point.vm_nr}_photo_${index + 1}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const Row: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+    <div className="tp-row">
+      <span className="tp-row-label">{label}</span>
+      <span className="tp-row-value">{value}</span>
+    </div>
+  );
+
+  return (
+    <div className="tp">
+      <header className="tp-head">
+        <span className="tp-vm">VM {point.vm_nr}</span>
+        <span className="tp-status" style={{ color: statusColour, backgroundColor: `${statusColour}1f` }}>
+          {t(status).toUpperCase()}
+        </span>
+      </header>
+
+      <section className="tp-coords">
+        <div className="tp-coord">
+          <span className="tp-coord-axis">X</span>
+          <span className="tp-coord-val">{point.easting ?? '--'}</span>
         </div>
-
-        <div class="meta-grid">
-          <div class="meta-item">
-            <div class="meta-label">Project ID</div>
-            <div class="meta-value">${selectedPoint.project_id || '11-24-2736'}</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">Target ID</div>
-            <div class="meta-value">${selectedPoint.target_id || ''}</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">UTM Coordinates</div>
-            <div class="meta-value">X: ${selectedPoint.easting} | Y: ${selectedPoint.northing}</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">Evaluated Depth (m)</div>
-            <div class="meta-value">${selectedPoint.evaluated_depth ? `${selectedPoint.evaluated_depth} m` : 'N/A'}</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">Instrument / Layer</div>
-            <div class="meta-value" style="font-size: 11px;">${(selectedPoint.instrument || 'georadar').toUpperCase()} / ${selectedPoint.layer || ''}</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">Clearance / Sohle Status</div>
-            <div class="meta-value">${feedback?.sohle_status || 'N/A'}</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">Fundstück</div>
-            <div class="meta-value">${feedback?.fundstueck || 'N/A'} ${feedback?.other ? `(${feedback.other})` : ''}</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">Investigator Name</div>
-            <div class="meta-value">${feedback?.investigator || 'N/A'}</div>
-          </div>
-          <div class="meta-item" style="grid-column: 1 / -1; border-top: 1px dashed #e2e8f0; padding-top: 8px;">
-            <div class="meta-label" style="font-weight: bold; color: #fa5f1c;">Öffnungsmessungen (Excavation Measurements)</div>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 4px;">
-              <div>
-                <span style="font-size: 11px; color: #64748b;">Länge:</span>
-                <span style="font-size: 13px; font-weight: bold;">${feedback?.laenge !== null && feedback?.laenge !== undefined ? `${feedback.laenge} m` : 'N/A'}</span>
-              </div>
-              <div>
-                <span style="font-size: 11px; color: #64748b;">Breite:</span>
-                <span style="font-size: 13px; font-weight: bold;">${feedback?.breite !== null && feedback?.breite !== undefined ? `${feedback.breite} m` : 'N/A'}</span>
-              </div>
-              <div>
-                <span style="font-size: 11px; color: #64748b;">Tiefe:</span>
-                <span style="font-size: 13px; font-weight: bold;">${feedback?.actual_depth !== null && feedback?.actual_depth !== undefined ? `${feedback.actual_depth} m` : 'N/A'}</span>
-              </div>
-              <div>
-                <span style="font-size: 11px; color: #64748b;">Volumen:</span>
-                <span style="font-size: 13px; font-weight: bold; color: #38bdf8;">${feedback?.m_cube !== null && feedback?.m_cube !== undefined ? `${feedback.m_cube} m³` : 'N/A'}</span>
-              </div>
-            </div>
-          </div>
-          <div class="meta-item" style="grid-column: 1 / -1; border-top: 1px dashed #e2e8f0; padding-top: 8px;">
-            <div class="meta-label">Additional Comments / Bemerkung</div>
-            <div class="meta-value" style="font-weight: normal; font-size: 13px; color: #334155;">
-              ${feedback?.notes || selectedPoint.remarks || 'No notes reported.'}
-            </div>
-          </div>
+        <div className="tp-coord">
+          <span className="tp-coord-axis">Y</span>
+          <span className="tp-coord-val">{point.northing ?? '--'}</span>
         </div>
+      </section>
 
-        ${feedback?.photos && feedback.photos.length > 0 ? `
-          <div class="photos-section">
-            <div class="meta-label" style="font-weight: bold; color: #38bdf8;">Submitted Pictures (Bilder Number: ${feedback.bilder_n})</div>
-            <div class="photo-grid">
-              ${feedback.photos.map((img: string, idx: number) => `
-                <div class="photo-card">
-                  <img src="${img}" alt="Attachment ${idx + 1}" style="max-height: 140px; object-fit: contain;" />
-                  <div style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 4px;">Photo ${idx + 1}</div>
-                </div>
-              `).join('')}
-            </div>
+      <section className="tp-grid">
+        <Row label={t('Project ID')} value={point.project_id || '--'} />
+        <Row label={t('Target ID')} value={point.target_id || t('N/A')} />
+        <Row label={t('Survey Layer')} value={point.layer || t('N/A')} />
+        <Row label={t('Evaluated Depth')} value={point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')} />
+      </section>
+
+      {feedback?.visited && (
+        <section className="tp-feedback">
+          <div className="tp-feedback-title">{t('Field Log Feedback')}</div>
+          <Row label={t('Sohle Status')} value={feedback.sohle_status || t('N/A')} />
+          <Row label="Fundstück" value={feedback.fundstueck || t('N/A')} />
+          {feedback.m_cube !== null && feedback.m_cube !== undefined && (
+            <Row label={t('Volumen')} value={`${feedback.m_cube} m³`} />
+          )}
+          <Row label={t('Actual Depth')} value={feedback.actual_depth ? `${feedback.actual_depth} m` : t('N/A')} />
+          <Row label={t('Investigator')} value={feedback.investigator || t('N/A')} />
+          {feedback.notes && <Row label={t('Notes')} value={feedback.notes} />}
+          {feedback.logged_at && (
+            <div className="tp-logged">{t('Logged')}: {new Date(feedback.logged_at).toLocaleString()}</div>
+          )}
+        </section>
+      )}
+
+      {photos.length > 0 && (
+        <section className="tp-photos">
+          <div className="tp-photos-head">
+            <span>{t('Submitted Pictures')}</span>
+            {photos.length > 1 && <span className="tp-count">{index + 1} / {photos.length}</span>}
           </div>
-        ` : ''}
 
-        <div class="footer">
-          Confidential Geophysics Survey Document - Nolte Geoservices Platforms GmbH &copy; ${new Date().getFullYear()}
+          <div className="tp-stage">
+            <img
+              src={photos[index]}
+              alt={`${t('Submitted Pictures')} ${index + 1}`}
+              className="tp-img"
+              onClick={() => setLightbox(true)}
+            />
+
+            {photos.length > 1 && (
+              <>
+                <button type="button" className="tp-nav tp-nav-prev" onClick={() => step(-1)} aria-label={t('Previous')}>
+                  <ChevronLeft size={16} />
+                </button>
+                <button type="button" className="tp-nav tp-nav-next" onClick={() => step(1)} aria-label={t('Next')}>
+                  <ChevronRight size={16} />
+                </button>
+              </>
+            )}
+          </div>
+
+          <button type="button" className="tp-download" onClick={downloadCurrent}>
+            <Download size={13} />
+            {photos.length > 1 ? t('Download this photo') : t('Download photo')}
+          </button>
+        </section>
+      )}
+
+      {lightbox && photos[index] && (
+        <div className="tp-lightbox" onClick={() => setLightbox(false)} role="dialog" aria-modal="true">
+          <button type="button" className="tp-lightbox-close" aria-label={t('Close')}>
+            <X size={18} />
+          </button>
+          <img src={photos[index]} alt={`${t('Submitted Pictures')} ${index + 1}`} />
         </div>
-
-        <script>
-          window.onload = function() { window.print(); }
-        </script>
-      </body>
-    </html>
-  `);
-  printWindow.document.close();
+      )}
+    </div>
+  );
 };
 
 const MapController: React.FC<{ 
@@ -779,134 +756,12 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
           <Popup
             position={[selectedPoint.latitude, selectedPoint.longitude]}
             eventHandlers={{ remove: () => setPopupPointId(null) }}
-            maxWidth={320}
-            minWidth={285}
+            maxWidth={340}
+            minWidth={286}
             autoPan={true}
+            className="target-popup"
           >
-            <div style={{ 
-              color: '#0f172a', 
-              fontFamily: 'var(--font-body)', 
-              fontSize: '0.78rem', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '8px', 
-              padding: '4px',
-              maxWidth: '300px'
-            }}>
-              
-              {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1.5px solid #fa5f1c', paddingBottom: '4px', marginBottom: '2px' }}>
-                <span style={{ fontWeight: 800, color: '#fa5f1c', fontSize: '0.85rem' }}>VM Nr. {selectedPoint.vm_nr}</span>
-                <span style={{
-                  fontSize: '0.58rem',
-                  fontWeight: 800,
-                  padding: '2px 8px',
-                  borderRadius: '9999px',
-                  backgroundColor: 'rgba(0,0,0,0.05)',
-                  color: getResolvedStatus(selectedPoint) === 'clear' ? '#10b981' : getResolvedStatus(selectedPoint) === 'uxo' ? '#ef4444' : getResolvedStatus(selectedPoint) === 'scrap' ? '#f59e0b' : getResolvedStatus(selectedPoint) === 'false_alarm' ? '#8b5cf6' : '#64748b',
-                }}>
-                  {t(getResolvedStatus(selectedPoint)).toUpperCase()}
-                </span>
-              </div>
-
-              {/* UTM Coordinates & GPR Meta */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: 'rgba(0,0,0,0.02)', padding: '6px 8px', borderRadius: '8px' }}>
-                <div><strong style={{ color: '#475569' }}>{t('Project ID')}:</strong> {selectedPoint.project_id || '11-24-2736'}</div>
-                <div><strong style={{ color: '#475569' }}>{t('Target ID')}:</strong> {selectedPoint.target_id || t('N/A')}</div>
-                <div><strong style={{ color: '#475569' }}>{t('UTM coords')}:</strong> X: {selectedPoint.easting} | Y: {selectedPoint.northing}</div>
-                <div><strong style={{ color: '#475569' }}>{t('Survey Layer')}:</strong> {selectedPoint.layer || t('N/A')}</div>
-                <div><strong style={{ color: '#475569' }}>{t('Evaluated Depth')}:</strong> {selectedPoint.evaluated_depth ? `${selectedPoint.evaluated_depth} m` : t('N/A')}</div>
-              </div>
-
-              {/* Feedback Log (if visited) */}
-              {selectedPoint.feedback && selectedPoint.feedback.visited && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: 'rgba(16, 185, 129, 0.05)', borderLeft: '3.5px solid #10b981', padding: '6px 8px', borderRadius: '4px' }}>
-                  <div style={{ fontWeight: 800, color: '#10b981', fontSize: '0.7rem', textTransform: 'uppercase', marginBottom: '2px' }}>{t('Field Log Feedback')}</div>
-                  <div><strong style={{ color: '#475569' }}>{t('Sohle Status')}:</strong> {selectedPoint.feedback?.sohle_status || t('N/A')}</div>
-                  <div><strong style={{ color: '#475569' }}>Fundstück:</strong> {selectedPoint.feedback?.fundstueck || t('N/A')}</div>
-                  {selectedPoint.feedback?.m_cube !== null && <div><strong style={{ color: '#475569' }}>{t('Volumen')}:</strong> {selectedPoint.feedback.m_cube} m³</div>}
-                  <div><strong style={{ color: '#475569' }}>{t('Actual Depth')}:</strong> {selectedPoint.feedback?.actual_depth ? `${selectedPoint.feedback.actual_depth} m` : t('N/A')}</div>
-                  <div><strong style={{ color: '#475569' }}>{t('Investigator')}:</strong> {selectedPoint.feedback?.investigator || t('N/A')}</div>
-                  {selectedPoint.feedback?.notes && <div><strong style={{ color: '#475569' }}>{t('Notes')}:</strong> {selectedPoint.feedback.notes}</div>}
-                  {selectedPoint.feedback?.logged_at && (
-                    <div style={{ fontSize: '0.62rem', color: '#64748b', marginTop: '2px' }}>
-                      {t('Logged')}: {new Date(selectedPoint.feedback.logged_at).toLocaleString()}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Photos Row (if present) */}
-              {selectedPoint.feedback?.photos && JSON.parse(JSON.stringify(selectedPoint.feedback.photos)).length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
-                  <div style={{ fontWeight: 800, color: '#475569', fontSize: '0.7rem' }}>{t('Submitted Pictures')} ({JSON.parse(JSON.stringify(selectedPoint.feedback.photos)).length})</div>
-                  <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
-                    {JSON.parse(JSON.stringify(selectedPoint.feedback.photos)).map((img: string, i: number) => (
-                      <img
-                        key={i}
-                        src={img}
-                        alt={`Attachment ${i+1}`}
-                        style={{
-                          width: '64px',
-                          height: '46px',
-                          objectFit: 'cover',
-                          borderRadius: '4px',
-                          border: '1px solid rgba(0,0,0,0.1)',
-                          cursor: 'pointer',
-                          flexShrink: 0
-                        }}
-                        onClick={() => window.open(img, '_blank')}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Actions Footer Links */}
-              <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: '6px', marginTop: '4px' }}>
-                <button
-                  onClick={() => downloadSingleCSV(selectedPoint)}
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '6px',
-                    padding: '4px 6px',
-                    fontSize: '0.68rem',
-                    color: '#334155',
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px'
-                  }}
-                >
-                  <FileSpreadsheet size={12} /> CSV
-                </button>
-                <button
-                  onClick={() => downloadSinglePDF(selectedPoint)}
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '6px',
-                    padding: '4px 6px',
-                    fontSize: '0.68rem',
-                    color: '#334155',
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px'
-                  }}
-                >
-                  <FileText size={12} /> {t('Print PDF')}
-                </button>
-              </div>
-
-            </div>
+            <TargetPopup point={selectedPoint} t={t} />
           </Popup>
         )}
         

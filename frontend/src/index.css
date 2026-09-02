@@ -1676,3 +1676,284 @@ body.light-theme .lang-switch-option.active {
     max-width: 100%;
   }
 }
+
+/* ============================================================================
+   Target popup (click a marker)
+
+   Leaflet paints .leaflet-popup-content-wrapper white and hardcodes the little
+   tip below it, so in dark mode the popup arrived as a white card in a dark app.
+   Both are re-pointed at the theme tokens here, which is also why the content
+   inside no longer carries its own colours.
+   ========================================================================== */
+.target-popup .leaflet-popup-content-wrapper {
+  background: var(--surface);
+  color: var(--surface-text);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  padding: 0;
+}
+
+.target-popup .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+
+/* The tip is a rotated square, so it needs the surface colour of its own. */
+.target-popup .leaflet-popup-tip {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+}
+
+.target-popup .leaflet-popup-close-button {
+  color: var(--surface-text-muted) !important;
+  padding: 6px 8px 0 0 !important;
+}
+
+.tp {
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  color: var(--surface-text);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  max-width: 320px;
+}
+
+.tp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.tp-vm {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.98rem;
+  letter-spacing: 0.01em;
+  color: var(--accent);
+}
+
+.tp-status {
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+/* Coordinates are the thing surveyors read first, so they get their own band
+   rather than a row in the table with everything else. */
+.tp-coords {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tp-coord {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--surface-border);
+  min-width: 0;
+}
+
+.tp-coord-axis {
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--surface-text-muted);
+}
+
+.tp-coord-val {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--surface-text-strong);
+  overflow-wrap: anywhere;
+}
+
+.tp-grid,
+.tp-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tp-feedback {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border-left: 3px solid var(--status-clear-solid, #10b981);
+  background: var(--surface-sunken);
+}
+
+.tp-feedback-title {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #10b981;
+  margin-bottom: 3px;
+}
+
+.tp-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tp-row-label {
+  color: var(--surface-text-muted);
+  flex-shrink: 0;
+}
+
+.tp-row-value {
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.tp-logged {
+  font-size: 0.6rem;
+  color: var(--surface-text-muted);
+  margin-top: 4px;
+}
+
+.tp-photos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tp-photos-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--surface-text-muted);
+}
+
+.tp-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.tp-stage {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-sunken);
+  line-height: 0;
+}
+
+.tp-img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  cursor: zoom-in;
+  display: block;
+}
+
+.tp-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  /* Fixed dark chip in both themes: it sits on a photograph, not on the popup
+     surface, and the photo behind it can be any colour. */
+  background: rgba(15, 23, 42, 0.62);
+  color: #ffffff;
+}
+
+.tp-nav:hover { background: rgba(15, 23, 42, 0.82); }
+.tp-nav-prev { left: 6px; }
+.tp-nav-next { right: 6px; }
+
+.tp-download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px;
+  border-radius: 8px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-sunken);
+  color: var(--surface-text);
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tp-download:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tp-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(2, 6, 23, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  cursor: zoom-out;
+}
+
+.tp-lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+}
+
+.tp-lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+/* Phones: the popup is capped against the viewport rather than its own max, and
+   the image gets a little less height so the detail rows stay in view. */
+@media (max-width: 600px) {
+  .tp {
+    max-width: calc(100vw - 64px);
+    font-size: 0.74rem;
+    padding: 11px 12px 12px;
+  }
+  .tp-img { height: 124px; }
+  .tp-nav { width: 32px; height: 32px; }
+  .tp-lightbox { padding: 12px; }
+}

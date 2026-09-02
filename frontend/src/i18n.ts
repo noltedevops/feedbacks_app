@@ -99,6 +99,11 @@ const de: Record<string, string> = {
   'Light': 'Hell',
   'Dark': 'Dunkel',
   'Close': 'Schließen',
+  // Target popup photo carousel.
+  'Previous': 'Zurück',
+  'Next': 'Weiter',
+  'Download photo': 'Foto herunterladen',
+  'Download this photo': 'Dieses Foto herunterladen',
   // Empty state for panels that only mean anything once a target has been excavated.
   'Investigated targets only': 'Nur für untersuchte Ziele',
   'TOTAL TARGETS': 'ZIELE GESAMT',
