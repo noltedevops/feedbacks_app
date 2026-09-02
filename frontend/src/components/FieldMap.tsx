@@ -288,6 +288,15 @@ const BASEMAPS = {
     // place and street name in this separate transparent overlay. dark_all carried its
     // labels inline, so without this second layer the map loses every name on it.
     labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+    // Esri labels every town it knows about, so zoomed out to a regional or country
+    // view the overlay turns into a wall of place names that buries the target markers
+    // underneath it - at z8 the label tile comes back larger than the basemap tile it
+    // covers. Below survey-area zoom the names identify nothing the surveyor is looking
+    // for, so the layer is simply not drawn there.
+    labelsMinZoom: 12,
+    // Held back from full strength so names read as context behind the markers rather
+    // than as competition with them.
+    labelsOpacity: 0.7,
     attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, and the GIS user community',
     // Real data stops at z16 worldwide - z17 and beyond serve an identical 2.5KB blank
     // tile, checked over both the survey area and dense urban centres. Capping the
@@ -329,6 +338,8 @@ const BasemapLayer: React.FC<{ basemap: BasemapKey }> = ({ basemap }) => {
           url={labelsUrl}
           maxZoom={22}
           maxNativeZoom={config.maxNativeZoom}
+          minZoom={'labelsMinZoom' in config ? config.labelsMinZoom : undefined}
+          opacity={'labelsOpacity' in config ? config.labelsOpacity : 1}
           className={'labelsClassName' in config ? config.labelsClassName : undefined}
         />
       )}
