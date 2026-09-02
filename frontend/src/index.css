@@ -1716,9 +1716,16 @@ body.light-theme .lang-switch-option.active {
   color: var(--surface-text);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
   padding: 12px 14px 14px;
-  max-width: 320px;
+  /* A definite width, not just a max.
+   *
+   * Leaflet sizes .leaflet-popup-content shrink-to-fit, which resolves the width
+   * from the content's min-content size. With only a max-width here, and
+   * overflow-wrap:anywhere on the values, min-content was one character - so the
+   * whole card collapsed to a column and every value wrapped letter by letter.
+   * Pinning the width means shrink-to-fit has an actual number to resolve to. */
+  width: 302px;
 }
 
 .tp-head {
@@ -1747,79 +1754,89 @@ body.light-theme .lang-switch-option.active {
   white-space: nowrap;
 }
 
-/* Coordinates are the thing surveyors read first, so they get their own band
-   rather than a row in the table with everything else. */
-.tp-coords {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
 
-.tp-coord {
+
+
+
+
+
+
+
+.tp-section {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 6px 9px;
-  border-radius: 8px;
-  background: var(--surface-sunken);
-  border: 1px solid var(--surface-border);
-  min-width: 0;
 }
 
-.tp-coord-axis {
-  font-size: 0.55rem;
+.tp-section-title {
+  font-size: 0.58rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--surface-text-muted);
-}
-
-.tp-coord-val {
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  font-size: 0.82rem;
-  color: var(--surface-text-strong);
-  overflow-wrap: anywhere;
-}
-
-.tp-grid,
-.tp-feedback {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+  margin-bottom: 4px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--surface-border);
 }
 
 .tp-feedback {
-  padding: 8px 10px;
+  padding: 8px 10px 9px;
   border-radius: 8px;
-  border-left: 3px solid var(--status-clear-solid, #10b981);
+  border-left: 3px solid #10b981;
   background: var(--surface-sunken);
 }
 
 .tp-feedback-title {
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: #10b981;
-  margin-bottom: 3px;
+  border-bottom-color: rgba(16, 185, 129, 0.28);
 }
 
+/* Two real columns rather than flex space-between. The label column is capped so
+ * it cannot eat the row, and both tracks are minmax(0, ...) so a long value
+ * shrinks the track instead of overflowing it. */
 .tp-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 104px) minmax(0, 1fr);
   align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.tp-row--stack {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1px;
+  padding-top: 4px;
 }
 
 .tp-row-label {
   color: var(--surface-text-muted);
-  flex-shrink: 0;
+  line-height: 1.45;
 }
 
 .tp-row-value {
   font-weight: 600;
   text-align: right;
-  overflow-wrap: anywhere;
+  line-height: 1.45;
+  /* break-word, never anywhere: a word only breaks when it cannot fit a line on
+   * its own, so ordinary names and numbers stay intact. `anywhere` is what let
+   * "Emmy Blaize" come apart into one letter per line. */
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+}
+
+.tp-row--stack .tp-row-value {
+  text-align: left;
+  font-weight: 500;
+  color: var(--surface-text);
+}
+
+/* Coordinates read as numbers on one line, aligned on their digits. */
+.tp-num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--surface-text-strong);
+  white-space: nowrap;
 }
 
 .tp-logged {
@@ -1949,9 +1966,15 @@ body.light-theme .lang-switch-option.active {
    the image gets a little less height so the detail rows stay in view. */
 @media (max-width: 600px) {
   .tp {
-    max-width: calc(100vw - 64px);
+    /* Narrower phones cannot give the card its full width; min() keeps the
+       definite width so the grid never falls back to shrink-to-fit. */
+    width: min(302px, calc(100vw - 72px));
     font-size: 0.74rem;
     padding: 11px 12px 12px;
+  }
+  .tp-row {
+    grid-template-columns: minmax(0, 92px) minmax(0, 1fr);
+    gap: 8px;
   }
   .tp-img { height: 124px; }
   .tp-nav { width: 32px; height: 32px; }
