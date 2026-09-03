@@ -55,6 +55,7 @@ const de: Record<string, string> = {
   'Fit bounds': 'Auf Ziele zoomen',
   'Basemap switcher': 'Kartenhintergrund wechseln',
   'Add Data Layer': 'Datenebene hinzufügen',
+  'Basemap': 'Kartengrundlage',
   'Dark Canvas': 'Dunkle Karte',
   'OSM Streets': 'OSM Straßen',
   'Satellite Map': 'Satellitenkarte',

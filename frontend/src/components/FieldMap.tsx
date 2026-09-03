@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 're
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { type LocalPoint, getResolvedStatus } from '../db/indexedDb';
-import { Layers, FolderPlus, Home, ChevronLeft, ChevronRight, Download, X } from 'lucide-react';
+import { Layers, FolderPlus, Home, ChevronLeft, ChevronRight, Download, X, Check } from 'lucide-react';
 import { makeT, type AppLang, type Translator } from '../i18n';
 
 interface FieldMapProps {
@@ -20,12 +20,26 @@ interface FieldMapProps {
   isMobile?: boolean;
 }
 
+/* Marker and legend fills.
+ *
+ * These deliberately do NOT follow the app theme, unlike the .status-chip text in
+ * index.css. A chip is a word on a white card and has to darken to stay readable; a
+ * marker is a dot on the basemap, and the basemap is chosen independently of the theme -
+ * dark canvas is the default in light mode too. Darkening these would put a dark dot on
+ * a dark map. They keep the bright hue and their white stroke, which reads on canvas,
+ * streets and satellite alike, and the legend matches the markers it explains. */
+const STATUS_FILL = { found: '#10b981', pending: '#ef4444' } as const;
 
-const STATUS_COLOURS: Record<string, string> = {
-  clear: '#10b981',
-  uxo: '#ef4444',
-  scrap: '#f59e0b',
-  false_alarm: '#8b5cf6'
+
+/* The popup's status pill sits inside .map-container-section, which is a .glass-panel,
+ * so the light-theme text override flattened it the same way it flattened the target
+ * list chips. It carries .status-chip to opt out of that and to take its colour from
+ * the same tokens - the popup is where a target's status is read most closely. */
+const STATUS_CHIP: Record<string, string> = {
+  clear: 'found',
+  uxo: 'pending',
+  scrap: 'scrap',
+  false_alarm: 'alarm'
 };
 
 /* Popup shown when a target marker is clicked.
@@ -51,7 +65,7 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t 
   useEffect(() => { setIndex(0); }, [point.id]);
 
   const status = getResolvedStatus(point);
-  const statusColour = STATUS_COLOURS[status] ?? '#64748b';
+  const chipStatus = STATUS_CHIP[status] ?? 'empty';
   const feedback = point.feedback;
 
   const step = (delta: number) => {
@@ -84,7 +98,7 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t 
     <div className="tp">
       <header className="tp-head">
         <span className="tp-vm">VM {point.vm_nr}</span>
-        <span className="tp-status" style={{ color: statusColour, backgroundColor: `${statusColour}1f` }}>
+        <span className="tp-status status-chip" data-status={chipStatus}>
           {t(status).toUpperCase()}
         </span>
       </header>
@@ -302,6 +316,14 @@ const BASEMAPS = {
 
 type BasemapKey = keyof typeof BASEMAPS;
 
+// Order the switcher lists them in. Separate from BASEMAPS so the tile configuration
+// above stays about tiles, and so the labels sit next to each other for translation.
+const BASEMAP_OPTIONS: { key: BasemapKey; label: string }[] = [
+  { key: 'dark', label: 'Dark Canvas' },
+  { key: 'streets', label: 'OSM Streets' },
+  { key: 'satellite', label: 'Satellite Map' }
+];
+
 const BasemapLayer: React.FC<{ basemap: BasemapKey }> = ({ basemap }) => {
   const config = BASEMAPS[basemap];
   const labelsUrl = 'labelsUrl' in config ? config.labelsUrl : undefined;
@@ -379,72 +401,33 @@ const MapToolbar: React.FC<{
       transition: 'left 0.2s ease-in-out'
     }}>
       
-      {/* Basemap switcher options popout */}
+      {/* Basemap switcher options popout.
+       *
+       * Three near-identical inline-styled buttons before this, on a card that only
+       * looked right in dark theme: the labels were a hardcoded #fff, and the active
+       * option was distinguished by an orange tint that the light theme's blanket text
+       * override flattened along with its orange label. Styling lives in index.css now
+       * and reads the overlay tokens, so both themes come from the same source, and the
+       * active option is marked by a tick as well as by colour. */}
       <div style={{ position: 'relative' }}>
         {basemapOpen && (
-          <div style={{
-            position: 'absolute',
-            left: '46px',
-            bottom: '0px',
-            backgroundColor: 'var(--overlay)',
-            border: '1px solid var(--overlay-border)',
-            padding: '8px',
-            borderRadius: 'var(--radius-md)',
-            boxShadow: 'var(--shadow-lg)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-            minWidth: '120px',
-            zIndex: 1001
-          }}>
-            <button
-              onClick={() => { setActiveBasemap('dark'); setBasemapOpen(false); }}
-              style={{
-                background: activeBasemap === 'dark' ? 'rgba(249, 115, 22, 0.15)' : 'none',
-                border: 'none',
-                color: activeBasemap === 'dark' ? '#f97316' : '#fff',
-                padding: '6px 10px',
-                borderRadius: 'var(--radius-sm)',
-                textAlign: 'left',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                fontWeight: activeBasemap === 'dark' ? 'bold' : 'normal'
-              }}
-            >
-              {t('Dark Canvas')}
-            </button>
-            <button
-              onClick={() => { setActiveBasemap('streets'); setBasemapOpen(false); }}
-              style={{
-                background: activeBasemap === 'streets' ? 'rgba(249, 115, 22, 0.15)' : 'none',
-                border: 'none',
-                color: activeBasemap === 'streets' ? '#f97316' : '#fff',
-                padding: '6px 10px',
-                borderRadius: 'var(--radius-sm)',
-                textAlign: 'left',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                fontWeight: activeBasemap === 'streets' ? 'bold' : 'normal'
-              }}
-            >
-              {t('OSM Streets')}
-            </button>
-            <button
-              onClick={() => { setActiveBasemap('satellite'); setBasemapOpen(false); }}
-              style={{
-                background: activeBasemap === 'satellite' ? 'rgba(249, 115, 22, 0.15)' : 'none',
-                border: 'none',
-                color: activeBasemap === 'satellite' ? '#f97316' : '#fff',
-                padding: '6px 10px',
-                borderRadius: 'var(--radius-sm)',
-                textAlign: 'left',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                fontWeight: activeBasemap === 'satellite' ? 'bold' : 'normal'
-              }}
-            >
-              {t('Satellite Map')}
-            </button>
+          <div className="basemap-menu" role="group" aria-label={t('Basemap')}>
+            <div className="basemap-menu-caption">{t('Basemap')}</div>
+            {BASEMAP_OPTIONS.map(({ key, label }) => {
+              const isActive = activeBasemap === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className="basemap-option"
+                  aria-pressed={isActive}
+                  onClick={() => { setActiveBasemap(key); setBasemapOpen(false); }}
+                >
+                  <span className="basemap-option-label">{t(label)}</span>
+                  {isActive && <Check size={13} strokeWidth={3} aria-hidden="true" />}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -589,11 +572,11 @@ const MapToolbar: React.FC<{
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.7rem', color: 'var(--surface-text-muted)', fontWeight: 600 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', border: '0.75px solid white' }}></div>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: STATUS_FILL.found, border: '0.75px solid white' }}></div>
             <span>{t('Investigated')}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444', border: '0.75px solid white' }}></div>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: STATUS_FILL.pending, border: '0.75px solid white' }}></div>
             <span>{t('Pending')}</span>
           </div>
         </div>
@@ -709,7 +692,7 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
     points.map((point) => {
       const isSelected = selectedPoint?.id === point.id;
       const isInvestigated = point.local_status === 'investigated';
-      const color = isInvestigated ? '#10b981' : '#ef4444';
+      const color = isInvestigated ? STATUS_FILL.found : STATUS_FILL.pending;
 
       if (isSelected && isEditLocationMode) {
         // Render a draggable standard Marker for editing location

@@ -197,7 +197,7 @@ function SubmissionConfirmation({ lang, vmNr, syncState, onOpenForm, onBackToLis
         <p style={{ fontSize: '0.82rem', color: '#cbd5e1', margin: 0, lineHeight: 1.5 }}>
           {t('Thank you! Your record has been submitted.')}
         </p>
-        <span style={{ fontSize: '0.7rem', color: '#8c9f96' }}>
+        <span style={{ fontSize: '0.7rem', color: 'var(--surface-text-muted)' }}>
           {t('Target')} VM {vmNr}
         </span>
       </div>
@@ -1356,7 +1356,7 @@ export default function App() {
 
   const vmNrSelect = (
     <div className="select-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-      <Shield size={12} style={{ position: 'absolute', left: '8px', color: '#8c9f96', zIndex: 1 }} />
+      <Shield size={12} style={{ position: 'absolute', left: '8px', color: 'var(--surface-text-muted)', zIndex: 1 }} />
       <select
         className="form-input"
         value={filterVmNr}
@@ -1374,7 +1374,7 @@ export default function App() {
 
   const instrumentSelect = (
     <div className="select-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-      <Layers size={12} style={{ position: 'absolute', left: '8px', color: '#8c9f96', zIndex: 1 }} />
+      <Layers size={12} style={{ position: 'absolute', left: '8px', color: 'var(--surface-text-muted)', zIndex: 1 }} />
       <select
         className="form-input"
         value={filterInstrument}
@@ -2094,7 +2094,7 @@ export default function App() {
                   ) : (
                     <WifiOff size={20} style={{ color: '#ef4444' }} />
                   )}
-                  <span className="sidebar-item-label" style={{ color: isOnline ? '#10b981' : '#ef4444' }}>
+                  <span className="sidebar-item-label" style={{ color: isOnline ? 'rgb(var(--status-found-rgb))' : 'rgb(var(--status-pending-rgb))' }}>
                     {isOnline ? t('Online') : t('Offline')}
                   </span>
                 </div>
@@ -2119,7 +2119,7 @@ export default function App() {
                     alignItems: 'center', 
                     justifyContent: 'center', 
                     fontWeight: 'bold', 
-                    color: '#f58220', 
+                    color: 'var(--accent-ink)', 
                     fontSize: '0.85rem',
                     fontFamily: 'var(--font-heading)'
                   }}>
@@ -2305,19 +2305,19 @@ export default function App() {
                         picker and the CSV export move into the folded filter bar below -
                         they are not what the crew reaches for first in the field. */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgb(var(--status-found-rgb))', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                         {t('Active Survey Area')}
                       </span>
-                      <h2 style={{ fontSize: isMobile ? '1rem' : '1.1rem', fontWeight: 800, color: '#fff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <h2 style={{ fontSize: isMobile ? '1rem' : '1.1rem', fontWeight: 800, color: 'var(--surface-text)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {activeAreaLabel}
                       </h2>
                       {!isMobile && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '2px' }}>
-                          <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#8c9f96', textTransform: 'uppercase' }}>{t('Project ID')}</span>
+                          <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--surface-text-muted)', textTransform: 'uppercase' }}>{t('Project ID')}</span>
                           {projectIdSelect}
                         </div>
                       )}
-                      <span style={{ fontSize: '0.68rem', color: '#8c9f96', marginTop: isMobile ? '2px' : '4px' }}>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--surface-text-muted)', marginTop: isMobile ? '2px' : '4px' }}>
                         {filteredPoints.length} {t('Targets Detected')}
                       </span>
 
@@ -2332,7 +2332,7 @@ export default function App() {
                           
                           {/* Search bar */}
                           <div className="select-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <Search size={14} style={{ position: 'absolute', left: '10px', color: '#8c9f96', zIndex: 1 }} />
+                            <Search size={14} style={{ position: 'absolute', left: '10px', color: 'var(--surface-text-muted)', zIndex: 1 }} />
                             <input
                               type="text"
                               className="form-input"
@@ -2350,7 +2350,7 @@ export default function App() {
                           {isMobile ? (
                             <FilterBar label={t('Filter')} summary={fieldFilterSummary} toggleLabel={t('Show filters')}>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#8c9f96', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('Project ID')}</span>
+                                <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--surface-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('Project ID')}</span>
                                 {projectIdSelect}
                               </div>
                               {vmNrSelect}
@@ -2369,7 +2369,7 @@ export default function App() {
                         {/* List coordinates */}
                         <div className="collector-list-wrap" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#8c9f96', letterSpacing: '0.02em', textTransform: 'uppercase' }}>{t('TARGET LISTING')} ({filteredPoints.length})</span>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--surface-text-muted)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>{t('TARGET LISTING')} ({filteredPoints.length})</span>
                             {/* On mobile the status filter lives in the folded bar with the rest. */}
                             {!isMobile && statusSelect}
                           </div>
@@ -2381,16 +2381,15 @@ export default function App() {
                             {visibleTargetPoints.map((point) => {
                               const isInvestigated = point.local_status === 'investigated';
                               let statusText = t('PENDING');
-                              let color = '#ef4444'; // Red for pending
+                              // The state, not the colour. Which hex that becomes is the
+                              // stylesheet's business, so the chip can darken in light
+                              // theme without this having an opinion about it.
+                              let status: 'pending' | 'empty' | 'found' = 'pending';
 
                               if (isInvestigated && point.feedback) {
                                 const fund = point.feedback.fundstueck;
                                 statusText = fund === 'Sonstige' ? (point.feedback.other || 'Sonstige') : fund;
-                                if (fund === 'ohne Fund') {
-                                  color = '#64748b'; // Slate for empty holes
-                                } else {
-                                  color = '#10b981'; // Emerald for findings
-                                }
+                                status = fund === 'ohne Fund' ? 'empty' : 'found';
                               }
 
                               return (
@@ -2404,17 +2403,10 @@ export default function App() {
                                       badge, the gaps and the depth strip all lose height. */}
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
                                     <span style={{ fontWeight: 800, fontSize: isMobile ? '0.875rem' : '0.85rem', color: '#0f172a', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>VM {point.vm_nr}</span>
-                                    <span style={{
+                                    <span className="status-chip" data-status={status} style={{
                                       fontSize: isMobile ? '0.58rem' : '0.62rem',
-                                      fontWeight: 800,
                                       padding: isMobile ? '1px 6px' : '2px 8px',
                                       borderRadius: '9999px',
-                                      backgroundColor: 'rgba(0,0,0,0.05)',
-                                      color: color,
-                                      border: `1px solid ${color}33`,
-                                      whiteSpace: 'nowrap',
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis',
                                       ...(isMobile ? { maxWidth: '55%' } : {})
                                     }} title={statusText}>
                                       {statusText.toUpperCase()}
@@ -2454,7 +2446,7 @@ export default function App() {
                                   background: 'rgba(255,255,255,0.04)',
                                   border: '1px solid rgba(255,255,255,0.08)',
                                   borderRadius: '8px',
-                                  color: '#8c9f96',
+                                  color: 'var(--surface-text-muted)',
                                   fontWeight: 700,
                                   fontSize: '0.72rem',
                                   padding: '10px',
@@ -2499,15 +2491,15 @@ export default function App() {
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '12px',
-                  color: '#0f172a'
+                  color: 'var(--surface-text)'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.75rem', color: '#0f172a', textTransform: 'uppercase', fontFamily: 'var(--font-heading)', letterSpacing: '0.02em' }}>{t('Quick Summary')}</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.75rem', color: 'var(--surface-text)', textTransform: 'uppercase', fontFamily: 'var(--font-heading)', letterSpacing: '0.02em' }}>{t('Quick Summary')}</span>
                   </div>
 
                   {/* Stat 1: Target Investigation Status */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: '#64748b' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: 'var(--surface-text-muted)' }}>
                       <span>{t('INVESTIGATION PROGRESS')}</span>
                       <span>{filteredPoints.filter(p => p.local_status === 'investigated').length} / {filteredPoints.length}</span>
                     </div>
@@ -2523,7 +2515,7 @@ export default function App() {
 
                   {/* Stat 2: Instruments Class (Magnetic Progress) */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: '#64748b' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: 'var(--surface-text-muted)' }}>
                       <span>{t('MAGNETIC TARGETS')}</span>
                       <span>
                         {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'magnetic' && p.local_status === 'investigated').length} / {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'magnetic').length}
@@ -2541,7 +2533,7 @@ export default function App() {
 
                   {/* Stat 3: Georadar Targets Progress */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: '#64748b' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: 'var(--surface-text-muted)' }}>
                       <span>{t('GEORADAR TARGETS')}</span>
                       <span>
                         {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'georadar' && p.local_status === 'investigated').length} / {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'georadar').length}
