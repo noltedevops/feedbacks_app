@@ -187,7 +187,12 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Utilities */
 .btn-primary {
-  background-color: hsl(var(--primary));
+  /* Not hsl(var(--primary)). Safety orange at 53% lightness carries white text at
+   * 2.85:1, which fails AA in both themes - this was never a theme bug, the button was
+   * simply below contrast everywhere. Dropping the lightness to 38% keeps the same hue
+   * and saturation and takes white to 4.9:1. --primary itself is untouched, so every
+   * other use of the accent stays exactly as it was. */
+  background-color: hsl(24 95% 38%);
   color: #fff;
   border: none;
   font-family: var(--font-heading);
@@ -318,15 +323,22 @@ h1, h2, h3, h4, h5, h6 {
    * emerald-500 on white is about 2:1, so the light theme darkens each hue rather than
    * changing it. Same green, same red, still recognisably the legend's pair. */
   --status-found-rgb: 16 185 129;
-  --status-pending-rgb: 239 68 68;
-  --status-empty-rgb: 100 116 139;
-  --status-scrap-rgb: 245 158 11;
-  --status-alarm-rgb: 139 92 246;
+  --status-pending-rgb: 248 113 113;
+  --status-empty-rgb: 148 163 184;
+  --status-scrap-rgb: 251 191 36;
+  --status-alarm-rgb: 167 139 250;
 
   --accent: #fa5f1c;
   /* The accent as *text*. --accent is a fill and stays put; this darkens on white,
    * where #fa5f1c is about 3:1 and orange-700 is 4.8:1. */
   --accent-ink: #fa5f1c;
+  /* The dashboard's panel kickers are colour-coded per panel. Same rule as the accent:
+   * the dark theme's bright hue, darkened where it has to sit on white. */
+  --info-ink: #38bdf8;
+  /* Chart gridlines. Was a hardcoded rgba(255,255,255,0.04) passed to CartesianGrid,
+   * which on a white light-theme panel is white on white - the charts had no grid at
+   * all in light mode, at a measured contrast of 1.00. */
+  --chart-grid: rgba(255, 255, 255, 0.07);
 }
 
 body.light-theme {
@@ -335,7 +347,10 @@ body.light-theme {
   --surface-sunken: rgba(15, 23, 42, 0.04);
   --surface-border: hsl(var(--border-light));
   --surface-text: #0f172a;
-  --surface-text-muted: #64748b;
+  /* slate-600, not slate-500. On the light panel surface #64748b measured 4.30:1 -
+   * just under AA - which is what left the panel's small labels washed out once the
+   * blanket override that had been repainting them was removed. */
+  --surface-text-muted: #475569;
   --surface-text-strong: #020617;
 
   --overlay: rgba(255, 255, 255, 0.97);
@@ -351,6 +366,8 @@ body.light-theme {
   --status-alarm-rgb: 109 40 217;
 
   --accent-ink: #c2410c;
+  --info-ink: #0369a1;
+  --chart-grid: rgba(15, 23, 42, 0.12);
 }
 
 body.light-theme {
@@ -820,6 +837,20 @@ select.form-input--compact option {
 }
 
 /* Glassmorphism Styles overrides for Green theme */
+.glass-panel,
+.glass-card {
+  /* The panel's own ink, inherited by everything inside it that does not set its own.
+   *
+   * This replaces `body.light-theme .glass-panel * { color: #0f172a !important }` and
+   * its .glass-card twin. Those repainted every descendant, which is why they had to be
+   * `!important` (to beat inline styles) and why anything whose colour carried meaning -
+   * a status chip, the active basemap row - came out slate-900 in light theme. Setting
+   * the colour once and letting it inherit gets the same result for ordinary text while
+   * leaving deliberate colour alone, so the :not() exemptions those rules had grown are
+   * gone with them. */
+  color: var(--surface-text);
+}
+
 .glass-panel {
   background: rgba(15, 34, 28, 0.65) !important;
   backdrop-filter: blur(16px);
@@ -835,6 +866,52 @@ select.form-input--compact option {
 .glass-card:hover {
   background: rgba(255, 255, 255, 0.04) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Leaflet's attribution bar paints itself white with mid-blue links - 3.17:1 in both
+ * themes, and a white strip under a dark map. Pointed at the overlay tokens the rest of
+ * the map chrome uses. */
+.leaflet-control-attribution {
+  background: var(--overlay) !important;
+  color: var(--surface-text-muted) !important;
+  border-top-left-radius: var(--radius-sm);
+  padding: 1px 6px;
+}
+
+.leaflet-control-attribution a {
+  color: var(--accent-ink) !important;
+  text-decoration: underline;
+}
+
+/* Recharts.
+ *
+ * Axis colour used to be a `stroke="#8c9f96"` prop on every XAxis and YAxis, and the
+ * grid an inline rgba white. An SVG presentation attribute cannot hold a var(), so the
+ * only way a token can reach them is from CSS - which also wins over the attribute, so
+ * a stray prop cannot quietly override the theme again. Axis text paints with `fill`,
+ * not `color`, which is why it was never touched by the light-theme text rules and was
+ * failing at 2.79:1 on white while everything around it passed. */
+.recharts-cartesian-grid line {
+  stroke: var(--chart-grid);
+}
+
+.recharts-cartesian-axis-line,
+.recharts-cartesian-axis-tick-line {
+  stroke: var(--surface-border);
+}
+
+.recharts-cartesian-axis-tick text,
+.recharts-label,
+.recharts-text {
+  fill: var(--surface-text-muted);
+}
+
+/* Recharts paints each legend label in its series colour, which makes the label as hard
+ * to read as the series colour happens to be - "Length (m)" in sky blue measured 1.94:1
+ * on a white panel. The swatch beside it already carries the colour, so the word is free
+ * to be ordinary text. Inline style from the library, hence the important. */
+.recharts-legend-item-text {
+  color: var(--surface-text-muted) !important;
 }
 
 /* Basemap switcher, the popout on the map's layers button.
@@ -936,8 +1013,26 @@ select.form-input--compact option {
 .status-chip[data-status="scrap"]   { --chip-rgb: var(--status-scrap-rgb); }
 .status-chip[data-status="alarm"]   { --chip-rgb: var(--status-alarm-rgb); }
 
-/* Modern target list items in Sidebar */
-.target-card-white {
+/* Surfaces that stay white in both themes: the target cards and the map's quick
+ * summary. They are deliberate white cards on dark chrome rather than surfaces that
+ * invert, so the ink on them is the light-theme ink even when the app is dark. */
+.target-card-white,
+.quick-summary-panel {
+  /* This card stays white in both themes - it is a deliberate white card on dark
+   * chrome, not a surface that inverts. So the ink on it is the light-theme ink even
+   * when the app is dark. Redeclaring the tokens here rather than hardcoding hexes at
+   * each call site means everything inside the card follows, the status chip included:
+   * before this, a chip on a white card in dark theme was emerald-500 at 2.5:1. */
+  --surface-text: #0f172a;
+  --surface-text-muted: #475569;
+  --surface-text-strong: #020617;
+  --status-found-rgb: 4 120 87;
+  --status-pending-rgb: 185 28 28;
+  --status-empty-rgb: 71 85 105;
+  --status-scrap-rgb: 180 83 9;
+  --status-alarm-rgb: 109 40 217;
+  --accent-ink: #c2410c;
+
   background: #ffffff !important;
   border-radius: 14px;
   padding: 14px;
@@ -982,14 +1077,6 @@ body.light-theme .glass-panel {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
 }
 
-/* Everything inside a light panel is dark text - except the status chips, whose whole
- * job is to be colour. This rule is `!important`, which beats even an inline style, so
- * before the exclusion an "investigated" chip and a "pending" chip both came out
- * slate-900 in light theme and the two states were indistinguishable. Dark theme never
- * showed it: the rule only exists under body.light-theme. */
-body.light-theme .glass-panel *:not(.status-chip):not(.basemap-option) {
-  color: #0f172a !important;
-}
 
 body.light-theme .glass-panel *:not(button) {
   border-color: rgba(0, 0, 0, 0.08) !important;
@@ -1001,9 +1088,6 @@ body.light-theme .glass-card {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
 }
 
-body.light-theme .glass-card *:not(.status-chip) {
-  color: #0f172a !important;
-}
 
 body.light-theme .form-label {
   color: #475569 !important;
@@ -1056,7 +1140,7 @@ body.light-theme .sidebar-item:hover {
 }
 
 body.light-theme .sidebar-item.active {
-  color: #10b981;
+  color: rgb(var(--status-found-rgb));
   background: rgba(16, 185, 129, 0.08);
 }
 

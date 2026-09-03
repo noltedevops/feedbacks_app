@@ -84,7 +84,7 @@ const ExcavationOnly: React.FC<{ note: string; minHeight?: number }> = ({ note, 
     gap: '6px',
     padding: '10px',
     textAlign: 'center',
-    color: '#64748b'
+    color: 'var(--surface-text-muted)'
   }}>
     <Info size={15} />
     <span style={{ fontSize: '0.62rem', fontWeight: 700, lineHeight: 1.3 }}>{note}</span>
@@ -388,12 +388,16 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   const panelTitleStyle: React.CSSProperties = {
     fontSize: isMobile ? '0.85rem' : '0.72rem',
     fontWeight: 800,
-    color: '#fff',
+    color: 'var(--surface-text)',
     margin: 0
   };
-  // Axis/legend text has to grow on a phone - 7px is unreadable at arm's length.
-  const axisFontSize = isMobile ? 10 : 7;
-  const legendFontSize = isMobile ? 10 : 7;
+  // Chart type. 7px was the desktop value for both of these and 8px for the tooltip,
+  // which is smaller than anything else in the app and below what is readable on a
+  // monitor at a normal viewing distance. 11px is still compact enough for four charts
+  // in a 360px column.
+  const axisFontSize = isMobile ? 11 : 11;
+  const legendFontSize = isMobile ? 11 : 11;
+  const tooltipFontSize = isMobile ? 11 : 11;
 
   // Native selects on iOS zoom the page in when focused below 16px. Full-width and
   // 40px tall also makes them a real tap target.
@@ -402,9 +406,9 @@ const DashboardImpl: React.FC<DashboardProps> = ({
         fontSize: '16px',
         padding: '8px 10px',
         fontWeight: 700,
-        backgroundColor: 'rgba(10, 22, 18, 0.6)',
-        borderColor: 'rgba(255, 255, 255, 0.06)',
-        color: '#fff',
+        backgroundColor: 'var(--surface-sunken)',
+        borderColor: 'var(--surface-border)',
+        color: 'var(--surface-text)',
         cursor: 'pointer',
         borderRadius: '8px',
         height: '44px',
@@ -415,9 +419,9 @@ const DashboardImpl: React.FC<DashboardProps> = ({
         fontSize: '0.72rem',
         padding: '4px 20px 4px 8px',
         fontWeight: 700,
-        backgroundColor: 'rgba(10, 22, 18, 0.6)',
-        borderColor: 'rgba(255, 255, 255, 0.06)',
-        color: '#fff',
+        backgroundColor: 'var(--surface-sunken)',
+        borderColor: 'var(--surface-border)',
+        color: 'var(--surface-text)',
         cursor: 'pointer',
         borderRadius: '6px',
         height: '26px'
@@ -425,7 +429,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
 
   const labelStyle: React.CSSProperties = {
     fontSize: isMobile ? '0.62rem' : '0.68rem',
-    color: '#8c9f96',
+    color: 'var(--surface-text-muted)',
     fontWeight: 700,
     textTransform: isMobile ? 'uppercase' : 'none',
     letterSpacing: isMobile ? '0.04em' : undefined
@@ -471,7 +475,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
       onChange={(e) => setFilterDepth(e.target.value)}
       className="form-input"
       title={t('Depth filter')}
-      style={isMobile ? selectStyle : { fontSize: '0.65rem', padding: '2px 14px 2px 4px', height: '20px', backgroundColor: 'rgba(10, 22, 18, 0.6)', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', cursor: 'pointer', borderRadius: '4px' }}
+      style={isMobile ? selectStyle : { fontSize: '0.65rem', padding: '2px 14px 2px 4px', height: '20px', backgroundColor: 'var(--surface-sunken)', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', cursor: 'pointer', borderRadius: '4px' }}
     >
       {DEPTH_BUCKETS.map(bucket => (
         <option key={bucket.id} value={bucket.id}>{bucket.label}</option>
@@ -485,7 +489,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
       onChange={(e) => setFilterStatus(e.target.value)}
       className="form-input"
       title={t('Status filter')}
-      style={isMobile ? selectStyle : { fontSize: '0.65rem', padding: '2px 14px 2px 4px', height: '20px', backgroundColor: 'rgba(10, 22, 18, 0.6)', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', cursor: 'pointer', borderRadius: '4px' }}
+      style={isMobile ? selectStyle : { fontSize: '0.65rem', padding: '2px 14px 2px 4px', height: '20px', backgroundColor: 'var(--surface-sunken)', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', cursor: 'pointer', borderRadius: '4px' }}
     >
       <option value="all">{t('All Targets')}</option>
       <option value="investigated">{t('Investigated')}</option>
@@ -529,10 +533,10 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   // left column down with it.
   const headerTitle = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', ...(isMobile ? { minWidth: 0 } : {}) }}>
-      <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+      <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'rgb(var(--status-found-rgb))', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
         {t('Operations Overview')}
       </span>
-      <h2 style={{ fontSize: isMobile ? '1rem' : '1.1rem', color: '#fff', fontWeight: 800, margin: 0, fontFamily: 'var(--font-heading)', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>
+      <h2 style={{ fontSize: isMobile ? '1rem' : '1.1rem', color: 'var(--surface-text)', fontWeight: 800, margin: 0, fontFamily: 'var(--font-heading)', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>
         {t('Clearance Analytics Dashboard')}
       </h2>
     </div>
@@ -566,7 +570,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
         {icon}
       </div>
       <div style={isMobile ? { minWidth: 0 } : undefined}>
-        <div style={{ fontSize: isMobile ? '0.55rem' : '0.5rem', color: '#8c9f96', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', ...(isMobile ? { lineHeight: 1.15 } : {}) }}>{label}</div>
+        <div style={{ fontSize: isMobile ? '0.55rem' : '0.5rem', color: 'var(--surface-text-muted)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', ...(isMobile ? { lineHeight: 1.15 } : {}) }}>{label}</div>
         <div style={{ fontSize: isMobile ? '1rem' : '0.9rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: valueColor, ...(isMobile ? { lineHeight: 1.2 } : {}) }}>{value}</div>
       </div>
     </div>
@@ -574,10 +578,10 @@ const DashboardImpl: React.FC<DashboardProps> = ({
 
   const statCards = (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? '6px' : '8px', flexShrink: 0 }}>
-      {statCard(t('TOTAL TARGETS'), total, '#f97316', 'rgba(249, 115, 22, 0.12)', '#fff', <Database size={14} />)}
-      {statCard(t('INVESTIGATED'), investigated, '#10b981', 'rgba(16, 185, 129, 0.12)', '#10b981', <CheckCircle2 size={14} />)}
-      {statCard(t('PENDING'), pending, '#ef4444', 'rgba(239, 68, 68, 0.12)', '#ef4444', <Clock size={14} />)}
-      {statCard(t('SURVEY PROJECTS'), projectsCount, '#8b5cf6', 'rgba(139, 92, 246, 0.12)', '#a78bfa', <Briefcase size={14} />)}
+      {statCard(t('TOTAL TARGETS'), total, '#f97316', 'rgba(249, 115, 22, 0.12)', 'var(--surface-text)', <Database size={14} />)}
+      {statCard(t('INVESTIGATED'), investigated, '#10b981', 'rgba(16, 185, 129, 0.12)', 'rgb(var(--status-found-rgb))', <CheckCircle2 size={14} />)}
+      {statCard(t('PENDING'), pending, '#ef4444', 'rgba(239, 68, 68, 0.12)', 'rgb(var(--status-pending-rgb))', <Clock size={14} />)}
+      {statCard(t('SURVEY PROJECTS'), projectsCount, '#8b5cf6', 'rgba(139, 92, 246, 0.12)', 'rgb(var(--status-alarm-rgb))', <Briefcase size={14} />)}
     </div>
   );
 
@@ -585,7 +589,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   const fundstueckPanel = (
     <div className="glass-panel" style={panelStyle}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
-        <span style={{ ...panelKickerStyle, color: '#f97316' }}>{t('Findings Status')}</span>
+        <span style={{ ...panelKickerStyle, color: 'var(--accent-ink)' }}>{t('Findings Status')}</span>
         <h3 style={panelTitleStyle}>{t('Grouped Findings (Sorted Low to High)')}</h3>
       </div>
       {hasExcavationData ? (
@@ -595,10 +599,10 @@ const DashboardImpl: React.FC<DashboardProps> = ({
               data={fundstueckChartData}
               margin={{ top: 5, right: 5, left: isMobile ? -22 : -32, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="name" stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
-              <YAxis stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
-              <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: isMobile ? 11 : 8 }}
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
+              <YAxis fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
+              <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: tooltipFontSize }}
               itemStyle={{ color: 'var(--surface-text)' }}
               labelStyle={{ color: 'var(--surface-text-muted)' }} />
               <Bar dataKey="count" name={t('Frequency')} fill="#fa5f1c" radius={[3, 3, 0, 0]} isAnimationActive={!isMobile} />
@@ -614,7 +618,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   const sohlePanel = (
     <div className="glass-panel" style={panelStyle}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
-        <span style={{ ...panelKickerStyle, color: '#10b981' }}>{t('Excavation Integrity')}</span>
+        <span style={{ ...panelKickerStyle, color: 'rgb(var(--status-found-rgb))' }}>{t('Excavation Integrity')}</span>
         <h3 style={panelTitleStyle}>{t('Sohle Status Split by Finding')}</h3>
       </div>
       {hasExcavationData ? (
@@ -624,10 +628,10 @@ const DashboardImpl: React.FC<DashboardProps> = ({
               data={sohleSplitChartData}
               margin={{ top: 5, right: 5, left: isMobile ? -22 : -32, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="name" stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
-              <YAxis stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
-              <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: isMobile ? 11 : 8 }}
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
+              <YAxis fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
+              <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: tooltipFontSize }}
               itemStyle={{ color: 'var(--surface-text)' }}
               labelStyle={{ color: 'var(--surface-text-muted)' }} />
               <Legend verticalAlign="top" height={isMobile ? 22 : 16} iconSize={isMobile ? 9 : 6} wrapperStyle={{ fontSize: legendFontSize }} />
@@ -655,7 +659,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flexShrink: 0 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-          <span style={{ ...panelKickerStyle, color: '#10b981' }}>{t('Target Log')}</span>
+          <span style={{ ...panelKickerStyle, color: 'rgb(var(--status-found-rgb))' }}>{t('Target Log')}</span>
           <h3 style={{ ...panelTitleStyle, fontSize: isMobile ? '0.85rem' : '0.75rem' }}>{t('Excavated Targets Database')} ({filteredPoints.length})</h3>
         </div>
 
@@ -717,13 +721,13 @@ const DashboardImpl: React.FC<DashboardProps> = ({
                 display: 'flex',
                 flexDirection: 'column',
                 gap: isMobile ? '0px' : '1px',
-                border: selectedPoint?.id === point.id ? '1.5px solid #10b981' : '1px solid #e2e8f0',
+                border: selectedPoint?.id === point.id ? '1.5px solid rgb(var(--status-found-rgb))' : '1px solid #e2e8f0',
                 cursor: 'pointer',
                 flexShrink: 0
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...(isMobile ? { gap: '6px' } : {}) }}>
-                <span style={{ fontWeight: 800, fontSize: isMobile ? '0.875rem' : '0.68rem', color: '#0f172a', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>VM {point.vm_nr}</span>
+                <span style={{ fontWeight: 800, fontSize: isMobile ? '0.875rem' : '0.68rem', color: 'var(--surface-text)', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>VM {point.vm_nr}</span>
                 <span className="status-chip" data-status={status} style={{
                    fontSize: isMobile ? '0.58rem' : '0.5rem',
                    padding: '1px 4px',
@@ -733,7 +737,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
                   {statusText.toUpperCase()}
                 </span>
               </div>
-              <div style={{ fontSize: isMobile ? '0.64rem' : '0.55rem', color: '#64748b', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>
+              <div style={{ fontSize: isMobile ? '0.64rem' : '0.55rem', color: 'var(--surface-text-muted)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>
                 {point.instrument?.toUpperCase()} • {point.layer?.replace('Stoerkoerper ', '') || t('Target')}
               </div>
 
@@ -751,11 +755,11 @@ const DashboardImpl: React.FC<DashboardProps> = ({
               }}>
                 {/* The measurement itself is held at ~13px on mobile while its label stays
                     small - compacting the row without shrinking the number being read. */}
-                <span style={{ color: '#94a3b8', fontWeight: 700 }}>
+                <span style={{ color: 'var(--surface-text-muted)', fontWeight: 700 }}>
                   {t('EVAL')}: <span style={isMobile ? { fontSize: '0.82rem' } : undefined}>{point.evaluated_depth ? `${point.evaluated_depth}m` : t('N/A')}</span>
                 </span>
                 {isInvestigated && point.feedback?.actual_depth && (
-                  <span style={{ color: '#10b981', fontWeight: 800 }}>
+                  <span style={{ color: 'rgb(var(--status-found-rgb))', fontWeight: 800 }}>
                     {t('EXCAV')}: <span style={isMobile ? { fontSize: '0.82rem' } : undefined}>{point.feedback.actual_depth}m</span>
                   </span>
                 )}
@@ -770,10 +774,10 @@ const DashboardImpl: React.FC<DashboardProps> = ({
             onClick={() => setVisibleLogCount(c => c + LOG_PAGE_SIZE)}
             style={{
               flexShrink: 0,
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'var(--surface-sunken)',
+              border: '1px solid var(--surface-border)',
               borderRadius: '6px',
-              color: '#8c9f96',
+              color: 'var(--surface-text-muted)',
               fontWeight: 700,
               fontSize: isMobile ? '0.72rem' : '0.6rem',
               padding: isMobile ? '11px' : '6px',
@@ -791,7 +795,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   const accuracyPanel = (
     <div className="glass-panel" style={panelStyle}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
-        <span style={{ ...panelKickerStyle, color: '#38bdf8' }}>{t('Sensor Accuracy')}</span>
+        <span style={{ ...panelKickerStyle, color: 'var(--info-ink)' }}>{t('Sensor Accuracy')}</span>
         <h3 style={panelTitleStyle}>{t('Evaluated vs Excavated Depth')}</h3>
       </div>
 
@@ -814,10 +818,10 @@ const DashboardImpl: React.FC<DashboardProps> = ({
                 <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-            <XAxis dataKey="limit" stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
-            <YAxis stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
-            <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: isMobile ? 11 : 8 }}
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="limit" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
+            <YAxis fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
+            <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: tooltipFontSize }}
               itemStyle={{ color: 'var(--surface-text)' }}
               labelStyle={{ color: 'var(--surface-text-muted)' }} />
             <Legend verticalAlign="top" height={isMobile ? 22 : 16} iconSize={isMobile ? 9 : 6} wrapperStyle={{ fontSize: legendFontSize }} />
@@ -834,16 +838,16 @@ const DashboardImpl: React.FC<DashboardProps> = ({
       {hasExcavationData ? (
         <div className="glass-card" style={{ padding: '6px 8px', display: 'flex', justifyContent: 'space-between', gap: '6px', border: '1px solid rgba(255,255,255,0.04)', fontSize: isMobile ? '0.62rem' : '0.55rem', flexShrink: 0 }}>
           <div style={{ textAlign: 'center', flex: 1, ...(isMobile ? { minWidth: 0 } : {}) }}>
-            <div style={{ color: '#8c9f96', fontWeight: 700 }}>{t('MEAN ERROR')}</div>
-            <strong style={{ color: '#fff', fontSize: isMobile ? '0.78rem' : '0.68rem' }}>&plusmn; {meanDepthError}m</strong>
+            <div style={{ color: 'var(--surface-text-muted)', fontWeight: 700 }}>{t('MEAN ERROR')}</div>
+            <strong style={{ color: 'var(--surface-text)', fontSize: isMobile ? '0.78rem' : '0.68rem' }}>&plusmn; {meanDepthError}m</strong>
           </div>
           <div style={{ textAlign: 'center', flex: 1, ...(isMobile ? { minWidth: 0 } : {}), borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ color: '#8c9f96', fontWeight: 700 }}>{t('ESTIMATION BIAS')}</div>
-            <strong style={{ color: '#fa5f1c', fontSize: isMobile ? '0.7rem' : '0.62rem', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={biasText}>{biasText}</strong>
+            <div style={{ color: 'var(--surface-text-muted)', fontWeight: 700 }}>{t('ESTIMATION BIAS')}</div>
+            <strong style={{ color: 'var(--accent-ink)', fontSize: isMobile ? '0.7rem' : '0.62rem', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={biasText}>{biasText}</strong>
           </div>
           <div style={{ textAlign: 'center', flex: 1, ...(isMobile ? { minWidth: 0 } : {}) }}>
-            <div style={{ color: '#8c9f96', fontWeight: 700 }}>{t('FPR (EMPTY)')}</div>
-            <strong style={{ color: '#ef4444', fontSize: isMobile ? '0.78rem' : '0.68rem' }}>{falsePositiveRate}%</strong>
+            <div style={{ color: 'var(--surface-text-muted)', fontWeight: 700 }}>{t('FPR (EMPTY)')}</div>
+            <strong style={{ color: 'rgb(var(--status-pending-rgb))', fontSize: isMobile ? '0.78rem' : '0.68rem' }}>{falsePositiveRate}%</strong>
           </div>
         </div>
       ) : (
@@ -859,7 +863,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   const profilingPanel = (
     <div className="glass-panel" style={panelStyle}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
-        <span style={{ ...panelKickerStyle, color: '#fa5f1c' }}>{t('Target Profiling')}</span>
+        <span style={{ ...panelKickerStyle, color: 'var(--accent-ink)' }}>{t('Target Profiling')}</span>
         <h3 style={panelTitleStyle}>{t('Target Dimensions (Stacked Serial Chart)')}</h3>
       </div>
 
@@ -870,16 +874,16 @@ const DashboardImpl: React.FC<DashboardProps> = ({
               data={metricsChartData}
               margin={{ top: 5, right: 5, left: isMobile ? -22 : -32, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="name" stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
-              <YAxis stroke="#8c9f96" fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
-              <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: isMobile ? 11 : 8 }}
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
+              <YAxis fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
+              <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: tooltipFontSize }}
               itemStyle={{ color: 'var(--surface-text)' }}
               labelStyle={{ color: 'var(--surface-text-muted)' }} />
               <Legend verticalAlign="top" height={isMobile ? 30 : 16} iconSize={isMobile ? 9 : 6} wrapperStyle={{ fontSize: legendFontSize }} />
               <Bar dataKey="Depth (m)" name={t('Depth (m)')} fill="#fa5f1c" stackId="metrics" isAnimationActive={!isMobile} />
               <Bar dataKey="Length (m)" name={t('Length (m)')} fill="#38bdf8" stackId="metrics" isAnimationActive={!isMobile} />
-              <Bar dataKey="Width (m)" name={t('Width (m)')} fill="#e2e8f0" stackId="metrics" isAnimationActive={!isMobile} />
+              <Bar dataKey="Width (m)" name={t('Width (m)')} fill="#8b5cf6" stackId="metrics" isAnimationActive={!isMobile} />
               <Bar dataKey="Volume (m³)" name={t('Volume (m³)')} fill="#10b981" stackId="metrics" isAnimationActive={!isMobile} />
             </BarChart>
           </ResponsiveContainer>
