@@ -692,12 +692,13 @@ const DashboardImpl: React.FC<DashboardProps> = ({
         {visibleLogPoints.map((point: LocalPoint) => {
           const isInvestigated = point.local_status === 'investigated';
           let statusText = t('PENDING');
-          let badgeColor = '#ef4444';
+          // Same vocabulary as the field app's target list - see .status-chip.
+          let status: 'pending' | 'empty' | 'found' = 'pending';
 
           if (isInvestigated && point.feedback) {
             const fund = point.feedback.fundstueck || 'ohne Fund';
             statusText = fund === 'Sonstige' ? (point.feedback.other || 'Sonstige') : fund;
-            badgeColor = fund === 'ohne Fund' ? '#64748b' : '#10b981';
+            status = fund === 'ohne Fund' ? 'empty' : 'found';
           }
 
           return (
@@ -723,17 +724,10 @@ const DashboardImpl: React.FC<DashboardProps> = ({
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...(isMobile ? { gap: '6px' } : {}) }}>
                 <span style={{ fontWeight: 800, fontSize: isMobile ? '0.875rem' : '0.68rem', color: '#0f172a', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>VM {point.vm_nr}</span>
-                <span style={{
+                <span className="status-chip" data-status={status} style={{
                    fontSize: isMobile ? '0.58rem' : '0.5rem',
-                   fontWeight: 800,
                    padding: '1px 4px',
                    borderRadius: '3px',
-                   backgroundColor: 'rgba(0,0,0,0.04)',
-                   color: badgeColor,
-                   border: `1px solid ${badgeColor}22`,
-                   whiteSpace: 'nowrap',
-                   overflow: 'hidden',
-                   textOverflow: 'ellipsis',
                    maxWidth: isMobile ? '55%' : '90px'
                 }} title={statusText}>
                   {statusText.toUpperCase()}

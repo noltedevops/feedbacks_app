@@ -2381,16 +2381,15 @@ export default function App() {
                             {visibleTargetPoints.map((point) => {
                               const isInvestigated = point.local_status === 'investigated';
                               let statusText = t('PENDING');
-                              let color = '#ef4444'; // Red for pending
+                              // The state, not the colour. Which hex that becomes is the
+                              // stylesheet's business, so the chip can darken in light
+                              // theme without this having an opinion about it.
+                              let status: 'pending' | 'empty' | 'found' = 'pending';
 
                               if (isInvestigated && point.feedback) {
                                 const fund = point.feedback.fundstueck;
                                 statusText = fund === 'Sonstige' ? (point.feedback.other || 'Sonstige') : fund;
-                                if (fund === 'ohne Fund') {
-                                  color = '#64748b'; // Slate for empty holes
-                                } else {
-                                  color = '#10b981'; // Emerald for findings
-                                }
+                                status = fund === 'ohne Fund' ? 'empty' : 'found';
                               }
 
                               return (
@@ -2404,17 +2403,10 @@ export default function App() {
                                       badge, the gaps and the depth strip all lose height. */}
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
                                     <span style={{ fontWeight: 800, fontSize: isMobile ? '0.875rem' : '0.85rem', color: '#0f172a', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>VM {point.vm_nr}</span>
-                                    <span style={{
+                                    <span className="status-chip" data-status={status} style={{
                                       fontSize: isMobile ? '0.58rem' : '0.62rem',
-                                      fontWeight: 800,
                                       padding: isMobile ? '1px 6px' : '2px 8px',
                                       borderRadius: '9999px',
-                                      backgroundColor: 'rgba(0,0,0,0.05)',
-                                      color: color,
-                                      border: `1px solid ${color}33`,
-                                      whiteSpace: 'nowrap',
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis',
                                       ...(isMobile ? { maxWidth: '55%' } : {})
                                     }} title={statusText}>
                                       {statusText.toUpperCase()}

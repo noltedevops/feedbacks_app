@@ -305,6 +305,21 @@ h1, h2, h3, h4, h5, h6 {
   --overlay-border: rgba(255, 255, 255, 0.1);
   --overlay-text: #e2e8f0;
 
+  /* Status colour, as rgb triples so one token drives the ink, its tint and its
+   * hairline - `rgb(var(--x) / 0.12)` rather than three hexes per state. Space-separated
+   * rgb with slash alpha is the modern spelling but an old one: Chrome 65, Safari 12.1.
+   * `color-mix` would read better and is not usable here, the build floor is Chrome 87.
+   *
+   * These are the same hues as the map legend and the markers. A legend dot only has to
+   * be identifiable so it keeps one value in both themes; a word has to be readable, and
+   * emerald-500 on white is about 2:1, so the light theme darkens each hue rather than
+   * changing it. Same green, same red, still recognisably the legend's pair. */
+  --status-found-rgb: 16 185 129;
+  --status-pending-rgb: 239 68 68;
+  --status-empty-rgb: 100 116 139;
+  --status-scrap-rgb: 245 158 11;
+  --status-alarm-rgb: 139 92 246;
+
   --accent: #fa5f1c;
 }
 
@@ -320,6 +335,13 @@ body.light-theme {
   --overlay: rgba(255, 255, 255, 0.97);
   --overlay-border: rgba(15, 23, 42, 0.12);
   --overlay-text: #0f172a;
+
+  /* Same hues, darkened for white: each clears 4.5:1 on a white card. */
+  --status-found-rgb: 4 120 87;
+  --status-pending-rgb: 185 28 28;
+  --status-empty-rgb: 71 85 105;
+  --status-scrap-rgb: 180 83 9;
+  --status-alarm-rgb: 109 40 217;
 }
 
 body.light-theme {
@@ -806,6 +828,28 @@ select.form-input--compact option {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
+/* Status chip: the coloured pill on a target row saying what was found, or that the
+ * target is still open. Colour is the information here, so it comes from the theme
+ * tokens rather than an inline hex, and the class is what exempts it from the
+ * light-theme text override above. Size and spacing stay with the call site, which
+ * varies them per surface and breakpoint. */
+.status-chip {
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  --chip-rgb: var(--status-empty-rgb);
+  color: rgb(var(--chip-rgb));
+  background-color: rgb(var(--chip-rgb) / 0.12);
+  border: 1px solid rgb(var(--chip-rgb) / 0.32);
+}
+
+.status-chip[data-status="found"]   { --chip-rgb: var(--status-found-rgb); }
+.status-chip[data-status="pending"] { --chip-rgb: var(--status-pending-rgb); }
+.status-chip[data-status="empty"]   { --chip-rgb: var(--status-empty-rgb); }
+.status-chip[data-status="scrap"]   { --chip-rgb: var(--status-scrap-rgb); }
+.status-chip[data-status="alarm"]   { --chip-rgb: var(--status-alarm-rgb); }
+
 /* Modern target list items in Sidebar */
 .target-card-white {
   background: #ffffff !important;
@@ -852,7 +896,12 @@ body.light-theme .glass-panel {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
 }
 
-body.light-theme .glass-panel * {
+/* Everything inside a light panel is dark text - except the status chips, whose whole
+ * job is to be colour. This rule is `!important`, which beats even an inline style, so
+ * before the exclusion an "investigated" chip and a "pending" chip both came out
+ * slate-900 in light theme and the two states were indistinguishable. Dark theme never
+ * showed it: the rule only exists under body.light-theme. */
+body.light-theme .glass-panel *:not(.status-chip) {
   color: #0f172a !important;
 }
 
@@ -866,7 +915,7 @@ body.light-theme .glass-card {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
 }
 
-body.light-theme .glass-card * {
+body.light-theme .glass-card *:not(.status-chip) {
   color: #0f172a !important;
 }
 
