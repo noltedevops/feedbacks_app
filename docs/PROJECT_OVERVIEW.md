@@ -65,6 +65,13 @@ to the office database for analytics.
   `scratch/`); no automated test suite or CI yet.
 - **Multi-project workflow** — one project loaded today; the project dropdown
   exists but ingestion/management of additional projects should be exercised.
+- **`POST /api/points` is hardcoded to project `11-24-2736`** — `server.py`
+  fixes the project, the `vm_nr` prefix and the `target_id` prefix to that one
+  project, so targets added through it land in Wilhelmshaven whichever project
+  the crew meant. Self-consistent, so it does not violate the identity rule, but
+  a second project cannot be imported through that endpoint. `ingest_anomalies.py`
+  has the same constant. Found while adding `feedback.project_id`; deliberately
+  left alone there.
 
 ## Screenshots
 
