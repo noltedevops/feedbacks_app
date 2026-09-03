@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 're
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { type LocalPoint, getResolvedStatus } from '../db/indexedDb';
-import { Layers, FolderPlus, Home, ChevronLeft, ChevronRight, Download, X } from 'lucide-react';
+import { Layers, FolderPlus, Home, ChevronLeft, ChevronRight, Download, X, Check } from 'lucide-react';
 import { makeT, type AppLang, type Translator } from '../i18n';
 
 interface FieldMapProps {
@@ -316,6 +316,14 @@ const BASEMAPS = {
 
 type BasemapKey = keyof typeof BASEMAPS;
 
+// Order the switcher lists them in. Separate from BASEMAPS so the tile configuration
+// above stays about tiles, and so the labels sit next to each other for translation.
+const BASEMAP_OPTIONS: { key: BasemapKey; label: string }[] = [
+  { key: 'dark', label: 'Dark Canvas' },
+  { key: 'streets', label: 'OSM Streets' },
+  { key: 'satellite', label: 'Satellite Map' }
+];
+
 const BasemapLayer: React.FC<{ basemap: BasemapKey }> = ({ basemap }) => {
   const config = BASEMAPS[basemap];
   const labelsUrl = 'labelsUrl' in config ? config.labelsUrl : undefined;
@@ -393,72 +401,33 @@ const MapToolbar: React.FC<{
       transition: 'left 0.2s ease-in-out'
     }}>
       
-      {/* Basemap switcher options popout */}
+      {/* Basemap switcher options popout.
+       *
+       * Three near-identical inline-styled buttons before this, on a card that only
+       * looked right in dark theme: the labels were a hardcoded #fff, and the active
+       * option was distinguished by an orange tint that the light theme's blanket text
+       * override flattened along with its orange label. Styling lives in index.css now
+       * and reads the overlay tokens, so both themes come from the same source, and the
+       * active option is marked by a tick as well as by colour. */}
       <div style={{ position: 'relative' }}>
         {basemapOpen && (
-          <div style={{
-            position: 'absolute',
-            left: '46px',
-            bottom: '0px',
-            backgroundColor: 'var(--overlay)',
-            border: '1px solid var(--overlay-border)',
-            padding: '8px',
-            borderRadius: 'var(--radius-md)',
-            boxShadow: 'var(--shadow-lg)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-            minWidth: '120px',
-            zIndex: 1001
-          }}>
-            <button
-              onClick={() => { setActiveBasemap('dark'); setBasemapOpen(false); }}
-              style={{
-                background: activeBasemap === 'dark' ? 'rgba(249, 115, 22, 0.15)' : 'none',
-                border: 'none',
-                color: activeBasemap === 'dark' ? '#f97316' : '#fff',
-                padding: '6px 10px',
-                borderRadius: 'var(--radius-sm)',
-                textAlign: 'left',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                fontWeight: activeBasemap === 'dark' ? 'bold' : 'normal'
-              }}
-            >
-              {t('Dark Canvas')}
-            </button>
-            <button
-              onClick={() => { setActiveBasemap('streets'); setBasemapOpen(false); }}
-              style={{
-                background: activeBasemap === 'streets' ? 'rgba(249, 115, 22, 0.15)' : 'none',
-                border: 'none',
-                color: activeBasemap === 'streets' ? '#f97316' : '#fff',
-                padding: '6px 10px',
-                borderRadius: 'var(--radius-sm)',
-                textAlign: 'left',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                fontWeight: activeBasemap === 'streets' ? 'bold' : 'normal'
-              }}
-            >
-              {t('OSM Streets')}
-            </button>
-            <button
-              onClick={() => { setActiveBasemap('satellite'); setBasemapOpen(false); }}
-              style={{
-                background: activeBasemap === 'satellite' ? 'rgba(249, 115, 22, 0.15)' : 'none',
-                border: 'none',
-                color: activeBasemap === 'satellite' ? '#f97316' : '#fff',
-                padding: '6px 10px',
-                borderRadius: 'var(--radius-sm)',
-                textAlign: 'left',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                fontWeight: activeBasemap === 'satellite' ? 'bold' : 'normal'
-              }}
-            >
-              {t('Satellite Map')}
-            </button>
+          <div className="basemap-menu" role="group" aria-label={t('Basemap')}>
+            <div className="basemap-menu-caption">{t('Basemap')}</div>
+            {BASEMAP_OPTIONS.map(({ key, label }) => {
+              const isActive = activeBasemap === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className="basemap-option"
+                  aria-pressed={isActive}
+                  onClick={() => { setActiveBasemap(key); setBasemapOpen(false); }}
+                >
+                  <span className="basemap-option-label">{t(label)}</span>
+                  {isActive && <Check size={13} strokeWidth={3} aria-hidden="true" />}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

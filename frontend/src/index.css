@@ -304,6 +304,9 @@ h1, h2, h3, h4, h5, h6 {
   --overlay: rgba(17, 24, 39, 0.95);
   --overlay-border: rgba(255, 255, 255, 0.1);
   --overlay-text: #e2e8f0;
+  /* Ink used for hover washes on overlay chrome: light on the dark overlay, dark on
+   * the light one, so one rule serves both. */
+  --overlay-hover-rgb: 255 255 255;
 
   /* Status colour, as rgb triples so one token drives the ink, its tint and its
    * hairline - `rgb(var(--x) / 0.12)` rather than three hexes per state. Space-separated
@@ -321,6 +324,9 @@ h1, h2, h3, h4, h5, h6 {
   --status-alarm-rgb: 139 92 246;
 
   --accent: #fa5f1c;
+  /* The accent as *text*. --accent is a fill and stays put; this darkens on white,
+   * where #fa5f1c is about 3:1 and orange-700 is 4.8:1. */
+  --accent-ink: #fa5f1c;
 }
 
 body.light-theme {
@@ -335,6 +341,7 @@ body.light-theme {
   --overlay: rgba(255, 255, 255, 0.97);
   --overlay-border: rgba(15, 23, 42, 0.12);
   --overlay-text: #0f172a;
+  --overlay-hover-rgb: 15 23 42;
 
   /* Same hues, darkened for white: each clears 4.5:1 on a white card. */
   --status-found-rgb: 4 120 87;
@@ -342,6 +349,8 @@ body.light-theme {
   --status-empty-rgb: 71 85 105;
   --status-scrap-rgb: 180 83 9;
   --status-alarm-rgb: 109 40 217;
+
+  --accent-ink: #c2410c;
 }
 
 body.light-theme {
@@ -828,6 +837,83 @@ select.form-input--compact option {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
+/* Basemap switcher, the popout on the map's layers button.
+ *
+ * Floating chrome over imagery, so it takes the --overlay tokens the map toolbar and
+ * the legend already use rather than the panel surface - that is what makes it read as
+ * part of the map furniture instead of a white card dropped on top of it.
+ *
+ * The active row is marked three ways: the accent colour, a faint accent wash, and a
+ * tick. Colour alone was doing the whole job before, which is both the "colour
+ * blocking" and a problem for anyone who cannot separate the two shades. */
+.basemap-menu {
+  position: absolute;
+  left: 46px;
+  bottom: 0;
+  z-index: 1001;
+  min-width: 158px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background-color: var(--overlay);
+  border: 1px solid var(--overlay-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.basemap-menu-caption {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--surface-text-muted);
+  padding: 3px 8px 5px;
+  border-bottom: 1px solid var(--overlay-border);
+  margin-bottom: 3px;
+}
+
+.basemap-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--overlay-text);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.basemap-option:hover {
+  background-color: rgba(var(--overlay-hover-rgb) / 0.08);
+}
+
+.basemap-option:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: -2px;
+}
+
+.basemap-option[aria-pressed="true"] {
+  color: var(--accent-ink);
+  background-color: rgba(250, 95, 28, 0.12);
+}
+
+.basemap-option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Status chip: the coloured pill on a target row saying what was found, or that the
  * target is still open. Colour is the information here, so it comes from the theme
  * tokens rather than an inline hex, and the class is what exempts it from the
@@ -901,7 +987,7 @@ body.light-theme .glass-panel {
  * before the exclusion an "investigated" chip and a "pending" chip both came out
  * slate-900 in light theme and the two states were indistinguishable. Dark theme never
  * showed it: the rule only exists under body.light-theme. */
-body.light-theme .glass-panel *:not(.status-chip) {
+body.light-theme .glass-panel *:not(.status-chip):not(.basemap-option) {
   color: #0f172a !important;
 }
 
