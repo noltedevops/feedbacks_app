@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -617,7 +617,24 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
   const t = makeT(lang);
   const [activeBasemap, setActiveBasemap] = useState<BasemapKey>('dark');
   const [basemapOpen, setBasemapOpen] = useState(false);
-  const [popupPointId, setPopupPointId] = useState<string | null>(null);
+  // An open popup is a *request*, not a mirror of the selection.
+  //
+  // Mirroring is what broke clicking a marker: closing the popup leaves the target
+  // selected, so clicking that same marker again is not a change in `selectedPoint`
+  // and an effect keyed on it never fires. The list looked fine only because
+  // dismissing its form clears the selection first, so re-picking the target is a
+  // real transition. The counter makes every request distinct, which is what lets
+  // the same target be re-opened.
+  const [popupRequest, setPopupRequest] = useState<{ id: string; seq: number } | null>(null);
+  const popupSeq = useRef(0);
+
+  // Re-keys the Popup, so react-leaflet builds a fresh Leaflet popup and opens it
+  // even when Leaflet closed the previous one behind React's back - which is exactly
+  // what the map's own close-popup-on-click does on the way into this handler.
+  const openPopupFor = useCallback((id: string) => {
+    popupSeq.current += 1;
+    setPopupRequest({ id, seq: popupSeq.current });
+  }, []);
 
   // On mobile the map is a block inside a scrolling page, so Leaflet's touch drag
   // would swallow every vertical swipe that starts on it and trap the scroll. The
@@ -641,13 +658,32 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
   // cause of the scroll stutter.
   const renderer = useMemo(() => L.canvas({ padding: 0.5 }), []);
 
+  // Selecting from the target list only ever arrives as a change of `selectedPoint`,
+  // so that still has to open the popup. Holding the request steady when it already
+  // points at this target keeps a marker click - which has asked for the popup itself,
+  // below - from re-keying it a second time and remounting for nothing.
   useEffect(() => {
-    if (selectedPoint) {
-      setPopupPointId(selectedPoint.id);
-    } else {
-      setPopupPointId(null);
+    if (!selectedPoint) {
+      setPopupRequest(null);
+      return;
     }
+    setPopupRequest((current) => {
+      if (current && current.id === selectedPoint.id) return current;
+      popupSeq.current += 1;
+      return { id: selectedPoint.id, seq: popupSeq.current };
+    });
   }, [selectedPoint]);
+
+  // react-leaflet reopens the popup whenever `position` changes identity, so a fresh
+  // array literal would tear it down and rebuild it on every unrelated render of this
+  // component. Pinned to the coordinates, it moves only when the target actually does -
+  // which it still needs to do while a location is being dragged.
+  const selectedLat = selectedPoint?.latitude;
+  const selectedLng = selectedPoint?.longitude;
+  const popupPosition = useMemo<[number, number] | null>(
+    () => (selectedLat === undefined || selectedLng === undefined ? null : [selectedLat, selectedLng]),
+    [selectedLat, selectedLng]
+  );
 
   // Center on Wilhelmshaven coordinates. MapContainer only reads `center` on mount,
   // so this only needs to be right once - but it walks every point, and recomputing it
@@ -727,12 +763,19 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
           weight={isSelected ? 1.5 : 0.4}
           fillOpacity={0.9}
           eventHandlers={{
-            click: () => onSelectPoint(point)
+            // Both halves matter: the selection drives the side panel and the map
+            // camera, the popup request drives the popup. Leaving the popup to the
+            // selection alone is what made a marker unclickable once its popup had
+            // been closed.
+            click: () => {
+              onSelectPoint(point);
+              openPopupFor(point.id);
+            }
           }}
         />
       );
     })
-  ), [points, selectedPoint, isEditLocationMode, onSelectPoint, onPointPositionChange, renderer, isMobile, t]);
+  ), [points, selectedPoint, isEditLocationMode, onSelectPoint, openPopupFor, onPointPositionChange, renderer, isMobile, t]);
 
   return (
     <div style={{ height: '100%', width: '100%', position: 'relative', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
@@ -757,10 +800,21 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
         <MapController points={points} selectedPoint={selectedPoint} />
         <MapResizeHandler />
 
-        {selectedPoint && popupPointId === selectedPoint.id && (
+        {/* Keyed on the request rather than on the target: a repeat request for the
+            target already showing has to remount, because that is the only thing
+            react-leaflet acts on - it opens the popup when the element mounts and
+            when `position` changes identity, and neither happens on a re-render that
+            renders the same popup for the same place.
+
+            No `remove` handler. It fired for React's own teardown as readily as for
+            a user closing the popup, so it could not tell the two apart, and every
+            teardown clearing the request is what left the map holding a selection it
+            could no longer show. Leaflet closing the popup on its own is fine now:
+            the next request re-keys and mounts a new one. */}
+        {selectedPoint && popupRequest?.id === selectedPoint.id && (
           <Popup
-            position={[selectedPoint.latitude, selectedPoint.longitude]}
-            eventHandlers={{ remove: () => setPopupPointId(null) }}
+            key={popupRequest.seq}
+            position={popupPosition!}
             maxWidth={340}
             minWidth={286}
             autoPan={true}
