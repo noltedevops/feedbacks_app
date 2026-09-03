@@ -837,6 +837,11 @@ def sync_data(
             {
                 "id": fb.id,
                 "anomaly_id": fb.point_id,
+                # Taken from the parent anomaly, not from the payload. The client never
+                # sends a project - the form only displays the one it read off the point -
+                # and taking it from the anomaly that was just resolved above means the
+                # stored project cannot disagree with the target the record belongs to.
+                "project_id": anomaly.project_id,
                 "visited": fb.visited,
                 "tief": fb.actual_depth,
                 "photos": photos_json,

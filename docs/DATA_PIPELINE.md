@@ -136,3 +136,16 @@ as CSV or PDF via `/api/reports/*`.
 `feedback.target_id` is a denormalised copy — nothing joins on it. The foreign key is
 `feedback.anomaly_id → anomalies.id`, which is why the uuid5 rule is what keeps records
 linkable across a re-ingestion.
+
+`feedback.project_id` is denormalised too, so feedback can be filtered and reported on
+by project without joining `anomalies` every time. It is written from the parent
+anomaly's `project_id` during sync, never from the payload — the field app has no
+project input, it only displays the one it read off the target. Deriving it by parsing
+the project out of `target_id` would give the same answer today (verified: the prefix
+matched the anomaly's project on all 1710 anomalies and all 65 feedback rows), but
+`target_id` is free text with no constraint behind it, while the foreign key either
+resolves or does not.
+
+`database.py` adds the column and backfills any `NULL` on startup, so a database seeded
+before it existed repairs itself. It is nullable until a backfill has been confirmed
+clean on every deployment.

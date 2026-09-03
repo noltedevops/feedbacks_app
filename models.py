@@ -44,6 +44,14 @@ class Feedback(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     anomaly_id = Column(String(36), ForeignKey("anomalies.id", ondelete="CASCADE"), nullable=False)
+    # Which project this record belongs to. Reachable through anomaly_id already, so it
+    # is strictly a denormalisation - it exists so feedback can be filtered and reported
+    # on by project without joining anomalies every time. Written from the parent
+    # anomaly's project_id, never from the client, so the two cannot disagree.
+    #
+    # Nullable: rows written before this column existed are backfilled on startup, and
+    # until that has been confirmed clean everywhere a NULL has to be representable.
+    project_id = Column(String(50), ForeignKey("projects.project_id", ondelete="CASCADE"), nullable=True, index=True)
     visited = Column(Boolean, default=True)
     visit_date = Column(DateTime, default=datetime.datetime.utcnow)
     tief = Column(Float, nullable=True)             # actual depth (Tiefe)

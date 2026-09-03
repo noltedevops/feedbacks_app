@@ -140,6 +140,49 @@ def init_db():
     except Exception as e:
         logger.error(f"Failed to add feedback.teams_tools column: {e}")
 
+    # feedback.project_id, and the backfill for rows written before it existed.
+    #
+    # The value is a denormalisation of anomalies.project_id, reached through the
+    # anomaly_id foreign key that every feedback row already has and cannot be without.
+    # That join is the source of truth here rather than parsing the project out of
+    # target_id: target_id is free text with no constraint behind it, so a value that
+    # drifted from its shape would be mis-attributed silently, while the join either
+    # resolves or does not.
+    #
+    # WHERE project_id IS NULL rather than a run-once guard, so this also repairs rows
+    # written by an older server after the column already existed. Once every row is
+    # filled it matches nothing and costs one indexed scan per startup.
+    #
+    # A correlated subquery rather than UPDATE ... FROM: it is the one spelling both
+    # PostgreSQL and the SQLite fallback accept.
+    try:
+        with engine.connect() as conn:
+            if engine.url.drivername.startswith("postgresql"):
+                conn.execute(text(
+                    "ALTER TABLE feedback ADD COLUMN IF NOT EXISTS project_id VARCHAR(50) "
+                    "REFERENCES projects(project_id) ON DELETE CASCADE;"
+                ))
+            else:
+                existing = {row[1] for row in conn.execute(text("PRAGMA table_info(feedback);"))}
+                if "project_id" not in existing:
+                    # SQLite cannot add a column and a foreign key in one statement; the
+                    # fallback database does not enforce foreign keys by default anyway.
+                    conn.execute(text("ALTER TABLE feedback ADD COLUMN project_id VARCHAR(50);"))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_feedback_project_id ON feedback (project_id);"
+            ))
+            result = conn.execute(text(
+                "UPDATE feedback SET project_id = ("
+                "  SELECT a.project_id FROM anomalies a WHERE a.id = feedback.anomaly_id"
+                ") WHERE project_id IS NULL;"
+            ))
+            conn.commit()
+            if result.rowcount:
+                logger.info("Backfilled feedback.project_id on %s row(s).", result.rowcount)
+            logger.info("Verified feedback.project_id column exists.")
+    except Exception as e:
+        logger.error(f"Failed to add or backfill feedback.project_id column: {e}")
+
     # Per-surface access flags. Rows created before these existed are backfilled
     # from role, so nobody loses the access they had: collectors keep the field
     # app, dashboard users keep the dashboard.
