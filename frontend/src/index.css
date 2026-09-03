@@ -52,7 +52,7 @@
 
 body {
   font-family: var(--font-body);
-  background-color: hsl(var(--bg-dark));
+  background-color: var(--app-bg);
   color: #f1f5f9;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -322,6 +322,13 @@ h1, h2, h3, h4, h5, h6 {
    * be identifiable so it keeps one value in both themes; a word has to be readable, and
    * emerald-500 on white is about 2:1, so the light theme darkens each hue rather than
    * changing it. Same green, same red, still recognisably the legend's pair. */
+  /* The page ground behind the panels. .app-container paints a full-viewport layer
+   * over body, and it had hsl(var(--bg-dark)) hardcoded with no light-theme override,
+   * so light mode kept the dark green ground under its light panels. The contrast
+   * audit could not see it: it measured text against its backdrop, and the text on
+   * that ground was legible - it was the ground itself that was wrong. */
+  --app-bg: hsl(var(--bg-dark));
+
   --status-found-rgb: 16 185 129;
   --status-pending-rgb: 248 113 113;
   --status-empty-rgb: 148 163 184;
@@ -357,6 +364,10 @@ body.light-theme {
   --overlay-border: rgba(15, 23, 42, 0.12);
   --overlay-text: #0f172a;
   --overlay-hover-rgb: 15 23 42;
+
+  /* slate-100 rather than the slate-50 body used before. The panels sitting on this
+   * are white, so the ground has to be a shade below them to read as a ground at all. */
+  --app-bg: #f1f5f9;
 
   /* Same hues, darkened for white: each clears 4.5:1 on a white card. */
   --status-found-rgb: 4 120 87;
@@ -445,7 +456,7 @@ select.form-input--compact option {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background-color: hsl(var(--bg-dark));
+  background-color: var(--app-bg);
 }
 
 /* Sidebar Styling */
@@ -1067,8 +1078,8 @@ select.form-input--compact option {
 
 /* Light Theme Variables & Class Overrides */
 body.light-theme {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--app-bg);
+  color: var(--surface-text);
 }
 
 body.light-theme .glass-panel {
