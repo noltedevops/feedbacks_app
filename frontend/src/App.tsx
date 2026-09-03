@@ -1265,6 +1265,22 @@ export default function App() {
     [serverProjects, uniqueProjectIds]
   );
 
+  // What the field app is currently scoped to, shown above the project picker.
+  //
+  // This was the string literal "Wilhelmshaven Seedeich", so it survived every change
+  // of project and named the wrong one as soon as a second project existed. Derived
+  // from the same filter the picker writes, it cannot go stale.
+  //
+  // The name comes from the server's project list. Offline that list is empty and the
+  // picker falls back to bare ids, so this does too. When a name is available the id
+  // is not repeated with it: the id is already on the PROJECT ID row immediately
+  // below, and this heading is a single line that ellipsises.
+  const activeAreaLabel = useMemo(() => {
+    if (filterProjectId === 'all') return t('All Projects');
+    const name = projectOptions.find(p => p.project_id === filterProjectId)?.project_name;
+    return name || filterProjectId;
+  }, [filterProjectId, projectOptions, t]);
+
   // Stable identities so the memoized FieldMap and Dashboard are not invalidated by a
   // fresh inline closure on every render.
   const handleSelectPoint = useCallback((point: LocalPoint | null) => setSelectedPoint(point), []);
@@ -2293,7 +2309,7 @@ export default function App() {
                         {t('Active Survey Area')}
                       </span>
                       <h2 style={{ fontSize: isMobile ? '1rem' : '1.1rem', fontWeight: 800, color: '#fff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        Wilhelmshaven Seedeich
+                        {activeAreaLabel}
                       </h2>
                       {!isMobile && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '2px' }}>
