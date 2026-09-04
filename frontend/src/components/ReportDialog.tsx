@@ -44,6 +44,21 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
 
   const rangeInvalid = Boolean(start && end && start > end);
 
+  // Local calendar date, deliberately not toISOString().slice(0, 10). That formats in
+  // UTC, so between midnight and 01:00 (02:00 in summer) a German crew clicking Today
+  // would have got yesterday - and the <input type="date"> values this feeds are local
+  // dates, so the two have to agree.
+  const isoDay = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  const today = isoDay(new Date());
+
+  // Quick ranges. One entry for now; it is a list so a later "This week" or "Last 30
+  // days" joins it without re-laying out the dialog or touching the markup below.
+  const presets: { id: string; label: string; from: string; to: string }[] = [
+    { id: 'today', label: t('Today'), from: today, to: today },
+  ];
+
   const download = async (kind: 'pdf' | 'csv') => {
     if (rangeInvalid) return;
     setBusy(kind);
@@ -129,6 +144,28 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label style={label}>{t('Quick select')}</label>
+          {/* Wraps rather than scrolls, so more presets stay reachable at phone width. */}
+          <div className="date-presets">
+            {presets.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                className="date-preset"
+                // Marked current when the range already matches, which is feedback that
+                // the click landed. Not aria-pressed: this sets a range rather than
+                // toggling one, and the authoritative state is the From/To values a
+                // screen reader reads from the inputs themselves.
+                data-active={start === preset.from && end === preset.to ? 'true' : undefined}
+                onClick={() => { setStart(preset.from); setEnd(preset.to); }}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>

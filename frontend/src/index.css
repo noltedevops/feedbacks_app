@@ -1002,6 +1002,61 @@ select.form-input--compact option {
   white-space: nowrap;
 }
 
+/* Date quick-select: the preset row above From/To in the report dialog, shared by the
+ * dashboard's report button and the field app's CSV export.
+ *
+ * A row rather than a single button because presets are a list that will grow, and it
+ * wraps rather than scrolls so every one of them stays reachable at phone width.
+ *
+ * Colour comes from the surface tokens, so the chips are correct in both themes on
+ * their own rather than depending on a blanket override. The panel these sit on is a
+ * .glass-panel, and light theme repaints the borders of everything inside one - but
+ * that rule exempts buttons, so these keep the border set here. */
+.date-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.date-preset {
+  padding: 5px 12px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-sunken);
+  color: var(--surface-text);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast),
+              border-color var(--transition-fast);
+}
+
+.date-preset:hover {
+  background-color: rgba(var(--overlay-hover-rgb) / 0.08);
+}
+
+.date-preset:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 1px;
+}
+
+/* Marked current when the range already equals the preset. Three signals rather than
+ * one - accent text, an accent wash and an accent border - so it does not rest on
+ * telling two background shades apart. --accent-ink rather than --accent because this
+ * is text: the raw accent is a fill and lands near 3:1 on the light panel.
+ *
+ * The wash is 0.08 where .basemap-option uses 0.12. That one sits on dark map chrome;
+ * this sits on a panel that is near-white in light theme, where the same 0.12 darkens
+ * the ground until orange-700 on it measures 4.50:1 - AA only by rounding. At 0.08 the
+ * active label is 4.71:1 in light and 5.07:1 in dark. */
+.date-preset[data-active="true"] {
+  color: var(--accent-ink);
+  background-color: rgba(250, 95, 28, 0.08);
+  border-color: var(--accent-ink);
+}
+
 /* Status chip: the coloured pill on a target row saying what was found, or that the
  * target is still open. Colour is the information here, so it comes from the theme
  * tokens rather than an inline hex, and the class is what exempts it from the
