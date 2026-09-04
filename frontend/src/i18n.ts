@@ -64,6 +64,7 @@ const de: Record<string, string> = {
   'DRAG TO RE-POSITION': 'ZUM VERSCHIEBEN ZIEHEN',
   'Target ID': 'Ziel-ID',
   'UTM coords': 'UTM-Koordinaten',
+  'Coordinate': 'Koordinate',
   'Survey Layer': 'Mess-Layer',
   'Evaluated Depth': 'Bewertete Tiefe',
   'Field Log Feedback': 'Feld-Protokoll',

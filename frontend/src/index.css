@@ -2139,18 +2139,21 @@ body.light-theme .lang-switch-option.active {
   color: var(--surface-text);
 }
 
+/* The two halves of the UTM coordinate on one stacked line. They were separate X and
+ * Y rows; as a single Coordinate field they sit side by side, and wrap to two lines
+ * rather than overflow when the card is at its phone width. */
+.tp-coord {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+
 /* Coordinates read as numbers on one line, aligned on their digits. */
 .tp-num {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   color: var(--surface-text-strong);
   white-space: nowrap;
-}
-
-.tp-logged {
-  font-size: 0.6rem;
-  color: var(--surface-text-muted);
-  margin-top: 4px;
 }
 
 .tp-photos {

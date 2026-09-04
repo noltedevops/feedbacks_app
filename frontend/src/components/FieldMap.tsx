@@ -166,40 +166,36 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t 
         </section>
       )}
 
+      {/* No section title: the header directly above already says which target these
+          belong to, and with the list this short another rule across the card is
+          chrome rather than structure. */}
       <section className="tp-section">
-        <div className="tp-section-title">{t('UTM coords')}</div>
-        <div className="tp-row">
-          <span className="tp-row-label">X</span>
-          <span className="tp-row-value tp-num">{point.easting ?? '--'}</span>
-        </div>
-        <div className="tp-row">
-          <span className="tp-row-label">Y</span>
-          <span className="tp-row-value tp-num">{point.northing ?? '--'}</span>
-        </div>
-      </section>
-
-      <section className="tp-section">
-        <div className="tp-section-title">{t('Survey Layer')}</div>
+        <Row
+          label={t('Coordinate')}
+          value={
+            <span className="tp-coord">
+              <span className="tp-num">E {point.easting ?? '--'}</span>
+              <span className="tp-num">N {point.northing ?? '--'}</span>
+            </span>
+          }
+          stack
+        />
         <Row label={t('Project ID')} value={point.project_id || '--'} />
-        <Row label={t('Target ID')} value={point.target_id || t('N/A')} />
-        <Row label={t('Survey Layer')} value={point.layer || t('N/A')} />
         <Row label={t('Evaluated Depth')} value={point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')} />
       </section>
 
+      {/* The remaining three only exist once a target has been opened, so they keep
+          their own block - the green rule is what says these came from the field log
+          rather than from the survey. */}
       {feedback?.visited && (
         <section className="tp-section tp-feedback">
           <div className="tp-section-title tp-feedback-title">{t('Field Log Feedback')}</div>
-          <Row label={t('Sohle Status')} value={feedback.sohle_status || t('N/A')} />
-          <Row label="Fundstück" value={feedback.fundstueck || t('N/A')} />
-          {feedback.m_cube !== null && feedback.m_cube !== undefined && (
-            <Row label={t('Volumen')} value={`${feedback.m_cube} m³`} />
-          )}
           <Row label={t('Actual Depth')} value={feedback.actual_depth ? `${feedback.actual_depth} m` : t('N/A')} />
+          <Row
+            label={t('Volumen')}
+            value={feedback.m_cube !== null && feedback.m_cube !== undefined ? `${feedback.m_cube} m³` : t('N/A')}
+          />
           <Row label={t('Investigator')} value={feedback.investigator || t('N/A')} stack />
-          {feedback.notes && <Row label={t('Notes')} value={feedback.notes} stack />}
-          {feedback.logged_at && (
-            <div className="tp-logged">{t('Logged')}: {new Date(feedback.logged_at).toLocaleString()}</div>
-          )}
         </section>
       )}
 
