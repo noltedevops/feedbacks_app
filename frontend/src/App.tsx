@@ -14,6 +14,7 @@ import { LangSwitch } from './components/LangSwitch';
 import { TourHost } from './tour/TourHost';
 import { TourLaunchers } from './tour/TourLaunchers';
 import type { TourId } from './tour/steps';
+import { useFilters, selectPoints } from './useFilters';
 import { makeT, type AppLang } from './i18n';
 import { useIsMobile } from './useIsMobile';
 import { 
@@ -392,13 +393,23 @@ export default function App() {
   const syncInFlightRef = useRef(false);
   const syncQueuedRef = useRef(false);
 
-  // Search and Filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterVmNr, setFilterVmNr] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all'); // all, investigated, pending
-  const [filterInstrument, setFilterInstrument] = useState('all'); // all, georadar, magnetic
+  // Search and Filters.
+  //
+  // One group per view. These were a single shared set, so narrowing either view
+  // narrowed the other - and for search and VM-Nr., which the dashboard renders no
+  // control for, it did so invisibly: a search left in the field app cut every
+  // dashboard total with nothing on that screen to explain or undo it.
+  const fieldFilters = useFilters();
+  const dashFilters = useFilters();
+
+  // The project is deliberately still one value. It is app-wide scoping - which site
+  // is being worked on - not a per-view filter, and the two views are meant to agree
+  // on it. Both groups are applied on top of it.
   const [filterProjectId, setFilterProjectId] = useState('all');
+
   // Dashboard-only depth bucket; see DEPTH_BUCKETS. 'all' means no depth constraint.
+  // Already correctly scoped before the split, and the pattern the rest now follows:
+  // it narrows the dashboard's own dataset and never touches the field app's.
   const [filterDepth, setFilterDepth] = useState('all');
   
   // Toast Notification
@@ -1204,10 +1215,34 @@ export default function App() {
     setCurrentUserFullName('');
   };
 
-  // Reset selectedPoint when any filter changes so map zooms to fit the new selection
+  // Which group belongs to the view actually on screen. userRole doubles as the
+  // surface, so 'collector' is the field app and anything else is the dashboard.
+  const activeFilters = userRole === 'collector' ? fieldFilters : dashFilters;
+
+  // Clearing the selection on a filter change is what lets the map re-fit to the new
+  // set. Now that the groups are independent it has to follow the view on screen: keyed
+  // on both, a filter change in the background view would drop the selection out from
+  // under the view the user is looking at.
+  //
+  // Switching view is not a filter change, and the two groups legitimately hold
+  // different values - so arriving at a view whose filters differ must not discard a
+  // selection the user just made. The view is tracked alongside the values and
+  // suppresses the reset when it is the thing that moved.
+  const activeFilterKey = [
+    activeFilters.searchQuery,
+    activeFilters.vmNr,
+    activeFilters.status,
+    activeFilters.instrument,
+    filterProjectId,
+  ].join('|');
+  const lastFilterScope = useRef({ view: userRole, key: activeFilterKey });
   useEffect(() => {
+    const previous = lastFilterScope.current;
+    lastFilterScope.current = { view: userRole, key: activeFilterKey };
+    if (previous.view !== userRole) return;
+    if (previous.key === activeFilterKey) return;
     setSelectedPoint(null);
-  }, [searchQuery, filterVmNr, filterStatus, filterInstrument, filterProjectId]);
+  }, [userRole, activeFilterKey]);
 
   // Turn off edit location mode when selectedPoint changes
   useEffect(() => {
@@ -1237,34 +1272,30 @@ export default function App() {
   // Dashboard - recomputing them on an unrelated render (a sync tick, a toast, an
   // online/offline flip) would hand those children fresh array identities and defeat
   // their memoization entirely.
-  const filteredPoints = useMemo(() => points.filter(p => {
-    const matchesSearch = p.vm_nr.toString().includes(searchQuery) ||
-                          (p.find_description && p.find_description.toLowerCase().includes(searchQuery.toLowerCase()));
+  //
+  // Two independent passes over the same targets, one per view. The rule for what a
+  // filter value means lives once, in selectPoints; only the group differs.
+  const filteredPoints = useMemo(
+    () => selectPoints(points, fieldFilters, filterProjectId),
+    [points, fieldFilters, filterProjectId]
+  );
 
-    const matchesVmNr = filterVmNr === 'all' || p.vm_nr.toString() === filterVmNr;
-
-    let matchesStatus = true;
-    const isInvestigated = p.local_status && p.local_status !== 'unvisited';
-    if (filterStatus === 'investigated') {
-      matchesStatus = !!isInvestigated;
-    } else if (filterStatus === 'pending') {
-      matchesStatus = !isInvestigated;
-    }
-
-    const matchesInstrument = filterInstrument === 'all' ||
-                             (p.instrument && p.instrument.toLowerCase() === filterInstrument.toLowerCase());
-
-    const matchesProjectId = filterProjectId === 'all' || p.project_id === filterProjectId;
-
-    return matchesSearch && matchesVmNr && matchesStatus && matchesInstrument && matchesProjectId;
-  }), [points, searchQuery, filterVmNr, filterStatus, filterInstrument, filterProjectId]);
+  const dashboardBasePoints = useMemo(
+    () => selectPoints(points, dashFilters, filterProjectId),
+    [points, dashFilters, filterProjectId]
+  );
 
   // The depth bucket is a dashboard control, so it narrows the dashboard's log list and
-  // map markers only - the field app keeps rendering from the unnarrowed filteredPoints.
-  // Status is already applied above; depth composes on top of it (AND).
-  const dashboardFilteredPoints = useMemo(() => filteredPoints.filter(p =>
-    matchesDepthBucket(p, filterDepth, filterStatus)
-  ), [filteredPoints, filterDepth, filterStatus]);
+  // map markers only - the field app never sees it. Status is already applied above;
+  // depth composes on top of it (AND).
+  //
+  // resolveDepth picks which depth column a bucket reads from the status, so this has
+  // to be the DASHBOARD's status. Reading the field app's would send the buckets at the
+  // wrong column - evaluated instead of actual - purely because of a control on another
+  // screen.
+  const dashboardFilteredPoints = useMemo(() => dashboardBasePoints.filter(p =>
+    matchesDepthBucket(p, filterDepth, dashFilters.status)
+  ), [dashboardBasePoints, filterDepth, dashFilters.status]);
 
   const allVmNumbers = useMemo(
     () => points.map(p => p.vm_nr).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })),
@@ -1334,15 +1365,15 @@ export default function App() {
   // visible above the bar because it is the primary control here.
   const fieldFilterSummary = useMemo(() => {
     const project = filterProjectId === 'all' ? t('All Projects') : filterProjectId;
-    const vm = filterVmNr === 'all' ? t('All VM Nr.') : `VM ${filterVmNr}`;
-    const instrument = filterInstrument === 'all'
+    const vm = fieldFilters.vmNr === 'all' ? t('All VM Nr.') : `VM ${fieldFilters.vmNr}`;
+    const instrument = fieldFilters.instrument === 'all'
       ? t('All Instruments')
-      : filterInstrument === 'georadar' ? t('Georadar') : t('Magnetic');
-    const status = filterStatus === 'investigated' ? t('Investigated')
-      : filterStatus === 'pending' ? t('Pending')
+      : fieldFilters.instrument === 'georadar' ? t('Georadar') : t('Magnetic');
+    const status = fieldFilters.status === 'investigated' ? t('Investigated')
+      : fieldFilters.status === 'pending' ? t('Pending')
       : t('All Targets');
     return [project, vm, instrument, status].join(' · ');
-  }, [filterProjectId, filterVmNr, filterInstrument, filterStatus, t]);
+  }, [filterProjectId, fieldFilters.vmNr, fieldFilters.instrument, fieldFilters.status, t]);
 
   // Field app controls defined once and placed differently per breakpoint: inline on
   // desktop exactly as before, folded into the filter bar on mobile. Behaviour and
@@ -1368,8 +1399,8 @@ export default function App() {
     <Select
       className="field-control"
       icon={<Shield size={14} />}
-      value={filterVmNr}
-      onChange={setFilterVmNr}
+      value={fieldFilters.vmNr}
+      onChange={fieldFilters.setVmNr}
       ariaLabel={t('All VM Nr.')}
       options={[
         { value: 'all', label: t('All VM Nr.') },
@@ -1382,8 +1413,8 @@ export default function App() {
     <Select
       className="field-control"
       icon={<Layers size={14} />}
-      value={filterInstrument}
-      onChange={setFilterInstrument}
+      value={fieldFilters.instrument}
+      onChange={fieldFilters.setInstrument}
       ariaLabel={t('All Instruments')}
       options={[
         { value: 'all', label: t('All Instruments') },
@@ -1397,8 +1428,8 @@ export default function App() {
     <Select
       className="field-control field-control--status"
       size="sm"
-      value={filterStatus}
-      onChange={setFilterStatus}
+      value={fieldFilters.status}
+      onChange={fieldFilters.setStatus}
       ariaLabel={t('Status filter')}
       options={[
         { value: 'all', label: t('All Targets') },
@@ -1726,8 +1757,8 @@ export default function App() {
                             <input
                               type="text"
                               className="form-input field-control"
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
+                              value={fieldFilters.searchQuery}
+                              onChange={(e) => fieldFilters.setSearchQuery(e.target.value)}
                               placeholder={t('Search targets...')}
                               aria-label={t('Search targets...')}
                             />
@@ -1899,10 +1930,10 @@ export default function App() {
                   onSeedRequest={handleSeedRequest}
                   addDataOpen={addDataOpen}
                   setAddDataOpen={setAddDataOpen}
-                  filterStatus={filterStatus}
-                  setFilterStatus={setFilterStatus}
-                  filterInstrument={filterInstrument}
-                  setFilterInstrument={setFilterInstrument}
+                  filterStatus={dashFilters.status}
+                  setFilterStatus={dashFilters.setStatus}
+                  filterInstrument={dashFilters.instrument}
+                  setFilterInstrument={dashFilters.setInstrument}
                   filterDepth={filterDepth}
                   setFilterDepth={setFilterDepth}
                   filterProjectId={filterProjectId}
