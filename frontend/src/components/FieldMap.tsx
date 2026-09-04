@@ -639,7 +639,13 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
   // overlay, and the browser repaints all of them whenever the page scrolls. On canvas
   // they collapse to a single element the compositor can leave alone. This is the main
   // cause of the scroll stutter.
-  const renderer = useMemo(() => L.canvas({ padding: 0.5 }), []);
+  //
+  // `tolerance` widens the hit area without touching the drawing. Leaflet reads it only
+  // in Path._clickTolerance(), which only _containsPoint() calls, so the marker is
+  // painted at exactly the radius below and merely answers to clicks further out. On
+  // desktop that takes the target from 2.7px (radius 2.5 + half the 0.4 stroke) to
+  // 8.7px - a marker you can hit without pixel-hunting.
+  const renderer = useMemo(() => L.canvas({ padding: 0.5, tolerance: 6 }), []);
 
   // Selecting from the target list only ever arrives as a change of `selectedPoint`,
   // so that still has to open the popup. Holding the request steady when it already
