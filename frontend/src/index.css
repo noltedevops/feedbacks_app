@@ -1532,6 +1532,21 @@ body.light-theme .lang-switch-option.active {
     white-space: nowrap;
   }
 
+  /* Five nav items for most accounts, seven for an admin, sharing ~305px. Nothing
+     overflows - the items flex down - but at seven the labels ellipsize, and
+     Overview is the one that can afford to lose its own: it is the landing view, it
+     is the only home-shaped glyph in the bar, and giving up its label and its equal
+     share of the width hands both back to labels an icon cannot stand in for. */
+  .sidebar-item--overview {
+    flex: 0 0 auto;
+    width: 38px;
+    max-width: 38px;
+  }
+
+  .sidebar-item--overview .sidebar-item-label {
+    display: none;
+  }
+
   .sidebar-item-badge {
     top: 0;
     right: 6px;

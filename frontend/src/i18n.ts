@@ -6,6 +6,7 @@ export type AppLang = 'EN' | 'DE';
 
 const de: Record<string, string> = {
   // --- App shell / sidebar ---
+  'Overview': 'Übersicht',
   'Field App': 'Feld-App',
   'Dashboard': 'Dashboard',
   'Sync': 'Sync',
@@ -290,7 +291,37 @@ const de: Record<string, string> = {
   'Could not reset the password.': 'Passwort konnte nicht zurückgesetzt werden.',
   'Could not change access.': 'Zugriff konnte nicht geändert werden.',
   'Please ask your administrator to reset your password.':
-    'Bitte wenden Sie sich an Ihren Administrator, um Ihr Passwort zurückzusetzen.'
+    'Bitte wenden Sie sich an Ihren Administrator, um Ihr Passwort zurückzusetzen.',
+
+  // --- Overview (post-login home) ---
+  'UXO Target Sync Platform': 'UXO-Ziel-Sync-Plattform',
+  'Survey anomalies out to the crew, excavation results back to the office.':
+    'Messanomalien hinaus zum Trupp, Aushubergebnisse zurück ins Büro.',
+  'Geophysical surveys produce a list of anomalies - points that might be ordnance. This platform puts that list in front of the people who dig, records what each excavation actually found, and syncs it back to the office.':
+    'Geophysikalische Messungen liefern eine Liste von Anomalien – Punkte, die Kampfmittel sein könnten. Diese Plattform bringt diese Liste zu den Menschen, die graben, erfasst, was jeder Aushub tatsächlich ergeben hat, und synchronisiert es zurück ins Büro.',
+
+  'Log what the excavation found': 'Erfassen, was der Aushub ergeben hat',
+  'Browse and filter the targets for your survey area, open a point on the map, and record the excavation: Sohle-Status, Fundstück, actual depth, Länge/Breite/m³, photos and the Trupp & Geräte block.':
+    'Ziele Ihres Messgebiets durchsuchen und filtern, einen Punkt auf der Karte öffnen und den Aushub erfassen: Sohle-Status, Fundstück, tatsächliche Tiefe, Länge/Breite/m³, Fotos und den Block Trupp & Geräte.',
+  'It works with no network - targets are cached on the device and submissions queue locally until a connection returns.':
+    'Funktioniert ohne Netz – Ziele werden auf dem Gerät zwischengespeichert und Eingaben lokal in eine Warteschlange gestellt, bis wieder eine Verbindung besteht.',
+  'Your results sync back to the office when the device is online.':
+    'Ihre Ergebnisse werden ins Büro synchronisiert, sobald das Gerät online ist.',
+  'Open the Field App': 'Feld-App öffnen',
+
+  'Review what the crew brought back': 'Auswerten, was der Trupp zurückgemeldet hat',
+  'Progress, findings breakdown, Sohle split, evaluated-against-excavated depth accuracy and excavated volume, over the whole target set or any slice of it.':
+    'Fortschritt, Fundverteilung, Sohle-Aufteilung, Tiefengenauigkeit bewertet gegen ausgehoben und Aushubvolumen – über den gesamten Zielbestand oder jeden Ausschnitt davon.',
+  'Filter by project, status, instrument or depth, then export the selection as CSV or as the site report PDF.':
+    'Nach Projekt, Status, Instrument oder Tiefe filtern und die Auswahl als CSV oder als Berichts-PDF exportieren.',
+  'Open the Dashboard': 'Dashboard öffnen',
+
+  'Access': 'Zugriff',
+  'Your account has no surface yet': 'Ihr Konto hat noch keinen Bereich',
+  'Access is granted per surface by an administrator. Ask for the one you need and they will decide on it.':
+    'Der Zugriff wird pro Bereich von einem Administrator vergeben. Fordern Sie den benötigten Bereich an – der Administrator entscheidet darüber.',
+  'Request the Field App': 'Feld-App anfordern',
+  'Request the Dashboard': 'Dashboard anfordern'
 };
 
 export type Translator = (text: string) => string;

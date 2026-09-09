@@ -1,0 +1,151 @@
+/* ============================================================================
+   OVERVIEW — the post-login home page.
+
+   Every colour here comes from the theme tokens in index.css. No hardcoded hex:
+   the components that carried their own hex are exactly what left the app half
+   dark in light mode, and this page is new surface area for that same bug.
+   ========================================================================== */
+
+/* The desktop shell pins the viewport and scrolls inside panels, so this pane owns
+   its own scroller rather than growing the page. On mobile index.css hands the
+   scroll back to the document, and the height cap has to come off with it. */
+.overview-main {
+  flex-grow: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--app-bg);
+  color: var(--surface-text);
+}
+
+.overview-inner {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 72px 40px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+
+.overview-kicker {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+
+.overview-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.overview-hero h1 {
+  font-size: 2.25rem;
+  line-height: 1.15;
+  font-weight: 700;
+  color: var(--surface-text-strong);
+  max-width: 20ch;
+}
+
+.overview-hero p {
+  font-size: 1.02rem;
+  line-height: 1.65;
+  color: var(--surface-text-muted);
+  max-width: 62ch;
+}
+
+.overview-section {
+  border-top: 1px solid var(--surface-border);
+  padding-top: 40px;
+}
+
+.overview-section-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.overview-section-body h2 {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--surface-text-strong);
+}
+
+.overview-section-body p {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--surface-text-muted);
+  max-width: 62ch;
+}
+
+.overview-section-body .btn-primary,
+.overview-section-body .btn-secondary {
+  margin-top: 10px;
+}
+
+.overview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+/* --- Tablet ----------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .overview-inner {
+    padding: 56px 32px 80px;
+    gap: 48px;
+  }
+
+  .overview-hero h1 {
+    font-size: 2rem;
+  }
+}
+
+/* --- Phone ------------------------------------------------------------ */
+@media (max-width: 768px) {
+  /* The document scrolls on a phone; a 100vh pane with its own scroller would
+     trap the page inside it and fight the bottom nav bar. */
+  .overview-main {
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .overview-inner {
+    padding: 32px 20px calc(var(--mobile-nav-total) + 32px);
+    gap: 36px;
+  }
+
+  .overview-hero h1 {
+    font-size: 1.65rem;
+    max-width: none;
+  }
+
+  .overview-hero p {
+    font-size: 0.95rem;
+  }
+
+  .overview-section {
+    padding-top: 32px;
+  }
+
+  .overview-section-body h2 {
+    font-size: 1.25rem;
+  }
+
+  /* Full-width targets: a 44px row is the touch minimum, and a centred label
+     reads better than one hugging the left edge of a full-bleed button. */
+  .overview-section-body .btn-primary,
+  .overview-section-body .btn-secondary,
+  .overview-actions .btn-secondary {
+    width: 100%;
+    min-height: 44px;
+  }
+}

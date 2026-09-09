@@ -6,6 +6,7 @@ import { FeedbackForm } from './components/FeedbackForm';
 import { ImportExport } from './components/ImportExport';
 import { ReportDialog, type ProjectOption } from './components/ReportDialog';
 import { FilterBar } from './components/FilterBar';
+import { Overview } from './components/Overview';
 import { makeT, type AppLang } from './i18n';
 import { useIsMobile } from './useIsMobile';
 import { 
@@ -31,7 +32,8 @@ import {
   Lock,
   ShieldCheck,
   Users,
-  Menu
+  Menu,
+  LayoutGrid
 } from 'lucide-react';
 import {
   authFetch, getAccess, setSession, clearSession, NO_ACCESS,
@@ -81,6 +83,30 @@ function initialsFor(name: string | null | undefined): string {
 }
 
 type AppRole = 'collector' | 'dashboard';
+
+/**
+ * Which surface is on screen.
+ *
+ * Deliberately not the same thing as AppRole, which the two used to be: AppRole is
+ * the account's role as the server records it and now only labels the avatar, while
+ * this is view state and nothing else.
+ *
+ * Just as deliberately not a member of `Surface` (auth.ts). That type is the
+ * *permission* vocabulary the server mirrors - require_surface(), the 403 body,
+ * permission_requests.surface - and the overview needs no permission, so widening it
+ * would push a non-permission into every one of those places.
+ */
+type AppView = 'overview' | 'field' | 'dashboard';
+
+// The view survives a reload, so a crew member reloading the PWA is not thrown back
+// out of the field app. Signing in afresh always resets to the overview.
+const VIEW_KEY = 'nolte_view';
+
+/** The persisted view, or the overview for anything unrecognised. */
+function storedView(): AppView {
+  const raw = localStorage.getItem(VIEW_KEY);
+  return raw === 'field' || raw === 'dashboard' ? raw : 'overview';
+}
 
 interface AdminUserRow {
   id: string;
@@ -256,7 +282,11 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState('');
   const [currentUserFullName, setCurrentUserFullName] = useState('');
+  // The account's role, as the server records it. Labels the avatar; routes nothing.
   const [userRole, setUserRole] = useState<AppRole>('collector');
+  // The surface the user asked for. What actually renders is `view` below, which
+  // re-checks it against the access flags.
+  const [requestedView, setRequestedView] = useState<AppView>('overview');
   // What this account may open. Mirrored from the server; the server re-checks.
   const [access, setAccess] = useState<Access>(NO_ACCESS);
   // Surface the user tried to open without permission -> drives the request dialog.
@@ -432,6 +462,9 @@ export default function App() {
       setUserRole(sessionRole as AppRole);
       setCurrentUserFullName(sessionFullName);
       setAccess(getAccess());
+      // A reload resumes where the user was, unlike a sign-in. `view` still holds
+      // this against the flags, so a surface revoked in the meantime cannot return.
+      setRequestedView(storedView());
       setIsLoggedIn(true);
     }
   }, []);
@@ -861,13 +894,12 @@ export default function App() {
 
         setCurrentUser(data.username);
         setCurrentUserFullName(fullname);
-        // userRole doubles as the surface on screen, so land on one this account
-        // can actually open: their stored role when allowed, otherwise the other.
-        setUserRole(
-          role === 'dashboard' && granted.can_dashboard ? 'dashboard'
-            : granted.can_field ? 'collector'
-            : 'dashboard'
-        );
+        setUserRole(role);
+        // Signing in lands on the overview, whatever the account may open. It needs
+        // no permission and calls no API, so it is the one surface that is right for
+        // every account - including one holding neither flag, which used to be
+        // dropped into the dashboard to collect 403s.
+        changeView('overview');
         setAccess(granted);
         setMustChangePassword(!!data.must_change_password);
         setIsLoggedIn(true);
@@ -906,6 +938,8 @@ export default function App() {
     setCurrentUser(usernameClean);
     setCurrentUserFullName(fullname);
     setUserRole(role);
+    // Safe with no network: the overview fetches nothing.
+    changeView('overview');
     setAccess(offlineAccess);
     setIsLoggedIn(true);
     showToast('info', t('OFFLINE MODE: your password was not checked. Field app only; data syncs when back online.'));
@@ -945,7 +979,8 @@ export default function App() {
 
         setCurrentUser(data.username);
         setCurrentUserFullName(data.full_name);
-        setUserRole(granted.can_field ? 'collector' : 'dashboard');
+        setUserRole(role);
+        changeView('overview');
         setAccess(granted);
         setIsLoggedIn(true);
         setShowAuthModal(false);
@@ -978,6 +1013,12 @@ export default function App() {
     setAuthView('login');
   };
 
+  /** Move to a view and remember it, so a reload comes back to the same place. */
+  const changeView = (next: AppView) => {
+    setRequestedView(next);
+    localStorage.setItem(VIEW_KEY, next);
+  };
+
   // Surface switching goes through here so a user without the permission gets
   // the request dialog instead of a view they are not allowed to see.
   const openSurface = (surface: Surface) => {
@@ -988,10 +1029,10 @@ export default function App() {
       return;
     }
     if (surface === 'field') {
-      setUserRole('collector');
+      changeView('field');
       setActiveTab('map');
     } else {
-      setUserRole('dashboard');
+      changeView('dashboard');
     }
   };
 
@@ -1175,6 +1216,11 @@ export default function App() {
     localStorage.removeItem('nolte_user');
     localStorage.removeItem('nolte_role');
     localStorage.removeItem('nolte_user_fullname');
+    // Both of these used to survive a sign-out, so the next account on the device
+    // started on the previous one's surface and wearing their role label.
+    localStorage.removeItem(VIEW_KEY);
+    setRequestedView('overview');
+    setUserRole('collector');
     setIsLoggedIn(false);
     setSelectedPoint(null);
     setSubmission(null);
@@ -1418,6 +1464,17 @@ export default function App() {
       {t('Export CSV')}
     </button>
   );
+
+  // The one place the access rule is applied to routing. A surface whose flag is
+  // gone - revoked between sessions, or taken away by the /api/auth/me refresh while
+  // the tab is open - falls back to the overview instead of rendering a view the
+  // server will 403. Derived rather than corrected in an effect, so there is no
+  // window in which the wrong surface is on screen.
+  const view: AppView =
+    (requestedView === 'field' && !access.can_field) ||
+    (requestedView === 'dashboard' && !access.can_dashboard)
+      ? 'overview'
+      : requestedView;
 
   return (
     <div className="app-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: 'var(--landing-bg)' }}>
@@ -2021,8 +2078,18 @@ export default function App() {
 
               {/* Navigation Menu */}
               <nav className="sidebar-menu">
+                {/* Never locked: the overview needs no permission and calls no API. */}
+                <button
+                  className={`sidebar-item sidebar-item--overview ${view === 'overview' ? 'active' : ''}`}
+                  onClick={() => changeView('overview')}
+                  title={t('Overview')}
+                >
+                  <LayoutGrid size={20} />
+                  <span className="sidebar-item-label">{t('Overview')}</span>
+                </button>
+
                 <button 
-                  className={`sidebar-item ${userRole === 'collector' && activeTab === 'map' ? 'active' : ''} ${access.can_field ? '' : 'locked'}`}
+                  className={`sidebar-item ${view === 'field' && activeTab === 'map' ? 'active' : ''} ${access.can_field ? '' : 'locked'}`}
                   onClick={() => openSurface('field')}
                   title={access.can_field ? t('Field App') : t('Field App - permission required')}
                 >
@@ -2032,7 +2099,7 @@ export default function App() {
                 </button>
 
                 <button
-                  className={`sidebar-item ${userRole === 'dashboard' ? 'active' : ''} ${access.can_dashboard ? '' : 'locked'}`}
+                  className={`sidebar-item ${view === 'dashboard' ? 'active' : ''} ${access.can_dashboard ? '' : 'locked'}`}
                   onClick={() => openSurface('dashboard')}
                   title={access.can_dashboard ? t('Dashboard') : t('Dashboard - permission required')}
                 >
@@ -2262,8 +2329,13 @@ export default function App() {
             {isSidebarCollapsed ? <ChevronsRight size={12} /> : <ChevronsLeft size={12} />}
           </button>
 
-          {/* Main Interface Router */}
-          {userRole === 'collector' ? (
+          {/* Main Interface Router.
+              Ordered so the overview is the fallback arm, not the dashboard. The
+              dashboard used to be the `else` of a binary, which meant any value that
+              was not 'collector' rendered it - the one surface that 403s without
+              can_dashboard. An unrecognised view now lands on the page that needs no
+              permission and fetches nothing. */}
+          {view === 'field' ? (
             
             // ROLE A: FIELD DATA COLLECTOR VIEW (FIELD APP)
             <main className="collector-main" style={{ display: 'flex', flexGrow: 1, padding: '16px', gap: '16px', height: '100vh', overflow: 'hidden' }}>
@@ -2565,7 +2637,7 @@ export default function App() {
               </section>
 
             </main>
-          ) : (
+          ) : view === 'dashboard' ? (
             
             // ROLE B: END USER / DASHBOARD VIEW (DASHBOARD)
             <main className={`dashboard-main${isMobile ? ' dashboard-main--mobile' : ''}`} style={isMobile
@@ -2640,6 +2712,16 @@ export default function App() {
               </div>
 
             </main>
+
+          ) : (
+
+            // POST-LOGIN HOME: orientation, and the way in to the surfaces this
+            // account may actually open.
+            <Overview
+              lang={lang}
+              access={access}
+              onOpenSurface={openSurface}
+            />
 
           )}
 
