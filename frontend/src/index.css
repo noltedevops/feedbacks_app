@@ -353,38 +353,78 @@ select.form-input--compact option {
   background-color: var(--app-bg);
 }
 
-/* Sidebar Styling */
+/* ============================================================================
+   RAIL
+
+   The app's primary navigation: a white column with a hairline edge, the logo at
+   the top, labelled items, and the account controls at the foot. The active item is
+   marked the brand's way - the 3px yellow rule, here on the rail's inner edge - on
+   top of a stronger ink and a sunken wash, so the state never rests on the yellow
+   alone (it is decorative at 1.5:1 on white).
+
+   88px wide so every label sets at the 12px floor: "Permissions" measures 74px at
+   12px/500 (75px when active, at 600), and the German "Berechtigungen" breaks at its
+   soft hyphen onto two lines.
+   ========================================================================== */
 .app-sidebar {
-  width: 80px;
-  background: rgba(10, 22, 18, 0.95);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  width: 88px;
+  flex-shrink: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 0;
-  flex-shrink: 0;
-  height: 100%;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  background: var(--surface);
+  border-right: 1px solid var(--surface-border);
+  transition: width var(--transition-normal), padding var(--transition-normal);
 }
 
-/* The logo is a button: it is the way to the Overview. The button chrome is reset so
-   it still reads as the mark it always was. */
+.sidebar-top,
+.sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  transition: opacity var(--transition-fast);
+}
+
+.sidebar-bottom {
+  gap: var(--space-3);
+}
+
+/* Docked away. Hidden as well as transparent, so the rail's controls also leave the
+   tab order while it is closed. */
+.app-sidebar.collapsed {
+  width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  border-right: none;
+  overflow: hidden;
+}
+
+.app-sidebar.collapsed .sidebar-top,
+.app-sidebar.collapsed .sidebar-bottom {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* The logo is a button: it is the way to the Overview. */
 .sidebar-logo {
-  width: 46px;
-  height: 46px;
+  position: relative;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(249, 115, 22, 0.18) 0%, rgba(249, 115, 22, 0.02) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-5);
   padding: 0;
   border: none;
+  border-radius: var(--radius-control);
+  background: none;
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .sidebar-logo img {
@@ -393,100 +433,465 @@ select.form-input--compact option {
   object-fit: contain;
 }
 
-.sidebar-logo:hover {
-  transform: scale(1.06);
-}
-
-/* On the Overview: the rail has no active item there, so the mark carries it. */
-.sidebar-logo.active {
-  box-shadow: 0 0 0 2px var(--accent);
-}
-
 .sidebar-logo:focus-visible {
-  outline: 2px solid var(--accent-ink);
-  outline-offset: 3px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sidebar-logo,
-  .sidebar-logo:hover {
-    transition: none;
-    transform: none;
-  }
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .sidebar-menu {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   align-items: center;
-  flex-grow: 1;
+  gap: var(--space-1);
   width: 100%;
 }
 
+/* 80px wide with 2px sides: 76px of line, which is what "Permissions" needs at 12px. */
 .sidebar-item {
-  width: 68px;
-  height: 60px;
+  position: relative;
+  width: 80px;
+  min-height: 56px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  border-radius: 12px;
-  cursor: pointer;
-  color: #8c9f96;
-  transition: all var(--transition-fast);
+  gap: var(--space-1);
+  padding: var(--space-2) 2px;
   border: none;
+  border-radius: var(--radius-control);
   background: none;
-  position: relative;
+  color: var(--surface-text-muted);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .sidebar-item:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-sunken);
+  color: var(--surface-text-strong);
+}
+
+.sidebar-item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.sidebar-item:disabled {
+  cursor: progress;
 }
 
 .sidebar-item.active {
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.08);
+  background: var(--surface-sunken);
+  color: var(--surface-text-strong);
+}
+
+.sidebar-item.active .sidebar-item-label {
+  font-weight: var(--weight-semibold);
+}
+
+/* The rule sits on the rail's inner edge: 4px out from an 80px item centred in 88. */
+.sidebar-item.active::before,
+.sidebar-logo.active::before {
+  content: '';
+  position: absolute;
+  top: var(--space-2);
+  bottom: var(--space-2);
+  left: -4px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--brand-yellow);
+}
+
+/* The logo is 48px in the 88px rail, so its rule sits 20px out. */
+.sidebar-logo.active::before {
+  left: -20px;
 }
 
 .sidebar-item-label {
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  font-family: var(--font-heading);
-  text-transform: uppercase;
+  max-width: 100%;
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-medium);
+  text-align: center;
+  hyphens: manual;
+  overflow-wrap: break-word;
 }
 
-.sidebar-item-badge {
-  position: absolute;
-  top: 4px;
-  right: 12px;
-  background: #fa5f1c;
-  color: #fff;
-  border-radius: 9999px;
-  padding: 1px 4px;
-  font-size: 0.58rem;
-  font-weight: 800;
-  border: 1.5px solid #0a1612;
-}
-
-/* Surfaces this account may not open: still clickable, since the click is what
-   opens the request dialog. */
+/* Surfaces this account may not open: still clickable, since the click is what opens
+   the request dialog. */
 .sidebar-item.locked {
-  color: #5c6b64;
-}
-
-.sidebar-item.locked:hover {
-  color: #8c9f96;
+  color: var(--surface-text-subtle);
 }
 
 .sidebar-item-lock {
   position: absolute;
   top: 6px;
   right: 14px;
-  color: #8c9f96;
+}
+
+.sidebar-item-badge {
+  position: absolute;
+  top: 4px;
+  right: 12px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--text-caption);
+  line-height: 18px;
+  font-weight: var(--weight-bold);
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* Connection state: an indicator, not a control. */
+.sidebar-status {
+  cursor: default;
+}
+
+.sidebar-status:hover {
+  background: none;
+}
+
+.sidebar-status[data-online='true'],
+.sidebar-status[data-online='true']:hover {
+  color: rgb(var(--status-found-rgb));
+}
+
+.sidebar-status[data-online='false'],
+.sidebar-status[data-online='false']:hover {
+  color: rgb(var(--status-pending-rgb));
+}
+
+/* --- Account controls ---------------------------------------------------- */
+.sidebar-profile {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.sidebar-avatar {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--surface-border-strong);
+  background: var(--surface-sunken);
+  color: var(--surface-text-strong);
+  font-family: var(--font-sans);
+  font-size: var(--text-label);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.sidebar-avatar:hover,
+.sidebar-avatar[aria-expanded='true'] {
+  border-color: var(--accent);
+}
+
+.sidebar-avatar[aria-expanded='true'] {
+  box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.35);
+}
+
+.sidebar-avatar:focus-visible,
+.sidebar-theme:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.sidebar-theme {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--surface-border-strong);
+  background: var(--surface);
+  color: var(--surface-text-muted);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.sidebar-theme:hover {
+  background: var(--surface-sunken);
+  color: var(--surface-text-strong);
+}
+
+/* Segmented language switch. The selected segment is ink, not gold: gold is kept for
+   actions, and a selection is a state. */
+.lang-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  padding: 2px;
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  border: 1px solid var(--surface-border-strong);
+}
+
+.lang-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 42px;
+  height: calc(100% - 4px);
+  border-radius: 1px;
+  background: var(--surface-text-strong);
+  pointer-events: none;
+  transition: transform var(--transition-normal);
+}
+
+.lang-switch[data-lang='DE'] .lang-switch-thumb {
+  transform: translateX(42px);
+}
+
+.lang-switch-option {
+  position: relative;
+  z-index: 1;
+  width: 42px;
+  min-height: 28px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-sans);
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-button);
+  color: var(--surface-text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.lang-switch-option:hover {
+  color: var(--surface-text-strong);
+}
+
+.lang-switch-option.active {
+  color: var(--surface);
+}
+
+.lang-switch-option:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+/* The rail's variant: 68px wide inside the 88px rail. */
+.lang-switch-compact .lang-switch-thumb,
+.lang-switch-compact .lang-switch-option {
+  width: 32px;
+}
+
+.lang-switch-compact[data-lang='DE'] .lang-switch-thumb {
+  transform: translateX(32px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lang-switch-thumb,
+  .app-sidebar {
+    transition: none;
+  }
+}
+
+/* The collapse handle follows the rail's edge through the adjacent-sibling rule, so
+   the markup carries no position of its own. */
+.sidebar-toggle-handle {
+  position: absolute;
+  left: 88px;
+  top: var(--space-5);
+  z-index: 10005;
+  width: 16px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-left: none;
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+  color: var(--surface-text-muted);
+  cursor: pointer;
+  transition: left var(--transition-normal), color var(--transition-fast);
+}
+
+.sidebar-toggle-handle:hover {
+  color: var(--surface-text-strong);
+}
+
+.sidebar-toggle-handle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.app-sidebar.collapsed + .sidebar-toggle-handle {
+  left: 0;
+}
+
+/* --- Profile menu -------------------------------------------------------- */
+/* One body, two frames: the pop-up beside the desktop avatar and the phone sheet.
+   Everything inside is the menu's own classes on the tokens - no inline colour, so
+   it is legible on the raised surface in both themes. */
+.profile-popover {
+  position: absolute;
+  left: calc(100% + var(--space-2));
+  bottom: 0;
+  z-index: 10010;
+  width: 272px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-panel);
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-float);
+  color: var(--surface-text);
+  animation: profile-fade 0.16s ease-out;
+}
+
+@keyframes profile-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.profile-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.profile-avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgb(var(--accent-rgb) / 0.16);
+  border: 1px solid rgb(var(--accent-rgb) / 0.55);
+  color: var(--surface-text-strong);
+  font-size: var(--text-label);
+  font-weight: var(--weight-semibold);
+}
+
+.profile-id {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.profile-name {
+  font-size: var(--text-body-lg);
+  line-height: var(--lh-body-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-meta {
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  color: var(--surface-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-role {
+  text-transform: capitalize;
+}
+
+.profile-close {
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--surface-text-muted);
+  cursor: pointer;
+}
+
+.profile-close:hover {
+  color: var(--surface-text-strong);
+}
+
+.profile-settings,
+.profile-popover .tour-launchers,
+.profile-sheet .tour-launchers {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--surface-border);
+}
+
+.profile-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.profile-row-label {
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-muted);
+}
+
+/* Sign out: a quiet outlined control in the danger ink - an exit, not an alarm. */
+.profile-signout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--control-h);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--surface-border-strong);
+  background: var(--surface);
+  color: var(--danger-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-button);
+  line-height: var(--lh-button);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-button);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.profile-signout:hover {
+  background: rgb(var(--danger-rgb) / 0.08);
+}
+
+.profile-signout:focus-visible,
+.profile-close:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 /* ============================================================================
@@ -770,57 +1175,6 @@ select.form-input--compact option {
   font-weight: var(--weight-semibold);
 }
 
-.sidebar-bottom {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-}
-
-.sidebar-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255,255,255,0.03);
-  cursor: pointer;
-  transition: border-color var(--transition-fast);
-}
-
-.sidebar-avatar:hover {
-  border-color: rgba(249, 115, 22, 0.4);
-}
-
-.sidebar-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.sidebar-logout {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  border: 1px solid rgba(239, 68, 68, 0.15);
-  background: rgba(239, 68, 68, 0.04);
-  color: #f87171;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.sidebar-logout:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-}
-
 /* Leaflet's attribution bar paints itself white with mid-blue links - 3.17:1 in both
  * themes, and a white strip under a dark map. Pointed at the overlay tokens the rest of
  * the map chrome uses. */
@@ -1013,162 +1367,13 @@ select.form-input--compact option {
 /* Responsive layout overrides for phones live at the end of this file, so they
    win against the theme and control rules that follow. */
 
-/* Light-theme overrides still to be retired by the surface sweeps: the rail, the
-   target card, the language switch. Panels, cards, inputs and buttons
-   need none - their tokens resolve per theme. */
-
-body.light-theme .app-sidebar {
-  background: #ffffff;
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-body.light-theme .sidebar-item {
-  color: #64748b;
-}
-
-body.light-theme .sidebar-item:hover {
-  color: #0f172a;
-  background: rgba(0, 0, 0, 0.03);
-}
-
-body.light-theme .sidebar-item.active {
-  color: rgb(var(--status-found-rgb));
-  background: rgba(16, 185, 129, 0.08);
-}
-
-body.light-theme .sidebar-item-badge {
-  border: 1.5px solid #ffffff;
-}
-
-body.light-theme .sidebar-logo {
-  border-bottom-color: rgba(0,0,0,0.06);
-}
+/* Light-theme override still to be retired by the Field App sweep: the target card.
+   Everything else resolves its colour through the tokens in both themes. */
 
 body.light-theme .target-card-white {
   background: #ffffff !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
-}
-
-/* Modern Segmented Language Switch (EN / DE) */
-.lang-switch {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  padding: 3px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: border-color var(--transition-fast), background var(--transition-fast);
-}
-
-.lang-switch:hover {
-  border-color: rgba(245, 130, 32, 0.45);
-  background: rgba(255, 255, 255, 0.09);
-}
-
-/* Sliding highlight pill */
-.lang-switch-thumb {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  height: calc(100% - 6px);
-  border-radius: 9999px;
-  background: linear-gradient(135deg, #f58220 0%, #ea6a00 100%);
-  box-shadow: 0 4px 14px rgba(245, 130, 32, 0.45);
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: none;
-  width: 42px;
-}
-
-.lang-switch[data-lang="DE"] .lang-switch-thumb {
-  transform: translateX(42px);
-}
-
-.lang-switch-option {
-  position: relative;
-  z-index: 1;
-  width: 42px;
-  padding: 5px 0;
-  border: none;
-  background: none;
-  border-radius: 9999px;
-  font-family: var(--font-heading);
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: #94a3b8;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.lang-switch-option:hover {
-  color: #ffffff;
-}
-
-.lang-switch-option.active {
-  color: #ffffff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-}
-
-/* Compact variant for the 80px app sidebar */
-.lang-switch-compact {
-  padding: 2px;
-  gap: 0;
-}
-
-.lang-switch-compact .lang-switch-thumb {
-  top: 2px;
-  left: 2px;
-  width: 28px;
-  height: calc(100% - 4px);
-}
-
-.lang-switch-compact[data-lang="DE"] .lang-switch-thumb {
-  transform: translateX(28px);
-}
-
-.lang-switch-compact .lang-switch-option {
-  width: 28px;
-  padding: 4px 0;
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
-}
-
-body.light-theme .lang-switch {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 0, 0, 0.1);
-  box-shadow: none;
-}
-
-body.light-theme .lang-switch:hover {
-  background: rgba(0, 0, 0, 0.05);
-  border-color: rgba(245, 130, 32, 0.5);
-}
-
-body.light-theme .lang-switch-option {
-  color: #64748b;
-}
-
-body.light-theme .lang-switch-option:hover {
-  color: #0f172a;
-}
-
-body.light-theme .lang-switch-option.active {
-  color: #ffffff;
-}
-
-/* Collapsible Sidebar States */
-.app-sidebar.collapsed {
-  width: 0px !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  border-right: none !important;
-  overflow: hidden;
 }
 
 /* ==========================================================================
@@ -1265,12 +1470,11 @@ body.light-theme .lang-switch-option.active {
     overflow: visible;
   }
 
-  /* --- Sidebar becomes a bottom nav bar -------------------------------- */
-  /* The bar has to FIT. Four nav items plus the avatar plus the language switch plus
-     the theme button measured 442px against ~354px of usable width, so the trailing
-     group ran off the right edge - that was the clipped "ER" bubble. Language and
-     theme now live in the profile sheet, and the nav flexes down instead of
-     overflowing, so nothing can spill past the edge again. */
+  /* --- The rail becomes a bottom bar -------------------------------------- */
+  /* Seven destinations for an admin share ~370px, which leaves no room for labels at
+     the 12px floor - they were being set at 8px to squeeze in, and still ellipsized.
+     So the bar is icons at 44px tap targets, each keeping its label as its accessible
+     name, and the active one carries the brand rule along the bar's top edge. */
   .app-sidebar {
     position: fixed;
     left: 0;
@@ -1278,48 +1482,52 @@ body.light-theme .lang-switch-option.active {
     bottom: 0;
     width: 100%;
     max-width: 100%;
-    height: auto;
+    /* Pinned height so the content padding below and the profile sheet's offset can
+       both be derived from one number instead of guessing. */
+    height: var(--mobile-nav-total);
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    /* Pinned height so the content padding below and the profile sheet's offset can
-       both be derived from one number instead of guessing. Border-box (the global
-       default here) - content-box would add the horizontal padding on top of the
-       left/right anchoring and make the bar wider than the screen. */
-    height: var(--mobile-nav-total);
-    padding: 6px 10px;
+    gap: var(--space-2);
+    padding: 6px var(--space-2);
     padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
     border-right: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    overflow: hidden;
+    border-top: 1px solid var(--surface-border);
     z-index: 10000;
   }
 
-  /* The collapse toggle is meaningless once the sidebar is a bottom bar, and its
+  /* The collapse toggle is meaningless once the rail is a bottom bar, and its
      collapsed state must not be able to hide the only navigation on the page. */
   .sidebar-toggle-handle {
     display: none !important;
   }
 
-  /* The nav group takes the leftover width and shrinks; the avatar never does. */
-  .app-sidebar .sidebar-top {
-    flex-direction: row !important;
-    align-items: center !important;
-    width: auto !important;
-    opacity: 1 !important;
-    gap: 4px;
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
+  .app-sidebar.collapsed {
+    width: 100%;
+    padding: 6px var(--space-2);
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--surface-border);
+    overflow: visible;
   }
 
-  /* The logo stays in the bar: it is the only way to the Overview, on a phone as on
-     a desktop. Icon-sized, and without the 24px bottom margin, which in a row would
-     push the bar to 83px and squeeze the trailing group toward the edge. */
+  .app-sidebar.collapsed .sidebar-top,
+  .app-sidebar.collapsed .sidebar-bottom {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .app-sidebar .sidebar-top {
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+    gap: var(--space-1);
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
   .sidebar-logo {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     margin-bottom: 0;
   }
 
@@ -1329,111 +1537,115 @@ body.light-theme .lang-switch-option.active {
 
   .sidebar-menu {
     flex-direction: row;
-    gap: 2px;
+    justify-content: space-around;
+    gap: 0;
     width: auto;
-    flex-grow: 0;
+    flex: 1 1 auto;
     min-width: 0;
   }
 
   .sidebar-item {
-    width: auto;
-    min-width: 0;
-    flex: 1 1 0;
-    max-width: 74px;
-    padding: 0 2px;
-    height: 46px;
-    gap: 2px;
-    border-radius: 10px;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
   }
 
+  /* Visually hidden, still the button's name for a screen reader. */
   .sidebar-item-label {
-    font-size: 0.5rem;
-    max-width: 100%;
+    position: absolute;
+    width: 1px;
+    height: 1px;
     overflow: hidden;
-    text-overflow: ellipsis;
+    clip: rect(0 0 0 0);
     white-space: nowrap;
+  }
+
+  /* The rule moves to the bar's top edge. */
+  .sidebar-item.active::before,
+  .sidebar-logo.active::before {
+    top: -7px;
+    bottom: auto;
+    left: var(--space-2);
+    right: var(--space-2);
+    width: auto;
+    height: 3px;
+    border-radius: 0 0 2px 2px;
+  }
+
+  .sidebar-item-lock {
+    top: 4px;
+    right: 4px;
   }
 
   .sidebar-item-badge {
     top: 0;
-    right: 6px;
+    right: -2px;
   }
 
-  /* !important: this element carries flex-direction: column in an inline style. */
   .app-sidebar .sidebar-bottom {
-    flex-direction: row !important;
-    align-items: center !important;
-    width: auto !important;
-    gap: 10px !important;
+    flex-direction: row;
+    width: auto;
+    gap: var(--space-2);
     flex: 0 0 auto;
   }
 
-  .sidebar-avatar,
-  .sidebar-logout {
-    width: 36px;
-    height: 36px;
-    flex-shrink: 0;
+  .sidebar-avatar {
+    width: 40px;
+    height: 40px;
   }
 
-  /* Keep the whole bar on one row so it stays a ~58px strip. */
-  .app-sidebar .sidebar-menu,
-  .app-sidebar .sidebar-bottom {
-    flex-wrap: nowrap;
-  }
-
-  /* --- Profile sheet (mobile replacement for the anchored pop-up) ------- */
+  /* --- Profile sheet (the phone's profile menu) ------------------------------ */
   .profile-sheet-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--scrim);
     z-index: 10009;
-    animation: profile-sheet-fade 0.15s ease-out;
+    animation: profile-fade 0.15s ease-out;
   }
 
   .profile-sheet {
     position: fixed;
-    left: 8px;
-    right: 8px;
+    left: var(--space-2);
+    right: var(--space-2);
     /* Sits clear of the nav bar rather than floating over page content. */
-    bottom: calc(var(--mobile-nav-total) + 8px);
+    bottom: calc(var(--mobile-nav-total) + var(--space-2));
     z-index: 10011;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding: 16px;
-    border-radius: 16px;
-    box-sizing: border-box;
-    background: #0f172a;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
-    color: #ffffff;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    border-radius: var(--radius-panel);
+    background: var(--surface-raised);
+    border: 1px solid var(--surface-border);
+    box-shadow: var(--shadow-float);
+    color: var(--surface-text);
     max-height: 70vh;
     overflow-y: auto;
     /* Opacity only, deliberately. A transform-based slide leaves the sheet displaced
        by its start offset if the animation is throttled or interrupted, which is
        enough to push it back over the nav bar it is supposed to clear. */
-    animation: profile-sheet-fade 0.18s ease-out;
+    animation: profile-fade 0.18s ease-out;
   }
 
-  /* Language switch and close control are real tap targets inside the sheet. */
-  .profile-sheet .lang-switch {
-    height: 40px;
+  /* Tap targets inside the sheet. */
+  .profile-sheet .lang-switch-thumb,
+  .profile-sheet .lang-switch-option {
+    width: 56px;
   }
 
   .profile-sheet .lang-switch-option {
-    min-height: 36px;
-    padding: 0 14px;
+    min-height: 40px;
   }
 
-  body.light-theme .profile-sheet {
-    background: #ffffff;
-    border-color: #e2e8f0;
-    color: #0f172a;
+  .profile-sheet .lang-switch[data-lang='DE'] .lang-switch-thumb {
+    transform: translateX(56px);
   }
 
-  @keyframes profile-sheet-fade {
-    from { opacity: 0; }
-    to { opacity: 1; }
+  .profile-sheet .profile-theme,
+  .profile-sheet .profile-signout {
+    min-height: 44px;
   }
 
   /* --- Field App (collector) ------------------------------------------- */

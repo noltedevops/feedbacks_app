@@ -96,6 +96,7 @@ const de: Record<string, string> = {
   'Filter': 'Filter',
   'Show filters': 'Filter anzeigen',
   'Profile and settings': 'Profil und Einstellungen',
+  'Main navigation': 'Hauptnavigation',
   'Language': 'Sprache',
   'Theme': 'Darstellung',
   'Light': 'Hell',
@@ -233,7 +234,9 @@ const de: Record<string, string> = {
   'Failed to import GPR points.': 'Import der GPR-Ziele fehlgeschlagen.',
 
   // --- Access & permissions ---
-  'Permissions': 'Berechtigungen',
+  // Soft hyphen: at the rail's 12px the word is wider than the item, and this is
+  // where it may break. Invisible wherever it fits on one line.
+  'Permissions': 'Berech­tigungen',
   'Permission requests': 'Berechtigungsanfragen',
   'Field App - permission required': 'Feld-App - Berechtigung erforderlich',
   'Dashboard - permission required': 'Dashboard - Berechtigung erforderlich',

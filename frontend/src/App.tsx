@@ -35,7 +35,8 @@ import {
   Lock,
   ShieldCheck,
   Users,
-  Menu
+  Menu,
+  BarChart3
 } from 'lucide-react';
 import {
   authFetch, getAccess, setSession, clearSession, NO_ACCESS,
@@ -135,8 +136,7 @@ interface PermissionRequestRow {
 // for more. See visibleTargetPoints.
 const TARGET_PAGE_SIZE = 40;
 
-// Modern segmented language switch with a sliding highlight.
-// `compact` renders the narrow variant used inside the 80px app sidebar.
+// Segmented language switch. `compact` is the narrow variant that fits the rail.
 function LangSwitch({ lang, onChange, compact = false }: {
   lang: AppLang;
   onChange: (lang: AppLang) => void;
@@ -164,6 +164,75 @@ function LangSwitch({ lang, onChange, compact = false }: {
         </button>
       ))}
     </div>
+  );
+}
+
+// The profile menu behind the avatar - one body for the desktop pop-up and the phone
+// sheet, which used to be two copies of the same markup with their own hardcoded
+// colours (white text on a surface that is white in the light theme). Language and
+// theme are only in the phone version: on a desktop they sit in the rail itself.
+function ProfileMenu({
+  t, lang, onLangChange, theme, onToggleTheme, fullName, username, role,
+  access, onStartTour, onSignOut, onClose, withSettings,
+}: {
+  t: (s: string) => string;
+  lang: AppLang;
+  onLangChange: (lang: AppLang) => void;
+  theme: 'dark' | 'light';
+  onToggleTheme: () => void;
+  fullName: string;
+  username: string;
+  role: string;
+  access: Access;
+  onStartTour: (surface: Surface) => void;
+  onSignOut: () => void;
+  onClose?: () => void;
+  withSettings: boolean;
+}) {
+  const name = fullName || username;
+  return (
+    <>
+      <div className="profile-head">
+        <span className="profile-avatar" aria-hidden="true">{initialsFor(name)}</span>
+        <div className="profile-id">
+          <span className="profile-name">{name}</span>
+          <span className="profile-meta">@{username || 'user'} · <span className="profile-role">{role}</span></span>
+        </div>
+        {onClose && (
+          <button type="button" className="profile-close" onClick={onClose} aria-label={t('Close')}>
+            <X size={18} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+
+      {withSettings && (
+        <div className="profile-settings">
+          <div className="profile-row">
+            <span className="profile-row-label">{t('Language')}</span>
+            <LangSwitch lang={lang} onChange={onLangChange} />
+          </div>
+          <div className="profile-row">
+            <span className="profile-row-label">{t('Theme')}</span>
+            <button
+              type="button"
+              className="btn-secondary profile-theme"
+              onClick={onToggleTheme}
+              title={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
+            >
+              {theme === 'dark'
+                ? <><Sun size={16} aria-hidden="true" /> {t('Light')}</>
+                : <><Moon size={16} aria-hidden="true" /> {t('Dark')}</>}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <TourLaunchers lang={lang} access={access} onStart={onStartTour} />
+
+      <button type="button" className="profile-signout" onClick={onSignOut}>
+        <LogOut size={15} aria-hidden="true" /> {t('Sign Out')}
+      </button>
+    </>
   );
 }
 
@@ -2085,10 +2154,12 @@ export default function App() {
         // 2. Logged In Screens Layout
         <>
         <div className="app-container">
-          {/* Vertical left sidebar navigation */}
-          <aside className={`app-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`} style={{ transition: 'width 0.2s, padding 0.2s, border-right 0.2s, opacity 0.2s' }}>
-            <div className="sidebar-top" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', opacity: isSidebarCollapsed ? 0 : 1, transition: 'opacity 0.15s' }}>
-              
+          {/* The rail: the app's primary navigation. A bottom bar on a phone - see the
+              mobile block in index.css. Styling lives entirely in the stylesheet, so the
+              markup here carries structure and state only. */}
+          <aside className={`app-sidebar${isSidebarCollapsed ? ' collapsed' : ''}`} aria-label={t('Main navigation')}>
+            <div className="sidebar-top">
+
               {/* The logo is the way to the Overview - there is no nav item for it. Never
                   locked: the overview needs no permission and calls no API. */}
               <button
@@ -2102,40 +2173,39 @@ export default function App() {
                 <img src="/logo.png" alt="" />
               </button>
 
-              {/* Navigation Menu */}
               <nav className="sidebar-menu">
                 <button
-                  className={`sidebar-item ${view === 'field' && activeTab === 'map' ? 'active' : ''} ${access.can_field ? '' : 'locked'}`}
+                  type="button"
+                  className={`sidebar-item${view === 'field' && activeTab === 'map' ? ' active' : ''}${access.can_field ? '' : ' locked'}`}
                   onClick={() => openSurface('field')}
+                  aria-current={view === 'field' ? 'page' : undefined}
                   title={access.can_field ? t('Field App') : t('Field App - permission required')}
                 >
-                  <Compass size={20} />
+                  <Compass size={20} aria-hidden="true" />
                   <span className="sidebar-item-label">{t('Field App')}</span>
-                  {!access.can_field && <Lock size={12} className="sidebar-item-lock" />}
+                  {!access.can_field && <Lock size={12} className="sidebar-item-lock" aria-hidden="true" />}
                 </button>
 
                 <button
-                  className={`sidebar-item ${view === 'dashboard' ? 'active' : ''} ${access.can_dashboard ? '' : 'locked'}`}
+                  type="button"
+                  className={`sidebar-item${view === 'dashboard' ? ' active' : ''}${access.can_dashboard ? '' : ' locked'}`}
                   onClick={() => openSurface('dashboard')}
+                  aria-current={view === 'dashboard' ? 'page' : undefined}
                   title={access.can_dashboard ? t('Dashboard') : t('Dashboard - permission required')}
                 >
-                  {/* Bar chart icon */}
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" x2="18" y1="20" y2="10" />
-                    <line x1="12" x2="12" y1="20" y2="4" />
-                    <line x1="6" x2="6" y1="20" y2="14" />
-                  </svg>
+                  <BarChart3 size={20} aria-hidden="true" />
                   <span className="sidebar-item-label">{t('Dashboard')}</span>
-                  {!access.can_dashboard && <Lock size={12} className="sidebar-item-lock" />}
+                  {!access.can_dashboard && <Lock size={12} className="sidebar-item-lock" aria-hidden="true" />}
                 </button>
 
                 {access.is_admin && (
                   <button
+                    type="button"
                     className="sidebar-item"
                     onClick={() => setShowAdminPanel(true)}
                     title={t('Permission requests')}
                   >
-                    <ShieldCheck size={20} />
+                    <ShieldCheck size={20} aria-hidden="true" />
                     <span className="sidebar-item-label">{t('Permissions')}</span>
                     {pendingRequests.length > 0 && (
                       <span className="sidebar-item-badge">{pendingRequests.length}</span>
@@ -2145,207 +2215,111 @@ export default function App() {
 
                 {access.is_admin && (
                   <button
+                    type="button"
                     className="sidebar-item"
                     onClick={() => setShowUsersPanel(true)}
                     title={t('Users')}
                   >
-                    <Users size={20} />
+                    <Users size={20} aria-hidden="true" />
                     <span className="sidebar-item-label">{t('Users')}</span>
                   </button>
                 )}
 
                 <button
+                  type="button"
                   className="sidebar-item"
                   data-tour="field.sync"
                   onClick={() => handleSync()}
                   disabled={syncing}
                   title={t('Sync Data')}
                 >
-                  <RefreshCw size={20} className={syncing ? 'animate-spin' : ''} />
+                  <RefreshCw size={20} className={syncing ? 'animate-spin' : ''} aria-hidden="true" />
                   <span className="sidebar-item-label">{t('Sync')}</span>
                   {pendingSyncCount > 0 && (
                     <span className="sidebar-item-badge">{pendingSyncCount}</span>
                   )}
                 </button>
 
-                <div 
-                  className="sidebar-item"
-                  style={{ cursor: 'default' }}
+                {/* Connection state: not a control, so not a button. The state is in the
+                    colour and the word and the icon, never the colour alone. */}
+                <div
+                  className="sidebar-item sidebar-status"
+                  data-online={isOnline ? 'true' : 'false'}
+                  role="status"
                   title={isOnline ? t('Network Connection: Online') : t('Network Connection: Offline')}
                 >
-                  {isOnline ? (
-                    <Wifi size={20} style={{ color: '#10b981' }} />
-                  ) : (
-                    <WifiOff size={20} style={{ color: '#ef4444' }} />
-                  )}
-                  <span className="sidebar-item-label" style={{ color: isOnline ? 'rgb(var(--status-found-rgb))' : 'rgb(var(--status-pending-rgb))' }}>
-                    {isOnline ? t('Online') : t('Offline')}
-                  </span>
+                  {isOnline ? <Wifi size={20} aria-hidden="true" /> : <WifiOff size={20} aria-hidden="true" />}
+                  <span className="sidebar-item-label">{isOnline ? t('Online') : t('Offline')}</span>
                 </div>
               </nav>
             </div>
 
-            {/* Bottom Controls */}
-            <div className="sidebar-bottom" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', width: '100%' }}>
-              
-              {/* User Profile Button & Pop-up Modal */}
-              <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                <div 
+            <div className="sidebar-bottom">
+              <div className="sidebar-profile">
+                <button
+                  type="button"
                   className="sidebar-avatar"
-                  style={{ cursor: 'pointer' }}
-                  title={`${t('User')}: ${currentUserFullName || currentUser}`}
                   onClick={() => setShowUserModal(!showUserModal)}
+                  aria-haspopup="dialog"
+                  aria-expanded={showUserModal}
+                  aria-label={`${t('User')}: ${currentUserFullName || currentUser}`}
+                  title={`${t('User')}: ${currentUserFullName || currentUser}`}
                 >
-                  <div style={{
-                    width: '100%', 
-                    height: '100%', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    fontWeight: 'bold', 
-                    color: 'var(--accent-ink)', 
-                    fontSize: '0.85rem',
-                    fontFamily: 'var(--font-heading)'
-                  }}>
-                    {initialsFor(currentUserFullName || currentUser)}
-                  </div>
-                </div>
+                  {initialsFor(currentUserFullName || currentUser)}
+                </button>
 
-                {/* Desktop keeps the anchored pop-up next to the avatar. On mobile the
-                    sidebar is a fixed bottom bar, so an absolutely-positioned 240px panel
-                    anchored inside it lands off the right edge and over the content - the
-                    mobile version renders as a bottom sheet outside this subtree instead. */}
+                {/* Desktop keeps the anchored pop-up next to the avatar. On a phone the
+                    rail is a fixed bottom bar, so the menu renders as a sheet outside this
+                    subtree instead. */}
                 {showUserModal && !isMobile && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '50px',
-                    left: '60px',
-                    backgroundColor: 'var(--surface)',
-                    border: '1px solid var(--surface-border)',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    width: '240px',
-                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8)',
-                    zIndex: 10010,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                    color: '#ffffff',
-                    backdropFilter: 'blur(12px)',
-                    animation: 'fade-in-up 0.2s ease-out'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        backgroundColor: 'rgba(245, 130, 32, 0.15)',
-                        border: '1px solid rgba(245, 130, 32, 0.4)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#f58220',
-                        fontWeight: 'bold',
-                        fontSize: '0.95rem'
-                      }}>
-                        {initialsFor(currentUserFullName || currentUser)}
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                          {currentUserFullName || 'Eric Musonera'}
-                        </span>
-                        <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-                          @{currentUser || 'user'} · <span style={{ color: '#f58220', textTransform: 'capitalize' }}>{userRole}</span>
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.08)', margin: '2px 0' }}></div>
-
-                    <TourLaunchers lang={lang} access={access} onStart={startTour} />
-
-                    <button
-                      onClick={() => {
-                        setShowUserModal(false);
-                        handleSignOut();
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        width: '100%',
-                        backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                        color: '#f87171',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                        borderRadius: '8px',
-                        padding: '8px 12px',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s'
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.3)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.15)')}
-                    >
-                      <LogOut size={15} /> {lang === 'EN' ? 'Sign Out' : 'Abmelden'}
-                    </button>
+                  <div className="profile-popover" role="dialog" aria-label={t('Profile and settings')}>
+                    <ProfileMenu
+                      t={t}
+                      lang={lang}
+                      onLangChange={setLang}
+                      theme={theme}
+                      onToggleTheme={toggleTheme}
+                      fullName={currentUserFullName}
+                      username={currentUser}
+                      role={userRole}
+                      access={access}
+                      onStartTour={startTour}
+                      onSignOut={() => { setShowUserModal(false); handleSignOut(); }}
+                      withSettings={false}
+                    />
                   </div>
                 )}
               </div>
 
-              {/* Language and theme sit in the bar on desktop. On mobile they move into
-                  the profile sheet behind the avatar: four nav items plus the avatar plus
-                  these two overflow a 380px bar, which is what was clipping the right
-                  edge. The avatar becomes the single entry point instead. */}
+              {/* Language and theme sit in the rail on desktop. On a phone they move into
+                  the profile sheet behind the avatar - the bar has no room for them. */}
               {!isMobile && (
                 <>
-                  {/* Language Switcher (available in both Field App and Dashboard) */}
                   <LangSwitch lang={lang} onChange={setLang} compact />
-
-                  {/* Theme Toggle Button placed where Logout button was */}
                   <button
-                    className="sidebar-logout"
+                    type="button"
+                    className="sidebar-theme"
                     onClick={toggleTheme}
+                    aria-label={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
                     title={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
                   >
-                    {theme === 'dark' ? <Sun size={18} color="#f58220" /> : <Moon size={18} color="#0f172a" />}
+                    {theme === 'dark' ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
                   </button>
                 </>
               )}
-
             </div>
           </aside>
 
-
-
-          {/* Collapsible Sidebar Toggle Handle (Dockable) */}
+          {/* Collapse handle. It follows the rail's edge by CSS (the adjacent-sibling rule
+              in index.css), so it needs no position of its own here. */}
           <button
+            type="button"
             className="sidebar-toggle-handle"
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            style={{
-              position: 'absolute',
-              left: isSidebarCollapsed ? '0px' : '80px',
-              top: '24px',
-              zIndex: 10005,
-              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(10, 22, 18, 0.95)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderLeft: 'none',
-              borderRadius: '0 8px 8px 0',
-              width: '20px',
-              height: '42px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fa5f1c',
-              cursor: 'pointer',
-              boxShadow: '4px 0 10px rgba(0,0,0,0.3)',
-              transition: 'left 0.2s, background-color 0.2s',
-              pointerEvents: 'auto'
-            }}
+            aria-label={isSidebarCollapsed ? t('Expand Sidebar (Undock)') : t('Collapse Sidebar (Dock)')}
             title={isSidebarCollapsed ? t('Expand Sidebar (Undock)') : t('Collapse Sidebar (Dock)')}
           >
-            {isSidebarCollapsed ? <ChevronsRight size={12} /> : <ChevronsLeft size={12} />}
+            {isSidebarCollapsed ? <ChevronsRight size={14} aria-hidden="true" /> : <ChevronsLeft size={14} aria-hidden="true" />}
           </button>
 
           {/* Main Interface Router.
@@ -2749,11 +2723,9 @@ export default function App() {
         </>
       )}
 
-      {/* Mobile profile sheet. Rendered here, outside .app-sidebar, on purpose: the
-          sidebar sets backdrop-filter, which makes it a containing block for fixed
-          descendants, so a sheet nested inside it could not anchor to the viewport.
-          Holds everything the desktop sidebar shows around the avatar - profile,
-          language, theme, sign out - so none of it is lost on a phone. */}
+      {/* Phone profile sheet. Rendered here, outside .app-sidebar, so it anchors to the
+          viewport rather than to the fixed bar. Holds everything the desktop rail shows
+          around the avatar - profile, language, theme, tours, sign out. */}
       {isLoggedIn && isMobile && showUserModal && (
         <>
           <div
@@ -2762,101 +2734,21 @@ export default function App() {
             aria-hidden="true"
           />
           <div className="profile-sheet" role="dialog" aria-label={t('Profile and settings')}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(245, 130, 32, 0.15)',
-                border: '1px solid rgba(245, 130, 32, 0.4)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#f58220',
-                fontWeight: 'bold',
-                fontSize: '0.95rem',
-                flexShrink: 0
-              }}>
-                {initialsFor(currentUserFullName || currentUser)}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                  {currentUserFullName || currentUser}
-                </span>
-                <span style={{ fontSize: '0.72rem', color: '#94a3b8', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                  @{currentUser || 'user'} · <span style={{ color: '#f58220', textTransform: 'capitalize' }}>{userRole}</span>
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowUserModal(false)}
-                aria-label={t('Close')}
-                style={{
-                  marginLeft: 'auto', background: 'none', border: 'none', color: '#94a3b8',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  minWidth: '44px', minHeight: '44px', padding: '0', flexShrink: 0
-                }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8' }}>{t('Language')}</span>
-              <LangSwitch lang={lang} onChange={setLang} />
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8' }}>{t('Theme')}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  toggleTheme();
-                }}
-                title={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  minHeight: '44px', padding: '0 14px',
-                  borderRadius: '10px',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer'
-                }}
-              >
-                {theme === 'dark'
-                  ? <><Sun size={16} color="#f58220" /> {t('Light')}</>
-                  : <><Moon size={16} color="#f58220" /> {t('Dark')}</>}
-              </button>
-            </div>
-
-            <TourLaunchers lang={lang} access={access} onStart={startTour} />
-
-            <button
-              onClick={() => {
-                setShowUserModal(false);
-                handleSignOut();
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                width: '100%',
-                minHeight: '44px',
-                backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                color: '#f87171',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '10px',
-                padding: '8px 12px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              <LogOut size={15} /> {lang === 'EN' ? 'Sign Out' : 'Abmelden'}
-            </button>
+            <ProfileMenu
+              t={t}
+              lang={lang}
+              onLangChange={setLang}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              fullName={currentUserFullName}
+              username={currentUser}
+              role={userRole}
+              access={access}
+              onStartTour={startTour}
+              onSignOut={() => { setShowUserModal(false); handleSignOut(); }}
+              onClose={() => setShowUserModal(false)}
+              withSettings
+            />
           </div>
         </>
       )}

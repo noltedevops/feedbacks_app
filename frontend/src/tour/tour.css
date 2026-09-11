@@ -222,31 +222,34 @@ body.light-theme .tour-root {
 .tour-launchers {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-2);
 }
 
+/* The overline step of the scale: 12px spaced caps. */
 .tour-launchers-label {
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
   text-transform: uppercase;
   color: var(--surface-text-muted);
-  margin-bottom: 2px;
 }
 
 .tour-launcher {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   width: 100%;
-  min-height: 36px;
-  padding: 0 10px;
+  min-height: var(--control-h);
+  padding: 0 var(--space-3);
   border: 1px solid var(--surface-border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface-sunken);
   color: var(--surface-text-strong);
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-semibold);
   text-align: left;
   cursor: pointer;
 }
@@ -261,7 +264,7 @@ body.light-theme .tour-root {
 }
 
 .tour-launcher:focus-visible {
-  outline: 2px solid var(--accent-ink);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
