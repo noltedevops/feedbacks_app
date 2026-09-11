@@ -517,6 +517,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     <button
       type="button"
       className="btn-primary"
+      data-tour="dash.report"
       onClick={onGenerateReport}
       title={t('Generate Report')}
       style={isMobile
@@ -577,7 +578,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   );
 
   const statCards = (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? '6px' : '8px', flexShrink: 0 }}>
+    <div data-tour="dash.stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? '6px' : '8px', flexShrink: 0 }}>
       {statCard(t('TOTAL TARGETS'), total, '#f97316', 'rgba(249, 115, 22, 0.12)', 'var(--surface-text)', <Database size={14} />)}
       {statCard(t('INVESTIGATED'), investigated, '#10b981', 'rgba(16, 185, 129, 0.12)', 'rgb(var(--status-found-rgb))', <CheckCircle2 size={14} />)}
       {statCard(t('PENDING'), pending, '#ef4444', 'rgba(239, 68, 68, 0.12)', 'rgb(var(--status-pending-rgb))', <Clock size={14} />)}
@@ -587,7 +588,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
 
   // ---- Chart panels --------------------------------------------------------
   const fundstueckPanel = (
-    <div className="glass-panel" style={panelStyle}>
+    <div className="glass-panel" data-tour="dash.findings" style={panelStyle}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
         <span style={{ ...panelKickerStyle, color: 'var(--accent-ink)' }}>{t('Findings Status')}</span>
         <h3 style={panelTitleStyle}>{t('Grouped Findings (Sorted Low to High)')}</h3>
@@ -648,7 +649,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
 
   // ---- Target log ----------------------------------------------------------
   const logPanel = (
-    <div className="glass-panel" style={{
+    <div className="glass-panel" data-tour="dash.log" style={{
       display: 'flex',
       flexDirection: 'column',
       gap: '8px',
@@ -793,7 +794,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
 
   // ---- Sensor accuracy -----------------------------------------------------
   const accuracyPanel = (
-    <div className="glass-panel" style={panelStyle}>
+    <div className="glass-panel" data-tour="dash.accuracy" style={panelStyle}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
         <span style={{ ...panelKickerStyle, color: 'var(--info-ink)' }}>{t('Sensor Accuracy')}</span>
         <h3 style={panelTitleStyle}>{t('Evaluated vs Excavated Depth')}</h3>
@@ -901,7 +902,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   if (isMobile) {
     return (
       <div className="dashboard-mobile">
-        <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px 12px', borderRadius: '12px' }}>
+        <div className="glass-panel" data-tour="dash.filters" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px 12px', borderRadius: '12px' }}>
           {headerTitle}
 
           {/* Folded by default so the dashboard opens on the stat cards and charts
@@ -975,7 +976,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
         {headerTitle}
 
         {/* Dropdown Selector */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <div data-tour="dash.filters" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {/* Project scope. Narrows every card, chart, the log and the map markers, and
               composes with instrument + status + depth. */}
           <span style={labelStyle}>{t('PROJECT:')}</span>

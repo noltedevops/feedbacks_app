@@ -1,0 +1,287 @@
+/* ============================================================================
+   GUIDED TOUR — spotlight and callout over the live app.
+
+   Colour comes from the theme tokens in index.css, the same as everywhere else.
+   The only values of its own are the scrim and the shadows, which are shades of
+   black and not part of either palette.
+
+   Stacking: above everything the app puts on screen - the rail (10000), its pop-ups
+   (10011), the report and form dialogs (99999) and the photo lightbox (100000) - so a
+   step can point into any of them.
+   ========================================================================== */
+
+.tour-root {
+  --tour-scrim: rgba(2, 6, 23, 0.58);
+  --tour-glide: 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.light-theme .tour-root {
+  --tour-scrim: rgba(15, 23, 42, 0.42);
+}
+
+/* Catches clicks on the steps that only point at something. "Try it" steps leave it
+   out, which is what hands the page back to the user. Transparent: the dimming is
+   the spotlight's job. */
+.tour-blocker {
+  position: fixed;
+  inset: 0;
+  z-index: 100100;
+}
+
+/* The hole is the element itself; the dimming is its shadow spread out over the
+   whole screen. Never takes a click - on a "try it" step the element under it has
+   to be usable. */
+.tour-spot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100101;
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 0 6px rgba(250, 95, 28, 0.18),
+    0 0 0 200vmax var(--tour-scrim);
+  animation: tour-fade 0.2s ease-out;
+}
+
+/* --- Callout ---------------------------------------------------------- */
+
+.tour-pop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100102;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+  padding: 16px 18px 14px;
+  border-radius: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-border);
+  color: var(--surface-text-strong);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.12);
+  outline: none;
+  transition: opacity 0.18s ease-out;
+}
+
+/* Measured before it is shown, so it is laid out but invisible until its step has
+   found its element. */
+.tour-pop[data-shown='false'] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.tour-root[data-glide] .tour-spot {
+  transition: transform var(--tour-glide), width var(--tour-glide), height var(--tour-glide);
+}
+
+.tour-root[data-glide] .tour-pop {
+  transition: top var(--tour-glide), left var(--tour-glide), opacity 0.18s ease-out;
+}
+
+.tour-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -4px -8px 6px 0;
+}
+
+.tour-pop-kicker {
+  font-family: var(--font-heading);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+
+.tour-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--surface-text-muted);
+  cursor: pointer;
+}
+
+.tour-close:hover {
+  background: var(--surface-sunken);
+  color: var(--surface-text-strong);
+}
+
+.tour-pop-content {
+  animation: tour-fade 0.22s ease-out;
+}
+
+.tour-pop-title {
+  margin: 0 0 6px;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--surface-text-strong);
+}
+
+.tour-pop-body {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--surface-text-muted);
+}
+
+.tour-pop-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.tour-dots {
+  display: flex;
+  gap: 5px;
+  min-width: 0;
+}
+
+.tour-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--surface-border);
+  transition: width 0.2s ease-out, background-color 0.2s ease-out;
+}
+
+.tour-dots span.is-done {
+  background: var(--surface-text-muted);
+}
+
+.tour-dots span.is-current {
+  width: 16px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.tour-pop-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tour-btn {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.tour-close:focus-visible,
+.tour-btn:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+/* --- Phone: a sheet above the nav bar --------------------------------- */
+
+.tour-pop--sheet {
+  top: auto;
+  left: 8px;
+  right: 8px;
+  bottom: calc(var(--mobile-nav-total, 70px) + 8px);
+  width: auto;
+  max-width: none;
+  padding: 16px 16px 14px;
+}
+
+/* Docked at the top instead, when that hides less of the element - see dockSheet(). */
+.tour-pop--sheet.tour-pop--top {
+  top: 8px;
+  bottom: auto;
+}
+
+.tour-pop--sheet .tour-btn {
+  min-height: 44px;
+  padding: 0 16px;
+}
+
+.tour-pop--sheet .tour-close {
+  width: 44px;
+  height: 44px;
+  margin: -8px -8px -8px 0;
+}
+
+/* --- Launchers in the profile menu ------------------------------------ */
+
+.tour-launchers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tour-launchers-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--surface-text-muted);
+  margin-bottom: 2px;
+}
+
+.tour-launcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--surface-sunken);
+  color: var(--surface-text-strong);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tour-launcher svg {
+  color: var(--accent-ink);
+  flex-shrink: 0;
+}
+
+.tour-launcher:hover {
+  border-color: var(--accent);
+}
+
+.tour-launcher:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .tour-launcher {
+    min-height: 44px;
+  }
+}
+
+@keyframes tour-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-spot,
+  .tour-pop,
+  .tour-pop-content,
+  .tour-dots span {
+    animation: none;
+    transition: none;
+  }
+}

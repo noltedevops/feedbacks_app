@@ -101,6 +101,7 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
       <div
         onClick={(e) => e.stopPropagation()}
         className="glass-panel"
+        data-tour="report-dialog"
         style={{ width: '100%', maxWidth: '420px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

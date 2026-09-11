@@ -300,28 +300,74 @@ const de: Record<string, string> = {
   'Geophysical surveys produce a list of anomalies - points that might be ordnance. This platform puts that list in front of the people who dig, records what each excavation actually found, and syncs it back to the office.':
     'Geophysikalische Messungen liefern eine Liste von Anomalien – Punkte, die Kampfmittel sein könnten. Diese Plattform bringt diese Liste zu den Menschen, die graben, erfasst, was jeder Aushub tatsächlich ergeben hat, und synchronisiert es zurück ins Büro.',
 
-  'Log what the excavation found': 'Erfassen, was der Aushub ergeben hat',
-  'Browse and filter the targets for your survey area, open a point on the map, and record the excavation: Sohle-Status, Fundstück, actual depth, Länge/Breite/m³, photos and the Trupp & Geräte block.':
-    'Ziele Ihres Messgebiets durchsuchen und filtern, einen Punkt auf der Karte öffnen und den Aushub erfassen: Sohle-Status, Fundstück, tatsächliche Tiefe, Länge/Breite/m³, Fotos und den Block Trupp & Geräte.',
-  'It works with no network - targets are cached on the device and submissions queue locally until a connection returns.':
-    'Funktioniert ohne Netz – Ziele werden auf dem Gerät zwischengespeichert und Eingaben lokal in eine Warteschlange gestellt, bis wieder eine Verbindung besteht.',
-  'Your results sync back to the office when the device is online.':
-    'Ihre Ergebnisse werden ins Büro synchronisiert, sobald das Gerät online ist.',
-  'Open the Field App': 'Feld-App öffnen',
-
-  'Review what the crew brought back': 'Auswerten, was der Trupp zurückgemeldet hat',
-  'Progress, findings breakdown, Sohle split, evaluated-against-excavated depth accuracy and excavated volume, over the whole target set or any slice of it.':
-    'Fortschritt, Fundverteilung, Sohle-Aufteilung, Tiefengenauigkeit bewertet gegen ausgehoben und Aushubvolumen – über den gesamten Zielbestand oder jeden Ausschnitt davon.',
-  'Filter by project, status, instrument or depth, then export the selection as CSV or as the site report PDF.':
-    'Nach Projekt, Status, Instrument oder Tiefe filtern und die Auswahl als CSV oder als Berichts-PDF exportieren.',
-  'Open the Dashboard': 'Dashboard öffnen',
+  'Guided tours': 'Geführte Touren',
+  'Finding a target, the map, the excavation form, offline and sync.':
+    'Ziele finden, die Karte, das Aushubformular, offline und Sync.',
+  'Take the Field App tour': 'Tour durch die Feld-App',
+  'Filtering, the charts, depth accuracy, generating a report.':
+    'Filtern, die Diagramme, die Tiefengenauigkeit, einen Bericht erstellen.',
+  'Take the Dashboard tour': 'Tour durch das Dashboard',
+  'Each tour runs on the live app and takes about a minute. Leave it whenever you like, and take it again from here or from your profile menu.':
+    'Jede Tour läuft in der echten App und dauert etwa eine Minute. Sie können sie jederzeit verlassen und hier oder über Ihr Profilmenü erneut starten.',
 
   'Access': 'Zugriff',
   'Your account has no surface yet': 'Ihr Konto hat noch keinen Bereich',
   'Access is granted per surface by an administrator. Ask for the one you need and they will decide on it.':
     'Der Zugriff wird pro Bereich von einem Administrator vergeben. Fordern Sie den benötigten Bereich an – der Administrator entscheidet darüber.',
   'Request the Field App': 'Feld-App anfordern',
-  'Request the Dashboard': 'Dashboard anfordern'
+  'Request the Dashboard': 'Dashboard anfordern',
+
+  // --- Guided tour ---
+  'Field App tour': 'Feld-App-Tour',
+  'Dashboard tour': 'Dashboard-Tour',
+  'Step {n} of {total}': 'Schritt {n} von {total}',
+  'Close tour': 'Tour schließen',
+  'Back': 'Zurück',
+  'Skip this step': 'Schritt überspringen',
+
+  'Your survey area': 'Ihr Messgebiet',
+  'Which survey area is loaded and how many targets it holds. The list and the map both follow it.':
+    'Welches Messgebiet geladen ist und wie viele Ziele es enthält. Liste und Karte folgen beide dieser Auswahl.',
+  'Find a target': 'Ein Ziel finden',
+  'Search by VM number, or narrow the list by instrument and status. On a phone the filters fold behind the Filter bar.':
+    'Nach VM-Nr. suchen oder die Liste nach Instrument und Status eingrenzen. Auf dem Handy liegen die Filter hinter der Filterleiste.',
+  'The target list': 'Die Zielliste',
+  'Every target in the area with its evaluated depth. Once a target has been dug, its chip shows what was found.':
+    'Jedes Ziel im Gebiet mit seiner errechneten Tiefe. Sobald ein Ziel ausgehoben ist, zeigt sein Chip, was gefunden wurde.',
+  'The map': 'Die Karte',
+  'The same targets in place - red is pending, green is investigated.':
+    'Dieselben Ziele an ihrem Ort – rot ist offen, grün ist untersucht.',
+  'Try it: open a target': 'Ausprobieren: ein Ziel öffnen',
+  'Tap any target in the list or on the map. The tour carries on as soon as its form opens.':
+    'Tippen Sie auf ein beliebiges Ziel in der Liste oder auf der Karte. Die Tour geht weiter, sobald sich sein Formular öffnet.',
+  'Record the excavation': 'Den Aushub erfassen',
+  'Fundstück, Sohle-Status, actual depth, Länge/Breite/m³, photos and the Trupp & Geräte block. Nothing is saved until you press Submit - Cancel goes back to the list.':
+    'Fundstück, Sohle-Status, tatsächliche Tiefe, Länge/Breite/m³, Fotos und der Block Trupp & Geräte. Gespeichert wird erst mit „Absenden“ – „Abbrechen“ führt zurück zur Liste.',
+  'Offline and sync': 'Offline und Sync',
+  'The Field App keeps working with no network. Submissions wait on the device, counted by a badge on Sync - press it once you are back online to send them to the office.':
+    'Die Feld-App arbeitet auch ohne Netz weiter. Eingaben warten auf dem Gerät, gezählt von einem Abzeichen an Sync – tippen Sie darauf, sobald Sie wieder online sind, um sie ans Büro zu senden.',
+
+  'Filter once, everything follows': 'Einmal filtern, alles folgt',
+  'Narrow by project, instrument, depth and status. Every number, chart, the target log and the map follow the selection.':
+    'Nach Projekt, Instrument, Tiefe und Status eingrenzen. Jede Zahl, jedes Diagramm, das Zielprotokoll und die Karte folgen der Auswahl.',
+  'The headline numbers': 'Die Kennzahlen',
+  'Total, investigated and pending targets, and how many survey projects the selection spans.':
+    'Ziele gesamt, untersucht und offen – und wie viele Messprojekte die Auswahl umfasst.',
+  'What was found': 'Was gefunden wurde',
+  'Findings grouped by type. Below it, the Sohle split shows which excavations were left clear.':
+    'Funde nach Art gruppiert. Darunter zeigt die Sohle-Aufteilung, welche Aushübe frei hinterlassen wurden.',
+  'How accurate the survey was': 'Wie genau die Messung war',
+  'Evaluated depth from the sensor against the depth actually excavated, with the mean error, the bias and the share of empty holes.':
+    'Errechnete Tiefe des Sensors gegen die tatsächlich ausgehobene Tiefe, mit mittlerem Fehler, Tendenz und dem Anteil leerer Löcher.',
+  'The target log': 'Das Zielprotokoll',
+  'Every target in the selection. Select one to find it on the map.':
+    'Jedes Ziel der Auswahl. Wählen Sie eines aus, um es auf der Karte zu finden.',
+  'Try it: generate a report': 'Ausprobieren: einen Bericht erstellen',
+  'Open Generate Report. On a phone it is inside the Filter bar.':
+    'Öffnen Sie „Bericht erstellen“. Auf dem Handy liegt es in der Filterleiste.',
+  'Export the selection': 'Die Auswahl exportieren',
+  'Choose a project and, if you like, a date range. Download PDF gives the landscape A4 site report, Download CSV the raw rows.':
+    'Projekt und, wenn gewünscht, einen Zeitraum wählen. „PDF herunterladen“ liefert den Objektbericht im A4-Querformat, „CSV herunterladen“ die Rohdaten.'
 };
 
 export type Translator = (text: string) => string;

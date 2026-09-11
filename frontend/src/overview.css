@@ -1,14 +1,19 @@
 /* ============================================================================
    OVERVIEW — the post-login home page.
 
-   Every colour here comes from the theme tokens in index.css. No hardcoded hex:
-   the components that carried their own hex are exactly what left the app half
-   dark in light mode, and this page is new surface area for that same bug.
+   Content-led: one column, wide margins, large type, and colour used only where
+   it means something (the accent on kickers and on the way into a tour). The
+   panels and glass of the two working surfaces are deliberately absent - this
+   page is a doorway, not a workspace.
+
+   Every colour comes from the theme tokens in index.css. No hardcoded hex: the
+   components that carried their own hex are exactly what left the app half dark
+   in light mode, and this page is new surface area for that same bug.
    ========================================================================== */
 
 /* The desktop shell pins the viewport and scrolls inside panels, so this pane owns
    its own scroller rather than growing the page. On mobile index.css hands the
-   scroll back to the document, and the height cap has to come off with it. */
+   scroll back to the document, and the height cap comes off with it. */
 .overview-main {
   flex-grow: 1;
   min-width: 0;
@@ -20,98 +25,236 @@
 }
 
 .overview-inner {
-  max-width: 880px;
+  max-width: 920px;
   margin: 0 auto;
-  padding: 72px 40px 96px;
-  display: flex;
-  flex-direction: column;
-  gap: 56px;
+  padding: 120px 48px 112px;
 }
 
+/* --- Type ------------------------------------------------------------- */
+
 .overview-kicker {
+  display: block;
   font-family: var(--font-heading);
   font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--accent-ink);
+  margin-bottom: 18px;
 }
 
-.overview-hero {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.overview-title {
+  font-size: 3rem;
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--surface-text-strong);
+  max-width: 17ch;
+  margin-bottom: 28px;
 }
 
-.overview-hero h1 {
-  font-size: 2.25rem;
+.overview-lead {
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: var(--surface-text-muted);
+  max-width: 58ch;
+}
+
+.overview-h2 {
+  font-size: 1.9rem;
   line-height: 1.15;
   font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--surface-text-strong);
-  max-width: 20ch;
+  margin-bottom: 20px;
 }
 
-.overview-hero p {
-  font-size: 1.02rem;
-  line-height: 1.65;
+.overview-copy {
+  font-size: 1rem;
+  line-height: 1.7;
   color: var(--surface-text-muted);
-  max-width: 62ch;
+  max-width: 58ch;
 }
 
-.overview-section {
-  border-top: 1px solid var(--surface-border);
-  padding-top: 40px;
+/* --- Tour entry points ------------------------------------------------ */
+
+.overview-tours {
+  margin-top: 72px;
 }
 
-.overview-section-body {
+/* Two across when the account has both surfaces; one card keeps the same width
+   rather than stretching across the page. */
+.overview-tour-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+/* The whole card is the button: one target, one action. */
+.overview-tour {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 14px;
+  gap: 6px;
+  padding: 24px 24px 22px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--surface-border);
+  background: var(--surface-sunken);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease-out, transform 0.2s ease-out, box-shadow 0.2s ease-out;
 }
 
-.overview-section-body h2 {
-  font-size: 1.5rem;
-  line-height: 1.25;
+.overview-tour:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px -20px rgba(0, 0, 0, 0.5);
+}
+
+.overview-tour:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 3px;
+}
+
+.overview-tour-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-border);
+  color: var(--accent-ink);
+}
+
+.overview-tour-name {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--surface-text-strong);
 }
 
-.overview-section-body p {
-  font-size: 0.95rem;
-  line-height: 1.7;
+.overview-tour-covers {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--surface-text-muted);
+}
+
+.overview-tour-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+
+.overview-tour-go svg {
+  transition: transform 0.2s ease-out;
+}
+
+.overview-tour:hover .overview-tour-go svg {
+  transform: translateX(3px);
+}
+
+.overview-tours-note {
+  margin-top: 20px;
+  font-size: 0.82rem;
+  line-height: 1.55;
   color: var(--surface-text-muted);
   max-width: 62ch;
 }
 
-.overview-section-body .btn-primary,
-.overview-section-body .btn-secondary {
-  margin-top: 10px;
+/* --- No-access block -------------------------------------------------- */
+
+.overview-section {
+  margin-top: 72px;
+  padding-top: 56px;
+  border-top: 1px solid var(--surface-border);
 }
 
 .overview-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 4px;
+  margin-top: 28px;
 }
 
-/* --- Tablet ----------------------------------------------------------- */
+/* --- Motion ----------------------------------------------------------- */
+
+/* Scoped to .js-reveal, which the component adds itself: if the script does not run,
+   the selector never matches and the content is simply visible. An animation is not
+   allowed to be the reason a page is blank - the component carries a timer for the
+   same reason, since a throttled tab produces no frames and never fires the
+   observer. */
+.overview-main.js-reveal .reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.overview-main.js-reveal .reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.overview-main.js-reveal .overview-tours.reveal {
+  transition-delay: 0.08s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overview-main.js-reveal .reveal,
+  .overview-main.js-reveal .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .overview-tour,
+  .overview-tour:hover,
+  .overview-tour-go svg,
+  .overview-tour:hover .overview-tour-go svg {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* --- Tablet (769-1024) ------------------------------------------------ */
 @media (max-width: 1024px) {
   .overview-inner {
-    padding: 56px 32px 80px;
-    gap: 48px;
+    padding: 88px 40px 96px;
   }
 
-  .overview-hero h1 {
-    font-size: 2rem;
+  .overview-title {
+    font-size: 2.4rem;
+    max-width: 20ch;
+  }
+
+  .overview-lead {
+    font-size: 1.05rem;
+  }
+
+  .overview-h2 {
+    font-size: 1.6rem;
+  }
+
+  .overview-tours,
+  .overview-section {
+    margin-top: 56px;
   }
 }
 
-/* --- Phone ------------------------------------------------------------ */
+/* --- Phone (<=768) ---------------------------------------------------- */
 @media (max-width: 768px) {
-  /* The document scrolls on a phone; a 100vh pane with its own scroller would
-     trap the page inside it and fight the bottom nav bar. */
+  /* The document scrolls on a phone; a 100vh pane with its own scroller would trap
+     the page inside it and fight the fixed bottom nav bar. */
   .overview-main {
     height: auto;
     min-height: auto;
@@ -119,31 +262,43 @@
   }
 
   .overview-inner {
-    padding: 32px 20px calc(var(--mobile-nav-total) + 32px);
-    gap: 36px;
+    padding: 48px 20px calc(var(--mobile-nav-total) + 40px);
   }
 
-  .overview-hero h1 {
-    font-size: 1.65rem;
+  .overview-title {
+    font-size: 1.85rem;
+    letter-spacing: -0.02em;
     max-width: none;
+    margin-bottom: 20px;
   }
 
-  .overview-hero p {
-    font-size: 0.95rem;
+  .overview-lead {
+    font-size: 0.98rem;
+  }
+
+  .overview-h2 {
+    font-size: 1.4rem;
+  }
+
+  .overview-tours {
+    margin-top: 40px;
+  }
+
+  .overview-tour-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .overview-tour {
+    padding: 20px 20px 18px;
   }
 
   .overview-section {
-    padding-top: 32px;
+    margin-top: 48px;
+    padding-top: 40px;
   }
 
-  .overview-section-body h2 {
-    font-size: 1.25rem;
-  }
-
-  /* Full-width targets: a 44px row is the touch minimum, and a centred label
-     reads better than one hugging the left edge of a full-bleed button. */
-  .overview-section-body .btn-primary,
-  .overview-section-body .btn-secondary,
+  /* Full-width targets: 44px is the touch minimum. */
   .overview-actions .btn-secondary {
     width: 100%;
     min-height: 44px;

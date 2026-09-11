@@ -479,15 +479,50 @@ select.form-input--compact option {
   height: 100%;
 }
 
+/* The logo is a button: it is the way to the Overview. The button chrome is reset so
+   it still reads as the mark it always was. */
 .sidebar-logo {
   width: 46px;
   height: 46px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(249, 115, 22, 0.18) 0%, rgba(249, 115, 22, 0.02) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 24px;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.sidebar-logo img {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
+.sidebar-logo:hover {
+  transform: scale(1.06);
+}
+
+/* On the Overview: the rail has no active item there, so the mark carries it. */
+.sidebar-logo.active {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.sidebar-logo:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-logo,
+  .sidebar-logo:hover {
+    transition: none;
+    transform: none;
+  }
 }
 
 .sidebar-logo-inner {
@@ -1501,12 +1536,17 @@ body.light-theme .lang-switch-option.active {
     overflow: hidden;
   }
 
-  /* !important + margin reset: the logo carries an inline display:flex, so without
-     these it kept a 46px slot and its 24px bottom margin in the bar - which is what
-     pushed the bar to 83px and squeezed the trailing group toward the edge. */
+  /* The logo stays in the bar: it is the only way to the Overview, on a phone as on
+     a desktop. Icon-sized, and without the 24px bottom margin, which in a row would
+     push the bar to 83px and squeeze the trailing group toward the edge. */
   .sidebar-logo {
-    display: none !important;
-    margin-bottom: 0 !important;
+    width: 38px;
+    height: 38px;
+    margin-bottom: 0;
+  }
+
+  .sidebar-logo img {
+    height: 26px;
   }
 
   .sidebar-menu {
@@ -1534,21 +1574,6 @@ body.light-theme .lang-switch-option.active {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  /* Five nav items for most accounts, seven for an admin, sharing ~305px. Nothing
-     overflows - the items flex down - but at seven the labels ellipsize, and
-     Overview is the one that can afford to lose its own: it is the landing view, it
-     is the only home-shaped glyph in the bar, and giving up its label and its equal
-     share of the width hands both back to labels an icon cannot stand in for. */
-  .sidebar-item--overview {
-    flex: 0 0 auto;
-    width: 38px;
-    max-width: 38px;
-  }
-
-  .sidebar-item--overview .sidebar-item-label {
-    display: none;
   }
 
   .sidebar-item-badge {

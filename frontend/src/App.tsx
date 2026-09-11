@@ -7,6 +7,9 @@ import { ImportExport } from './components/ImportExport';
 import { ReportDialog, type ProjectOption } from './components/ReportDialog';
 import { FilterBar } from './components/FilterBar';
 import { Overview } from './components/Overview';
+import { TourHost } from './tour/TourHost';
+import { TourLaunchers } from './tour/TourLaunchers';
+import type { TourId } from './tour/steps';
 import { makeT, type AppLang } from './i18n';
 import { useIsMobile } from './useIsMobile';
 import { 
@@ -32,8 +35,7 @@ import {
   Lock,
   ShieldCheck,
   Users,
-  Menu,
-  LayoutGrid
+  Menu
 } from 'lucide-react';
 import {
   authFetch, getAccess, setSession, clearSession, NO_ACCESS,
@@ -287,6 +289,11 @@ export default function App() {
   // The surface the user asked for. What actually renders is `view` below, which
   // re-checks it against the access flags.
   const [requestedView, setRequestedView] = useState<AppView>('overview');
+  // The guided tour running over a surface, if any. Started only by a click - from the
+  // Overview or the profile menu - never automatically.
+  const [tour, setTour] = useState<TourId | null>(null);
+  // Keys the tour, so starting one again - even the same one - begins at step one.
+  const [tourRun, setTourRun] = useState(0);
   // What this account may open. Mirrored from the server; the server re-checks.
   const [access, setAccess] = useState<Access>(NO_ACCESS);
   // Surface the user tried to open without permission -> drives the request dialog.
@@ -1036,6 +1043,17 @@ export default function App() {
     }
   };
 
+  // Opens the surface and runs its tour over it. A locked surface gets openSurface's
+  // request dialog and no tour - though neither entry point offers one.
+  const startTour = (surface: Surface) => {
+    setShowUserModal(false);
+    openSurface(surface);
+    if (surface === 'field' ? access.can_field : access.can_dashboard) {
+      setTour(surface);
+      setTourRun(n => n + 1);
+    }
+  };
+
   const submitPermissionRequest = async () => {
     if (!permissionPrompt) return;
     setPermissionSending(true);
@@ -1220,6 +1238,7 @@ export default function App() {
     // started on the previous one's surface and wearing their role label.
     localStorage.removeItem(VIEW_KEY);
     setRequestedView('overview');
+    setTour(null);
     setUserRole('collector');
     setIsLoggedIn(false);
     setSelectedPoint(null);
@@ -2067,28 +2086,22 @@ export default function App() {
           <aside className={`app-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`} style={{ transition: 'width 0.2s, padding 0.2s, border-right 0.2s, opacity 0.2s' }}>
             <div className="sidebar-top" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', opacity: isSidebarCollapsed ? 0 : 1, transition: 'opacity 0.15s' }}>
               
-              {/* Top Sidebar: Original Nolte Logo Image */}
-              <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 0' }}>
-                <img 
-                  src="/logo.png" 
-                  alt="Nolte Logo" 
-                  style={{ height: '36px', width: 'auto', objectFit: 'contain' }} 
-                />
-              </div>
+              {/* The logo is the way to the Overview - there is no nav item for it. Never
+                  locked: the overview needs no permission and calls no API. */}
+              <button
+                type="button"
+                className={`sidebar-logo${view === 'overview' ? ' active' : ''}`}
+                onClick={() => changeView('overview')}
+                aria-label={t('Overview')}
+                aria-current={view === 'overview' ? 'page' : undefined}
+                title={t('Overview')}
+              >
+                <img src="/logo.png" alt="" />
+              </button>
 
               {/* Navigation Menu */}
               <nav className="sidebar-menu">
-                {/* Never locked: the overview needs no permission and calls no API. */}
                 <button
-                  className={`sidebar-item sidebar-item--overview ${view === 'overview' ? 'active' : ''}`}
-                  onClick={() => changeView('overview')}
-                  title={t('Overview')}
-                >
-                  <LayoutGrid size={20} />
-                  <span className="sidebar-item-label">{t('Overview')}</span>
-                </button>
-
-                <button 
                   className={`sidebar-item ${view === 'field' && activeTab === 'map' ? 'active' : ''} ${access.can_field ? '' : 'locked'}`}
                   onClick={() => openSurface('field')}
                   title={access.can_field ? t('Field App') : t('Field App - permission required')}
@@ -2138,8 +2151,9 @@ export default function App() {
                   </button>
                 )}
 
-                <button 
+                <button
                   className="sidebar-item"
+                  data-tour="field.sync"
                   onClick={() => handleSync()}
                   disabled={syncing}
                   title={t('Sync Data')}
@@ -2244,6 +2258,8 @@ export default function App() {
                     </div>
 
                     <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.08)', margin: '2px 0' }}></div>
+
+                    <TourLaunchers lang={lang} access={access} onStart={startTour} />
 
                     <button
                       onClick={() => {
@@ -2376,7 +2392,7 @@ export default function App() {
                     {/* Survey Details Header (Screenshot Match). On mobile the project
                         picker and the CSV export move into the folded filter bar below -
                         they are not what the crew reaches for first in the field. */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div data-tour="field.area" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgb(var(--status-found-rgb))', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                         {t('Active Survey Area')}
                       </span>
@@ -2400,7 +2416,7 @@ export default function App() {
                     {activeTab === 'map' ? (
                       <>
                         {/* Filters Panel */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div data-tour="field.filters" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           
                           {/* Search bar */}
                           <div className="select-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -2439,7 +2455,7 @@ export default function App() {
                         </div>
 
                         {/* List coordinates */}
-                        <div className="collector-list-wrap" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden' }}>
+                        <div className="collector-list-wrap" data-tour="field.list" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--surface-text-muted)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>{t('TARGET LISTING')} ({filteredPoints.length})</span>
                             {/* On mobile the status filter lives in the folded bar with the rest. */}
@@ -2622,7 +2638,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="collector-map-wrap" style={{ height: '100%', width: '100%' }}>
+                <div className="collector-map-wrap" data-tour="field.map" style={{ height: '100%', width: '100%' }}>
                   <FieldMap
                     lang={lang}
                     points={filteredPoints}
@@ -2715,11 +2731,12 @@ export default function App() {
 
           ) : (
 
-            // POST-LOGIN HOME: orientation, and the way in to the surfaces this
+            // POST-LOGIN HOME: orientation, and a guided tour of each surface this
             // account may actually open.
             <Overview
               lang={lang}
               access={access}
+              onStartTour={startTour}
               onOpenSurface={openSurface}
             />
 
@@ -2811,6 +2828,8 @@ export default function App() {
               </button>
             </div>
 
+            <TourLaunchers lang={lang} access={access} onStart={startTour} />
+
             <button
               onClick={() => {
                 setShowUserModal(false);
@@ -2837,6 +2856,18 @@ export default function App() {
             </button>
           </div>
         </>
+      )}
+
+      {/* Guided tour over the live surface. Ends by itself if that surface leaves the
+          screen, so nothing here has to remember to stop it. */}
+      {isLoggedIn && tour && (
+        <TourHost
+          key={`${tour}-${tourRun}`}
+          tour={tour}
+          lang={lang}
+          onScreen={view === tour}
+          onClose={() => setTour(null)}
+        />
       )}
 
       {/* Floating Action Notifications */}

@@ -322,7 +322,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const computedVolume = (lVal * bVal * tVal).toFixed(3);
 
   return (
-    <div className="feedback-form-root" style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%', overflowY: 'auto', paddingRight: '4px' }}>
+    <div className="feedback-form-root" data-tour="field.form" style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%', overflowY: 'auto', paddingRight: '4px' }}>
 
       {/* Header Title without Logo */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px', flexShrink: 0 }}>
