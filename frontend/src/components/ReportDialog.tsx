@@ -81,7 +81,7 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
     }
   };
 
-  const label: React.CSSProperties = { fontSize: '0.68rem', color: '#8c9f96', fontWeight: 700, display: 'block', marginBottom: '4px' };
+  const label: React.CSSProperties = { fontSize: '0.68rem', color: 'var(--surface-text-muted)', fontWeight: 700, display: 'block', marginBottom: '4px' };
   // Height and font only; the vertical padding is dropped by .form-input--compact, which
   // .form-input would otherwise apply on top of this height and clip the text.
   const field: React.CSSProperties = { fontSize: '0.75rem', height: '32px', width: '100%', boxSizing: 'border-box' };
@@ -104,10 +104,10 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
         style={{ width: '100%', maxWidth: '420px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, fontSize: '0.95rem', color: '#f1f5f9', fontWeight: 700 }}>
+          <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--surface-text-strong)', fontWeight: 700 }}>
             {title || t('Generate Report')}
           </h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--surface-text-muted)', cursor: 'pointer', display: 'flex' }}>
             <X size={18} />
           </button>
         </div>
@@ -142,14 +142,14 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
           </div>
         </div>
 
-        <span style={{ fontSize: '0.65rem', color: '#64748b' }}>
+        <span style={{ fontSize: '0.65rem', color: 'var(--surface-text-muted)' }}>
           {t('Leave dates empty to include the whole period.')}
         </span>
 
         {rangeInvalid && (
-          <span style={{ fontSize: '0.68rem', color: '#ef4444' }}>{t('The start date must be before the end date.')}</span>
+          <span style={{ fontSize: '0.68rem', color: 'var(--danger-ink)' }}>{t('The start date must be before the end date.')}</span>
         )}
-        {error && <span style={{ fontSize: '0.68rem', color: '#ef4444' }}>{error}</span>}
+        {error && <span style={{ fontSize: '0.68rem', color: 'var(--danger-ink)' }}>{error}</span>}
 
         <div style={{ display: 'flex', gap: '8px' }}>
           {allowPdf && (

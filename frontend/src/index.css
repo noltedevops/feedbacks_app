@@ -342,6 +342,9 @@ h1, h2, h3, h4, h5, h6 {
   /* The dashboard's panel kickers are colour-coded per panel. Same rule as the accent:
    * the dark theme's bright hue, darkened where it has to sit on white. */
   --info-ink: #38bdf8;
+  /* Error text. Same rule again: red-500 reads on the dark surface but is 3.52:1 on the
+   * light one, and red-700 is what clears AA there. */
+  --danger-ink: #f87171;
   /* Chart gridlines. Was a hardcoded rgba(255,255,255,0.04) passed to CartesianGrid,
    * which on a white light-theme panel is white on white - the charts had no grid at
    * all in light mode, at a measured contrast of 1.00. */
@@ -378,6 +381,7 @@ body.light-theme {
 
   --accent-ink: #c2410c;
   --info-ink: #0369a1;
+  --danger-ink: #b91c1c;
   --chart-grid: rgba(15, 23, 42, 0.12);
 }
 
