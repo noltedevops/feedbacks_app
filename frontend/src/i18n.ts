@@ -57,7 +57,7 @@ const de: Record<string, string> = {
   'Basemap switcher': 'Kartenhintergrund wechseln',
   'Add Data Layer': 'Datenebene hinzufügen',
   'Basemap': 'Kartengrundlage',
-  'Dark Canvas': 'Dunkle Karte',
+  'Canvas': 'Grundkarte',
   'OSM Streets': 'OSM Straßen',
   'Satellite Map': 'Satellitenkarte',
   'Map Legend': 'Kartenlegende',

@@ -1,15 +1,18 @@
 // Bumped from v1: that cache exists on installed devices but is empty, because the
 // install below never completed. Renaming lets the activate handler drop it.
-const CACHE_NAME = 'uxo-tracker-v3';
+// v4: the Google Fonts stylesheet left the precache when Montserrat moved into the
+// bundle, and the rename is what drops the copy v3 holds on installed devices.
+const CACHE_NAME = 'uxo-tracker-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
   // index.html has always shipped an SVG favicon; there has never been a
   // favicon.ico in this repo. The .ico path was inherited boilerplate.
-  '/favicon.svg',
-  'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap'
+  '/favicon.svg'
 ];
+// The typeface is not listed: it is a hashed same-origin asset from the bundle, so the
+// fetch handler below caches it on first use like the rest of the build.
 
 // Install Service Worker and cache core static shell.
 //
@@ -20,9 +23,8 @@ const ASSETS_TO_CACHE = [
 // register() still resolved and logged success in the page.
 //
 // Caching each asset individually keeps one unreachable URL from costing more than
-// that asset. That matters beyond the favicon: the font stylesheet is cross-origin,
-// so a crew installing the app somewhere with no signal would otherwise end up with
-// no offline shell at all - the exact situation this app exists for.
+// that asset, so a crew installing the app somewhere with patchy signal still ends up
+// with an offline shell - the exact situation this app exists for.
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {

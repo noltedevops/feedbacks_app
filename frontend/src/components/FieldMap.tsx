@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { type LocalPoint, getResolvedStatus } from '../db/indexedDb';
 import { Layers, FolderPlus, Home, ChevronLeft, ChevronRight, Download, X, Check } from 'lucide-react';
 import { makeT, type AppLang, type Translator } from '../i18n';
+import { useTheme } from '../useTheme';
 
 interface FieldMapProps {
   lang: AppLang;
@@ -271,16 +272,29 @@ const MapResizeHandler: React.FC = () => {
 // only the pixels showed it - and has said the raster service is being retired in
 // favour of vector tiles, so a key would only have bought time.
 //
-// The replacement is Esri's Dark Gray Canvas rather than a vector basemap. Vector was
-// tried first and lost: MapLibre needs a WebGL context plus a separately bundled web
-// worker, and when that worker 404s the map still initialises, still paints its
-// background, and renders nothing else - a black rectangle with no error thrown. On a
-// field app that runs on whatever tablet a crew owns, a basemap that can fail silently
-// and invisibly is worse than one that is merely coarse.
+// The replacement is Esri's Canvas rather than a vector basemap. Vector was tried first
+// and lost: MapLibre needs a WebGL context plus a separately bundled web worker, and
+// when that worker 404s the map still initialises, still paints its background, and
+// renders nothing else - a black rectangle with no error thrown. On a field app that
+// runs on whatever tablet a crew owns, a basemap that can fail silently and invisibly
+// is worse than one that is merely coarse.
+//
+// The canvas follows the theme: Esri's Light Gray Canvas under the light theme, its
+// Dark Gray Canvas under the dark one. Same keyless service family on the same host,
+// so the theme switch adds no provider. Only this entry varies - streets and satellite
+// are photographs of the world and look the same whatever the chrome around them.
+const CANVAS_LIGHT = {
+  url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+  labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+  // Drawn for this canvas as-is, so no filter on either layer.
+  className: undefined,
+  labelsClassName: undefined
+};
+
 const BASEMAPS = {
-  dark: {
+  canvas: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-    // Esri splits the dark canvas in two: geometry in the base service above, and every
+    // Esri splits the canvas in two: geometry in the base service above, and every
     // place and street name in this separate transparent overlay. dark_all carried its
     // labels inline, so without this second layer the map loses every name on it.
     labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
@@ -319,18 +333,24 @@ type BasemapKey = keyof typeof BASEMAPS;
 // Order the switcher lists them in. Separate from BASEMAPS so the tile configuration
 // above stays about tiles, and so the labels sit next to each other for translation.
 const BASEMAP_OPTIONS: { key: BasemapKey; label: string }[] = [
-  { key: 'dark', label: 'Dark Canvas' },
+  { key: 'canvas', label: 'Canvas' },
   { key: 'streets', label: 'OSM Streets' },
   { key: 'satellite', label: 'Satellite Map' }
 ];
 
 const BasemapLayer: React.FC<{ basemap: BasemapKey }> = ({ basemap }) => {
-  const config = BASEMAPS[basemap];
+  const theme = useTheme();
+  const config = basemap === 'canvas' && theme === 'light'
+    ? { ...BASEMAPS.canvas, ...CANVAS_LIGHT }
+    : BASEMAPS[basemap];
   const labelsUrl = 'labelsUrl' in config ? config.labelsUrl : undefined;
 
+  // Keyed by theme: Leaflet applies a tile layer's className once, at creation, so a
+  // theme switch has to build the layers afresh to drop or add the dark filter.
   return (
     <>
       <TileLayer
+        key={`base-${theme}`}
         attribution={config.attribution}
         url={config.url}
         maxZoom={22}
@@ -339,6 +359,7 @@ const BasemapLayer: React.FC<{ basemap: BasemapKey }> = ({ basemap }) => {
       />
       {labelsUrl && (
         <TileLayer
+          key={`labels-${theme}`}
           url={labelsUrl}
           maxZoom={22}
           maxNativeZoom={config.maxNativeZoom}
@@ -598,7 +619,7 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
   isMobile = false
 }) => {
   const t = makeT(lang);
-  const [activeBasemap, setActiveBasemap] = useState<BasemapKey>('dark');
+  const [activeBasemap, setActiveBasemap] = useState<BasemapKey>('canvas');
   const [basemapOpen, setBasemapOpen] = useState(false);
   // An open popup is a *request*, not a mirror of the selection.
   //
