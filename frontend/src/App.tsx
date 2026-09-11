@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import { db, type LocalPoint, type PendingFeedback, type TeamsTools } from './db/indexedDb';
 import { FieldMap } from './components/FieldMap';
 import { Dashboard, matchesDepthBucket } from './components/Dashboard';
@@ -316,8 +316,10 @@ export default function App() {
   const [pwError, setPwError] = useState('');
   const [pwSaving, setPwSaving] = useState(false);
   
-  // Theme States
-  const [theme, setTheme] = useState<'dark' | 'light'>((localStorage.getItem('theme') as any) || 'dark');
+  // Theme States. Light is the default identity; dark is kept for anyone who chose it.
+  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
+    localStorage.getItem('theme') === 'dark' ? 'dark' : 'light'
+  );
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Narrow screens reflow both surfaces into a single scrolling column. Everything a
@@ -325,12 +327,13 @@ export default function App() {
   // chiefly moving the dashboard map out of its background layer and into the flow.
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    if (theme === 'light') {
-      document.body.classList.add('light-theme');
-    } else {
-      document.body.classList.remove('light-theme');
-    }
+  // The tokens key off body.dark-theme. body.light-theme is still set for the
+  // per-surface overrides written against it, and goes when the last of those does.
+  // A layout effect so the class is on before the first paint: light is the default
+  // now, and a dark user would otherwise see one frame of it on every load.
+  useLayoutEffect(() => {
+    document.body.classList.toggle('dark-theme', theme === 'dark');
+    document.body.classList.toggle('light-theme', theme === 'light');
   }, [theme]);
 
   // Three controls now flip the theme - the rail, the mobile sheet and the landing

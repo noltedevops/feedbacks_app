@@ -1,46 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-
+/* The design system lives in tokens.css, imported ahead of this file.
+ *
+ * Legacy names. Rules and components written before the tokens still read these;
+ * each one now resolves to the token that replaced it, and each goes as the surface
+ * sweeps retire its last reader. New code uses the tokens directly. */
 :root {
-  /* Fonts */
-  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --primary: 46 100% 45%;           /* the brand gold #e4af00, as an hsl triple */
+  --primary-hover: 46 100% 40%;
 
-  /* HSL Colors - Safety/Geophysics Theme (Forest Green) */
-  --primary: 24 95% 53%;         /* Safety Orange (#f97316) */
-  --primary-hover: 24 95% 45%;
-  --primary-light: 24 95% 96%;
-  
-  --bg-dark: 163 37% 7%;          /* Deep Forest Green (#081411) */
-  --card-dark: 163 37% 12%;       /* Sleek Card Green (#0f241f) */
-  --border-dark: 163 30% 18%;     /* Subtle green border (#17372f) */
-  
-  --bg-light: 210 40% 98%;        /* Soft clean grey */
-  --card-light: 0 0% 100%;        /* Pure white */
-  --border-light: 214 32% 91%;
-  
-  /* Status Colors */
-  --status-unvisited: 215 16% 47%; /* Slate-Grey (#64748b) */
-  --status-clear: 142 70% 45%;     /* Emerald-Green (#10b981) */
-  --status-scrap: 35 92% 47%;      /* Gold-Amber (#f59e0b) */
-  --status-uxo: 0 84% 60%;         /* Hazard-Red (#ef4444) */
-  --status-alarm: 262 83% 58%;     /* False Alarm Violet (#8b5cf6) */
+  --shadow-sm: var(--shadow-panel);
+  --shadow-md: var(--shadow-float);
+  --shadow-lg: var(--shadow-float);
+  --shadow-glass: var(--shadow-float);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
-
-  /* Radius */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
-  --radius-full: 9999px;
-
-  /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius-panel);
+  --radius-xl: var(--radius-panel);
+  --radius-full: var(--radius-pill);
 }
 
 /* Base resets & Theme mapping */
@@ -52,8 +28,11 @@
 
 body {
   font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-regular);
   background-color: var(--app-bg);
-  color: #f1f5f9;
+  color: var(--surface-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
@@ -61,10 +40,18 @@ body {
   width: 100vw;
 }
 
+/* Headings default to the heading step of the scale; a surface picks another step
+   by class, never by an ad-hoc size. Tracking stays at the face's own - Montserrat
+   is already wide, and the brand sets its headlines without tightening. */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+/* Figures line up in columns everywhere a number is compared with another. */
+.num {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Custom Scrollbars */
@@ -273,121 +260,9 @@ h1, h2, h3, h4, h5, h6 {
   color: #4b5563;
 }
 
-/* Native controls render light-mode by default, which is what made the selected value in
-   a closed <select> and the date picker's calendar glyph dark-on-dark. Declaring the
-   scheme lets the browser paint them for a dark surface. */
-:root {
-  color-scheme: dark;
-}
-
-/* Theme tokens.
- *
- * The --*-dark / --*-light pairs above are raw palette entries: both exist at once
- * and neither changes when the theme does, so every themed surface had to be written
- * out a second time as a `body.light-theme .foo` override. That works for anything
- * styled by a class, and not at all for the inline styles the React components set -
- * a stylesheet cannot reach those, which is why chart tooltips and the map widgets
- * stayed dark in light mode however many override rules were added.
- *
- * These tokens are the missing layer: one name per role, resolved differently under
- * body.light-theme. Because custom properties inherit through the DOM, an inline
- * style can read them - `backgroundColor: 'var(--surface)'` follows the theme with no
- * `theme` prop threaded through the component tree. Same switch as before, still the
- * body class; components can just see it now.
- */
-:root {
-  --surface: hsl(var(--card-dark));
-  --surface-raised: hsl(163 37% 16%);
-  --surface-sunken: rgba(255, 255, 255, 0.04);
-  --surface-border: hsl(var(--border-dark));
-  --surface-text: #e2e8f0;
-  --surface-text-muted: #94a3b8;
-  --surface-text-strong: #f8fafc;
-
-  /* Floating chrome over the map: toolbar, legend, basemap switcher. Kept separate
-   * from --surface because it sits on imagery and needs to stay legible over it. */
-  --overlay: rgba(17, 24, 39, 0.95);
-  --overlay-border: rgba(255, 255, 255, 0.1);
-  --overlay-text: #e2e8f0;
-  /* Ink used for hover washes on overlay chrome: light on the dark overlay, dark on
-   * the light one, so one rule serves both. */
-  --overlay-hover-rgb: 255 255 255;
-
-  /* Status colour, as rgb triples so one token drives the ink, its tint and its
-   * hairline - `rgb(var(--x) / 0.12)` rather than three hexes per state. Space-separated
-   * rgb with slash alpha is the modern spelling but an old one: Chrome 65, Safari 12.1.
-   * `color-mix` would read better and is not usable here, the build floor is Chrome 87.
-   *
-   * These are the same hues as the map legend and the markers. A legend dot only has to
-   * be identifiable so it keeps one value in both themes; a word has to be readable, and
-   * emerald-500 on white is about 2:1, so the light theme darkens each hue rather than
-   * changing it. Same green, same red, still recognisably the legend's pair. */
-  /* The page ground behind the panels. .app-container paints a full-viewport layer
-   * over body, and it had hsl(var(--bg-dark)) hardcoded with no light-theme override,
-   * so light mode kept the dark green ground under its light panels. The contrast
-   * audit could not see it: it measured text against its backdrop, and the text on
-   * that ground was legible - it was the ground itself that was wrong. */
-  --app-bg: hsl(var(--bg-dark));
-
-  --status-found-rgb: 16 185 129;
-  --status-pending-rgb: 248 113 113;
-  --status-empty-rgb: 148 163 184;
-  --status-scrap-rgb: 251 191 36;
-  --status-alarm-rgb: 167 139 250;
-
-  --accent: #fa5f1c;
-  /* The accent as *text*. --accent is a fill and stays put; this darkens on white,
-   * where #fa5f1c is about 3:1 and orange-700 is 4.8:1. */
-  --accent-ink: #fa5f1c;
-  /* The dashboard's panel kickers are colour-coded per panel. Same rule as the accent:
-   * the dark theme's bright hue, darkened where it has to sit on white. */
-  --info-ink: #38bdf8;
-  /* Error text. Same rule again: red-500 reads on the dark surface but is 3.52:1 on the
-   * light one, and red-700 is what clears AA there. */
-  --danger-ink: #f87171;
-  /* Chart gridlines. Was a hardcoded rgba(255,255,255,0.04) passed to CartesianGrid,
-   * which on a white light-theme panel is white on white - the charts had no grid at
-   * all in light mode, at a measured contrast of 1.00. */
-  --chart-grid: rgba(255, 255, 255, 0.07);
-}
-
-body.light-theme {
-  --surface: hsl(var(--card-light));
-  --surface-raised: #ffffff;
-  --surface-sunken: rgba(15, 23, 42, 0.04);
-  --surface-border: hsl(var(--border-light));
-  --surface-text: #0f172a;
-  /* slate-600, not slate-500. On the light panel surface #64748b measured 4.30:1 -
-   * just under AA - which is what left the panel's small labels washed out once the
-   * blanket override that had been repainting them was removed. */
-  --surface-text-muted: #475569;
-  --surface-text-strong: #020617;
-
-  --overlay: rgba(255, 255, 255, 0.97);
-  --overlay-border: rgba(15, 23, 42, 0.12);
-  --overlay-text: #0f172a;
-  --overlay-hover-rgb: 15 23 42;
-
-  /* slate-100 rather than the slate-50 body used before. The panels sitting on this
-   * are white, so the ground has to be a shade below them to read as a ground at all. */
-  --app-bg: #f1f5f9;
-
-  /* Same hues, darkened for white: each clears 4.5:1 on a white card. */
-  --status-found-rgb: 4 120 87;
-  --status-pending-rgb: 185 28 28;
-  --status-empty-rgb: 71 85 105;
-  --status-scrap-rgb: 180 83 9;
-  --status-alarm-rgb: 109 40 217;
-
-  --accent-ink: #c2410c;
-  --info-ink: #0369a1;
-  --danger-ink: #b91c1c;
-  --chart-grid: rgba(15, 23, 42, 0.12);
-}
-
-body.light-theme {
-  color-scheme: light;
-}
+/* Theme tokens and color-scheme live in tokens.css: one name per role, light on :root,
+ * dark under body.dark-theme. Inline styles read them through var() and follow the
+ * theme with no prop threaded through the tree. */
 
 /* A <select> paints its closed value with the element's own color, not the option's, so
    both have to be set: the first for the collapsed control, the second for the open list

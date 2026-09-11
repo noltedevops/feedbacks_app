@@ -1,0 +1,202 @@
+/* ============================================================================
+   DESIGN TOKENS — the NOLTE design system.
+
+   Every colour, size, space, radius and shadow in the app comes from here. A
+   component that needs a value this file does not have gets a token added here,
+   never a literal at the call site: hardcoded colour is what caused this
+   project's whole class of theme bugs, one surface at a time.
+
+   Source: nolteservices.com, measured - Montserrat, white and black grounds, the
+   gold #e4af00 as the one accent, the logo yellow #fece07 as a 3px rule. Adapted
+   where the site's own pairings fail WCAG AA: gold is never text on a light
+   ground (2.01:1 on white), and the gold button carries near-black text (9.15:1)
+   rather than the site's white (2.01:1).
+
+   Light is the default and lives on :root. Dark is body.dark-theme. Every pair
+   below was measured against every ground it can sit on; the ratios are noted
+   where a value was chosen for them.
+   ========================================================================== */
+
+:root {
+  /* --- Type ------------------------------------------------------------- */
+
+  /* Self-hosted (@fontsource-variable/montserrat, imported in main.tsx), so the
+     face is in the bundle and works with no network - a field app cannot depend
+     on a font CDN. */
+  --font-sans: 'Montserrat Variable', 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-body: var(--font-sans);
+
+  /* One scale. 12px is the floor: nothing in the app renders smaller. */
+  --text-display: 2.5rem;    --lh-display: 3rem;       /* 40/48  Overview hero */
+  --text-title: 1.375rem;    --lh-title: 1.875rem;     /* 22/30  surface headers */
+  --text-heading: 1.125rem;  --lh-heading: 1.625rem;   /* 18/26  panel and dialog titles */
+  --text-body-lg: 1rem;      --lh-body-lg: 1.5rem;     /* 16/24  reading copy */
+  --text-body: 0.875rem;     --lh-body: 1.25rem;       /* 14/20  default UI text */
+  --text-label: 0.8125rem;   --lh-label: 1.125rem;     /* 13/18  labels, list metadata */
+  --text-caption: 0.75rem;   --lh-caption: 1rem;       /* 12/16  axes, legends, timestamps */
+  --text-overline: 0.75rem;  --lh-overline: 1rem;      /* 12/16  spaced caps kicker */
+  --text-button: 0.8125rem;  --lh-button: 1rem;        /* 13/16 */
+  --text-stat: 1.5rem;       --lh-stat: 1.75rem;       /* 24/28  headline numbers */
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* The brand's spaced capitals. */
+  --tracking-overline: 0.1em;
+  --tracking-button: 0.06em;
+  --tracking-display: -0.02em;
+
+  /* --- Space: a 4px base, and only these steps ------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --gutter: var(--space-5);          /* 24 on tablet and desktop */
+  --panel-pad: var(--space-4);       /* 16 */
+  --panel-gap: var(--space-3);       /* 12 */
+
+  /* --- Shape ------------------------------------------------------------ */
+  /* Near-square controls, after the site's square buttons - 0px reads harsh at
+     dense UI sizes. Panels and dialogs are rounded, after its 16px cards. */
+  --radius-control: 2px;
+  --radius-panel: 12px;
+  --radius-pill: 9999px;
+
+  --control-h: 36px;
+  --control-h-sm: 32px;
+
+  /* --- Motion ----------------------------------------------------------- */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --- Colour: light (default) ------------------------------------------ */
+  color-scheme: light;
+
+  /* Grounds. The page is the brand's warm #e8e6e6 family, one step lighter, so
+     white panels read as panels on it. */
+  --app-bg: #f4f4f3;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f4f4f3;
+
+  /* Hairlines do the separating; shadows are kept for things that float.
+     --surface-border-strong is the outline of an input or a control, so it is
+     held to the 3:1 a control boundary needs (#8c8c8c: 3.36:1 on white). */
+  --surface-border: #e8e6e6;
+  --surface-border-strong: #8c8c8c;
+
+  /* Ink, strongest to weakest. Each clears 4.5:1 on white and on the sunken ground. */
+  --surface-text-strong: #141414;   /* 18.4:1 */
+  --surface-text: #262626;          /* 15.1:1  the brand charcoal */
+  --surface-text-muted: #5a5a5a;    /*  6.9:1  secondary */
+  --surface-text-subtle: #6b6b6b;   /*  5.3:1  tertiary: timestamps, captions */
+
+  /* The accent. A fill, and a fill only, on light grounds: as text the brand gold
+     is 2.01:1 on white. --accent-ink is its darkened sibling for the rare word
+     that must be gold (5.07:1). --on-accent is what sits on a gold fill. */
+  --accent: #e4af00;
+  --accent-hover: #cc9d00;
+  --accent-rgb: 228 175 0;
+  --on-accent: #141414;             /* 9.15:1 on #e4af00, 7.36:1 on the hover */
+  --accent-ink: #8a6a00;
+  /* The logo yellow. The 3px rule and the mark itself; never text on light. */
+  --brand-yellow: #fece07;
+
+  --focus-ring: #8a6a00;            /* 5.07:1 on white - the 3:1 a focus ring needs */
+
+  /* Feedback ink. */
+  --danger-ink: #b91c1c;            /* 6.47:1 */
+  --danger-rgb: 185 28 28;
+  --info-ink: #1e5a96;              /* 7.10:1 */
+
+  /* Target status, as rgb triples so one token drives the ink, its tint and its
+     hairline: rgb(var(--x)), rgb(var(--x) / 0.12). Functional colour, not brand
+     colour - kept muted so the gold stays the only accent on screen. Each clears
+     4.5:1 as text on white and on the sunken ground. */
+  --status-found-rgb: 31 122 76;    /* #1f7a4c  investigated / found */
+  --status-pending-rgb: 180 35 24;  /* #b42318  pending */
+  --status-empty-rgb: 90 90 90;     /* #5a5a5a  dug, nothing found */
+  --status-scrap-rgb: 143 84 16;    /* #8f5410 */
+  --status-alarm-rgb: 106 69 176;   /* #6a45b0 */
+
+  /* Floating chrome over the map: toolbar, legend, basemap switcher. Opaque
+     enough to hold its text over any imagery. */
+  --overlay: rgba(255, 255, 255, 0.96);
+  --overlay-border: rgba(20, 20, 20, 0.12);
+  --overlay-text: #262626;
+  --overlay-hover-rgb: 20 20 20;
+
+  --scrim: rgba(20, 20, 20, 0.45);
+  --chart-grid: rgba(20, 20, 20, 0.08);
+
+  --shadow-float: 0 12px 32px -12px rgba(20, 20, 20, 0.22), 0 2px 6px rgba(20, 20, 20, 0.06);
+  --shadow-panel: 0 1px 2px rgba(20, 20, 20, 0.04);
+}
+
+/* --- Colour: dark ------------------------------------------------------- */
+/* The brand's black sections and #262626 charcoal. Only colour changes here -
+   type, space and shape are the same system in both themes. */
+body.dark-theme {
+  color-scheme: dark;
+
+  --app-bg: #111111;
+  --surface: #1c1c1c;
+  --surface-raised: #262626;
+  --surface-sunken: #161616;
+
+  --surface-border: #333333;
+  --surface-border-strong: #707070;  /* 3.06:1 on the raised ground */
+
+  --surface-text-strong: #f2f2f2;
+  --surface-text: #d9d9d9;
+  --surface-text-muted: #a3a3a3;    /* 6.0:1 on the raised ground */
+  --surface-text-subtle: #939393;   /* 4.9:1 on the raised ground */
+
+  --accent: #e4af00;
+  --accent-hover: #f0bf1a;
+  --accent-rgb: 228 175 0;
+  --on-accent: #141414;
+  /* On a dark ground the logo yellow is legible as text: 10.1:1 on #262626. */
+  --accent-ink: #fece07;
+  --brand-yellow: #fece07;
+
+  --focus-ring: #fece07;
+
+  --danger-ink: #f87171;            /* red-400: 5.47:1 on the raised ground */
+  --danger-rgb: 248 113 113;
+  --info-ink: #7cb3e6;
+
+  --status-found-rgb: 76 195 138;
+  --status-pending-rgb: 248 113 113;
+  --status-empty-rgb: 163 163 163;
+  --status-scrap-rgb: 240 169 79;
+  --status-alarm-rgb: 182 156 246;
+
+  --overlay: rgba(28, 28, 28, 0.94);
+  --overlay-border: rgba(255, 255, 255, 0.1);
+  --overlay-text: #e5e5e5;
+  --overlay-hover-rgb: 255 255 255;
+
+  --scrim: rgba(0, 0, 0, 0.6);
+  --chart-grid: rgba(255, 255, 255, 0.08);
+
+  --shadow-float: 0 16px 40px -12px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-panel: none;
+}
+
+/* The display size steps down on a phone; nothing else in the scale does. */
+@media (max-width: 768px) {
+  :root {
+    --text-display: 1.875rem;
+    --lh-display: 2.375rem;
+    --gutter: var(--space-4);
+  }
+}

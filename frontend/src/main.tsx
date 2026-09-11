@@ -1,5 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+// The typeface ships in the bundle, not from a CDN: the field app has to render
+// correctly with no network. Variable, so every weight the scale uses is one file.
+import '@fontsource-variable/montserrat/wght.css'
+// Tokens first: every stylesheet after this one reads from them.
+import './tokens.css'
 import './index.css'
 import './landing.css'
 import './overview.css'
