@@ -258,89 +258,37 @@ function SubmissionConfirmation({ lang, vmNr, syncState, onOpenForm, onBackToLis
     offline: t('Saved offline - it will sync automatically once back online.'),
     pending: t('Not synced yet - the app will retry automatically.')
   };
-  const syncColor = syncState === 'synced' ? '#10b981' : syncState === 'syncing' ? '#38bdf8' : '#f59e0b';
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '18px',
-      height: '100%',
-      textAlign: 'center',
-      padding: '8px 4px',
-      overflowY: 'auto',
-      animation: 'fade-in-up 0.25s ease-out'
-    }}>
-      <div style={{
-        width: '64px',
-        height: '64px',
-        borderRadius: '50%',
-        backgroundColor: 'rgba(16, 185, 129, 0.12)',
-        border: '1px solid rgba(16, 185, 129, 0.35)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0
-      }}>
-        <CheckCircle2 size={32} color="#10b981" />
+    <div className="submit-done">
+      <span className="submit-done-mark" aria-hidden="true">
+        <CheckCircle2 size={28} />
+      </span>
+
+      <div className="submit-done-text">
+        <h2 className="submit-done-title">{t('Submission Received')}</h2>
+        <p className="submit-done-body">{t('Thank you! Your record has been submitted.')}</p>
+        <span className="submit-done-meta num">{t('Target')} VM {vmNr}</span>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#f1f5f9', margin: 0 }}>
-          {t('Submission Received')}
-        </h2>
-        <p style={{ fontSize: '0.82rem', color: '#cbd5e1', margin: 0, lineHeight: 1.5 }}>
-          {t('Thank you! Your record has been submitted.')}
-        </p>
-        <span style={{ fontSize: '0.7rem', color: 'var(--surface-text-muted)' }}>
-          {t('Target')} VM {vmNr}
-        </span>
-      </div>
-
-      {/* Non-blocking sync indicator */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '6px 12px',
-        borderRadius: '999px',
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
-        border: `1px solid ${syncColor}33`,
-        fontSize: '0.68rem',
-        color: syncColor,
-        fontWeight: 600
-      }}>
+      {/* Non-blocking sync indicator. The state is in the icon and the words; the
+          colour only repeats it. */}
+      <div className="submit-done-sync" data-state={syncState} role="status">
         {syncState === 'offline'
-          ? <WifiOff size={12} />
-          : <RefreshCw size={12} className={syncState === 'syncing' ? 'animate-spin' : ''} />}
+          ? <WifiOff size={14} aria-hidden="true" />
+          : <RefreshCw size={14} className={syncState === 'syncing' ? 'animate-spin' : ''} aria-hidden="true" />}
         {syncLabel[syncState]}
       </div>
 
-      <div style={{ width: '100%', height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.06)' }} />
+      <p className="submit-done-ask">{t('Would you like to add another record?')}</p>
 
-      <p style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 600, margin: 0 }}>
-        {t('Would you like to add another record?')}
-      </p>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={onOpenForm}
-          style={{ padding: '11px', fontSize: '0.8rem', justifyContent: 'center', gap: '8px', width: '100%' }}
-        >
-          <FilePlus2 size={15} />
+      <div className="submit-done-actions">
+        <button type="button" className="btn-primary" onClick={onOpenForm}>
+          <FilePlus2 size={16} aria-hidden="true" />
           {t('Open Field Application Form')}
         </button>
-        <button
-          type="button"
-          className="btn-secondary"
-          onClick={onBackToList}
-          style={{ padding: '10px', fontSize: '0.78rem', justifyContent: 'center', gap: '8px', width: '100%' }}
-        >
-          <ListChecks size={14} />
+        <button type="button" className="btn-secondary" onClick={onBackToList}>
+          <ListChecks size={16} aria-hidden="true" />
           {t('Back to Target List')}
         </button>
       </div>
@@ -1468,21 +1416,10 @@ export default function App() {
   // styling are identical in both - only their position changes.
   const projectIdSelect = (
     <select
-      className="form-input"
+      className="form-input field-control"
       value={filterProjectId}
       onChange={(e) => setFilterProjectId(e.target.value)}
       title={t('Project ID')}
-      style={{
-        fontSize: '0.78rem',
-        fontWeight: 700,
-        height: '28px',
-        padding: '0 8px',
-        backgroundColor: 'var(--surface-sunken)',
-        borderColor: 'rgba(255, 255, 255, 0.06)',
-        color: '#fff',
-        width: '100%',
-        cursor: 'pointer'
-      }}
     >
       <option value="all">{t('All Projects')}</option>
       {uniqueProjectIds.map(id => (
@@ -1492,14 +1429,13 @@ export default function App() {
   );
 
   const vmNrSelect = (
-    <div className="select-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-      <Shield size={12} style={{ position: 'absolute', left: '8px', color: 'var(--surface-text-muted)', zIndex: 1 }} />
+    <div className="select-with-icon">
+      <Shield size={14} className="select-with-icon-glyph" aria-hidden="true" />
       <select
-        className="form-input"
+        className="form-input field-control"
         value={filterVmNr}
         onChange={(e) => setFilterVmNr(e.target.value)}
         title={t('All VM Nr.')}
-        style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'var(--surface-sunken)', borderColor: 'var(--surface-border)' }}
       >
         <option value="all">{t('All VM Nr.')}</option>
         {allVmNumbers.map(vm => (
@@ -1510,14 +1446,13 @@ export default function App() {
   );
 
   const instrumentSelect = (
-    <div className="select-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-      <Layers size={12} style={{ position: 'absolute', left: '8px', color: 'var(--surface-text-muted)', zIndex: 1 }} />
+    <div className="select-with-icon">
+      <Layers size={14} className="select-with-icon-glyph" aria-hidden="true" />
       <select
-        className="form-input"
+        className="form-input field-control"
         value={filterInstrument}
         onChange={(e) => setFilterInstrument(e.target.value)}
         title={t('All Instruments')}
-        style={{ width: '100%', paddingLeft: '26px', fontSize: '0.75rem', appearance: 'none', backgroundColor: 'var(--surface-sunken)', borderColor: 'var(--surface-border)' }}
       >
         <option value="all">{t('All Instruments')}</option>
         <option value="georadar">{t('Georadar')}</option>
@@ -1528,13 +1463,10 @@ export default function App() {
 
   const statusSelect = (
     <select
-      className="form-input"
+      className="form-input field-control field-control--status"
       value={filterStatus}
       onChange={(e) => setFilterStatus(e.target.value)}
       title={t('Status filter')}
-      style={isMobile
-        ? { width: '100%', fontSize: '0.75rem', background: 'var(--surface-sunken)', borderColor: 'var(--surface-border)' }
-        : { width: '120px', fontSize: '0.7rem', height: '24px', padding: '0 4px', background: 'var(--surface-sunken)', borderColor: 'var(--surface-border)' }}
     >
       <option value="all">{t('All Targets')}</option>
       <option value="investigated">{t('Investigated')}</option>
@@ -1545,16 +1477,26 @@ export default function App() {
   const exportCsvButton = (
     <button
       type="button"
-      className="btn-secondary"
+      className="btn-secondary field-export"
       onClick={() => setReportDialog('field')}
       disabled={!isOnline}
       title={isOnline ? t('Export CSV') : t('Network Connection: Offline')}
-      style={{ marginTop: isMobile ? '2px' : '8px', padding: '7px', fontSize: '0.72rem', justifyContent: 'center', gap: '6px', width: '100%' }}
     >
-      <Table2 size={13} />
+      <Table2 size={14} aria-hidden="true" />
       {t('Export CSV')}
     </button>
   );
+
+  // The map's quick summary: investigated out of total, overall and per instrument.
+  const isInvestigatedPoint = (p: LocalPoint) => p.local_status === 'investigated';
+  const byInstrument = (name: string) => filteredPoints.filter(p => p.instrument?.toLowerCase() === name);
+  const magneticPoints = byInstrument('magnetic');
+  const georadarPoints = byInstrument('georadar');
+  const quickSummaryRows = [
+    { label: t('INVESTIGATION PROGRESS'), done: filteredPoints.filter(isInvestigatedPoint).length, total: filteredPoints.length },
+    { label: t('MAGNETIC TARGETS'), done: magneticPoints.filter(isInvestigatedPoint).length, total: magneticPoints.length },
+    { label: t('GEORADAR TARGETS'), done: georadarPoints.filter(isInvestigatedPoint).length, total: georadarPoints.length },
+  ];
 
   // The one place the access rule is applied to routing. A surface whose flag is
   // gone - revoked between sessions, or taken away by the /api/auth/me refresh while
@@ -2331,11 +2273,12 @@ export default function App() {
           {view === 'field' ? (
             
             // ROLE A: FIELD DATA COLLECTOR VIEW (FIELD APP)
-            <main className="collector-main" style={{ display: 'flex', flexGrow: 1, padding: '16px', gap: '16px', height: '100vh', overflow: 'hidden' }}>
-              
-              {/* Left sidebar collector control panel */}
-              <section className="glass-panel collector-sidebar" style={{ width: '380px', display: 'flex', flexDirection: 'column', flexShrink: 0, padding: '16px', overflow: 'hidden', border: 'none', background: 'var(--surface-sunken)' }}>
-                
+            <main className="collector-main">
+
+              {/* The working panel: the target list, or the form for the open target,
+                  or the confirmation once it is filed. */}
+              <section className="glass-panel collector-sidebar">
+
                 {formPoint ? (
                   <FeedbackForm
                     lang={lang}
@@ -2364,25 +2307,21 @@ export default function App() {
                     onBackToList={() => setSubmission(null)}
                   />
                 ) : (
-                  <div className="collector-panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px', height: '100%', overflow: 'hidden' }}>
+                  <div className="collector-panel-body">
 
-                    {/* Survey Details Header (Screenshot Match). On mobile the project
-                        picker and the CSV export move into the folded filter bar below -
-                        they are not what the crew reaches for first in the field. */}
-                    <div data-tour="field.area" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgb(var(--status-found-rgb))', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                        {t('Active Survey Area')}
-                      </span>
-                      <h2 style={{ fontSize: isMobile ? '1rem' : '1.1rem', fontWeight: 800, color: 'var(--surface-text)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {activeAreaLabel}
-                      </h2>
+                    {/* The survey area. On a phone the project picker and the CSV export
+                        move into the folded filter bar below - they are not what the crew
+                        reaches for first in the field. */}
+                    <div className="collector-area" data-tour="field.area">
+                      <span className="collector-kicker">{t('Active Survey Area')}</span>
+                      <h2 className="collector-title" title={activeAreaLabel}>{activeAreaLabel}</h2>
                       {!isMobile && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '2px' }}>
-                          <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--surface-text-muted)', textTransform: 'uppercase' }}>{t('Project ID')}</span>
+                        <label className="collector-field">
+                          <span className="collector-field-label">{t('Project ID')}</span>
                           {projectIdSelect}
-                        </div>
+                        </label>
                       )}
-                      <span style={{ fontSize: '0.68rem', color: 'var(--surface-text-muted)', marginTop: isMobile ? '2px' : '4px' }}>
+                      <span className="collector-count num">
                         {filteredPoints.length} {t('Targets Detected')}
                       </span>
 
@@ -2392,63 +2331,55 @@ export default function App() {
 
                     {activeTab === 'map' ? (
                       <>
-                        {/* Filters Panel */}
-                        <div data-tour="field.filters" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          
-                          {/* Search bar */}
-                          <div className="select-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <Search size={14} style={{ position: 'absolute', left: '10px', color: 'var(--surface-text-muted)', zIndex: 1 }} />
+                        <div className="collector-filters" data-tour="field.filters">
+                          <div className="select-with-icon">
+                            <Search size={14} className="select-with-icon-glyph" aria-hidden="true" />
                             <input
                               type="text"
-                              className="form-input"
+                              className="form-input field-control"
                               value={searchQuery}
                               onChange={(e) => setSearchQuery(e.target.value)}
                               placeholder={t('Search targets...')}
-                              style={{ width: '100%', paddingLeft: '30px', fontSize: '0.8rem', backgroundColor: 'var(--surface-sunken)', borderColor: 'var(--surface-border)' }}
+                              aria-label={t('Search targets...')}
                             />
                           </div>
 
-                          {/* Mobile folds the secondary filters (project, VM Nr., instrument,
+                          {/* A phone folds the secondary filters (project, VM Nr., instrument,
                               status) and the CSV export behind a one-line bar; the search box
-                              above stays visible because it is the primary control here.
-                              Desktop keeps the original inline 2-up grid. */}
+                              above stays visible because it is the primary control here. */}
                           {isMobile ? (
                             <FilterBar label={t('Filter')} summary={fieldFilterSummary} toggleLabel={t('Show filters')}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--surface-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('Project ID')}</span>
+                              <label className="collector-field">
+                                <span className="collector-field-label">{t('Project ID')}</span>
                                 {projectIdSelect}
-                              </div>
+                              </label>
                               {vmNrSelect}
                               {instrumentSelect}
                               {statusSelect}
                               {exportCsvButton}
                             </FilterBar>
                           ) : (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            <div className="collector-filter-grid">
                               {vmNrSelect}
                               {instrumentSelect}
                             </div>
                           )}
                         </div>
 
-                        {/* List coordinates */}
-                        <div className="collector-list-wrap" data-tour="field.list" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--surface-text-muted)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>{t('TARGET LISTING')} ({filteredPoints.length})</span>
-                            {/* On mobile the status filter lives in the folded bar with the rest. */}
+                        <div className="collector-list-wrap" data-tour="field.list">
+                          <div className="collector-list-head">
+                            <span className="collector-kicker collector-kicker--muted">
+                              {t('TARGET LISTING')} <span className="num">({filteredPoints.length})</span>
+                            </span>
+                            {/* On a phone the status filter lives in the folded bar with the rest. */}
                             {!isMobile && statusSelect}
                           </div>
-                          <div
-                            className="collector-list-scroll"
-                            onScroll={handleTargetListScroll}
-                            style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '6px' : '10px', overflowY: 'auto', flexGrow: 1, paddingRight: '2px' }}
-                          >
+                          <div className="collector-list-scroll" onScroll={handleTargetListScroll}>
                             {visibleTargetPoints.map((point) => {
                               const isInvestigated = point.local_status === 'investigated';
                               let statusText = t('PENDING');
-                              // The state, not the colour. Which hex that becomes is the
-                              // stylesheet's business, so the chip can darken in light
-                              // theme without this having an opinion about it.
+                              // The state, not the colour. Which colour that becomes is the
+                              // stylesheet's business.
                               let status: 'pending' | 'empty' | 'found' = 'pending';
 
                               if (isInvestigated && point.feedback) {
@@ -2457,68 +2388,41 @@ export default function App() {
                                 status = fund === 'ohne Fund' ? 'empty' : 'found';
                               }
 
+                              const isSelected = selectedPoint?.id === point.id;
                               return (
-                                <div
+                                <button
+                                  type="button"
                                   key={point.id}
-                                  className={`target-card-white ${(selectedPoint as any)?.id === point.id ? 'active' : ''}`}
+                                  className={`target-card${isSelected ? ' active' : ''}`}
+                                  aria-pressed={isSelected}
                                   onClick={() => setSelectedPoint(point)}
                                 >
-                                  {/* Mobile tightens the rows rather than the type: the VM
-                                      number stays 14px and the depth value 12px, but the
-                                      badge, the gaps and the depth strip all lose height. */}
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ fontWeight: 800, fontSize: isMobile ? '0.875rem' : '0.85rem', color: '#0f172a', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>VM {point.vm_nr}</span>
-                                    <span className="status-chip" data-status={status} style={{
-                                      fontSize: isMobile ? '0.58rem' : '0.62rem',
-                                      padding: isMobile ? '1px 6px' : '2px 8px',
-                                      borderRadius: '9999px',
-                                      ...(isMobile ? { maxWidth: '55%' } : {})
-                                    }} title={statusText}>
-                                      {statusText.toUpperCase()}
+                                  <span className="target-card-head">
+                                    <span className="target-card-vm num">VM {point.vm_nr}</span>
+                                    <span className="status-chip" data-status={status} title={statusText}>
+                                      {statusText}
                                     </span>
-                                  </div>
-                                  <div style={{ fontSize: isMobile ? '0.64rem' : '0.7rem', color: '#475569', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>
-                                    {point.instrument?.toUpperCase()} • {point.layer?.replace('Stoerkoerper ', '') || t('Target Layer')}
-                                  </div>
-
-                                  <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    gap: '6px',
-                                    marginTop: isMobile ? '2px' : '4px',
-                                    padding: isMobile ? '1px 6px' : '4px 8px',
-                                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                                    borderRadius: '6px',
-                                    ...(isMobile ? { lineHeight: 1.25 } : {})
-                                  }}>
-                                    <span style={{ fontSize: isMobile ? '0.6rem' : '0.62rem', color: '#64748b', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('EVALUATED DEPTH')}</span>
-                                    {/* Held at ~13px on mobile: the label may compact, the measured value may not. */}
-                                    <span style={{ fontSize: isMobile ? '0.82rem' : '0.72rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap' }}>
+                                  </span>
+                                  <span className="target-card-meta">
+                                    {point.instrument?.toUpperCase()} · {point.layer?.replace('Stoerkoerper ', '') || t('Target Layer')}
+                                  </span>
+                                  <span className="target-card-depth">
+                                    <span className="target-card-depth-label">{t('EVALUATED DEPTH')}</span>
+                                    <span className="target-card-depth-value num">
                                       {point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')}
                                     </span>
-                                  </div>
-                                </div>
+                                  </span>
+                                </button>
                               );
                             })}
 
                             {visibleTargetPoints.length < filteredPoints.length && (
                               <button
                                 type="button"
+                                className="btn-secondary list-more"
                                 onClick={() => setVisibleTargetCount(c => c + TARGET_PAGE_SIZE)}
-                                style={{
-                                  flexShrink: 0,
-                                  background: 'rgba(255,255,255,0.04)',
-                                  border: '1px solid rgba(255,255,255,0.08)',
-                                  borderRadius: '8px',
-                                  color: 'var(--surface-text-muted)',
-                                  fontWeight: 700,
-                                  fontSize: '0.72rem',
-                                  padding: '10px',
-                                  cursor: 'pointer'
-                                }}
                               >
-                                {t('Show more')} ({filteredPoints.length - visibleTargetPoints.length})
+                                {t('Show more')} <span className="num">({filteredPoints.length - visibleTargetPoints.length})</span>
                               </button>
                             )}
                           </div>
@@ -2536,86 +2440,28 @@ export default function App() {
                 )}
               </section>
 
-              {/* Collector map widget */}
-              <section className="glass-panel map-container-section" style={{ flexGrow: 1, padding: '6px', overflow: 'hidden', position: 'relative' }}>
-                
-                {/* Floating Quick Summary panel (Screenshot template match). On mobile it
-                    drops out of the overlay and stacks above the map - at 380px a 260px
-                    floating card would cover most of the map it floats over. */}
-                <div className="quick-summary-panel" style={{
-                  position: 'absolute',
-                  top: '16px',
-                  right: '16px',
-                  zIndex: 1000,
-                  width: '260px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.96)',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '16px',
-                  padding: '16px',
-                  boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                  color: 'var(--surface-text)'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.75rem', color: 'var(--surface-text)', textTransform: 'uppercase', fontFamily: 'var(--font-heading)', letterSpacing: '0.02em' }}>{t('Quick Summary')}</span>
-                  </div>
-
-                  {/* Stat 1: Target Investigation Status */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: 'var(--surface-text-muted)' }}>
-                      <span>{t('INVESTIGATION PROGRESS')}</span>
-                      <span>{filteredPoints.filter(p => p.local_status === 'investigated').length} / {filteredPoints.length}</span>
+              {/* The map, with the quick summary floating over it. On a phone the summary
+                  drops out of the overlay and stacks above the map - at 380px a floating
+                  card would cover most of the map it floats over. */}
+              <section className="glass-panel map-container-section" data-popup-open={selectedPoint ? '' : undefined}>
+                <div className="quick-summary-panel">
+                  <span className="quick-summary-title">{t('Quick Summary')}</span>
+                  {quickSummaryRows.map(row => (
+                    <div className="quick-summary-row" key={row.label}>
+                      <div className="quick-summary-row-head">
+                        <span>{row.label}</span>
+                        <span className="num">{row.done} / {row.total}</span>
+                      </div>
+                      {/* One colour for all three: each bar is the same measure - the
+                          share investigated - of a different slice. */}
+                      <div className="quick-summary-bar" aria-hidden="true">
+                        <span style={{ width: `${(row.done / Math.max(1, row.total)) * 100}%` }} />
+                      </div>
                     </div>
-                    <div style={{ height: '6px', width: '100%', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ 
-                        height: '100%', 
-                        width: `${(filteredPoints.filter(p => p.local_status === 'investigated').length / Math.max(1, filteredPoints.length)) * 100}%`, 
-                        backgroundColor: '#10b981',
-                        borderRadius: '3px'
-                      }} />
-                    </div>
-                  </div>
-
-                  {/* Stat 2: Instruments Class (Magnetic Progress) */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: 'var(--surface-text-muted)' }}>
-                      <span>{t('MAGNETIC TARGETS')}</span>
-                      <span>
-                        {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'magnetic' && p.local_status === 'investigated').length} / {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'magnetic').length}
-                      </span>
-                    </div>
-                    <div style={{ height: '6px', width: '100%', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ 
-                        height: '100%', 
-                        width: `${(filteredPoints.filter(p => p.instrument?.toLowerCase() === 'magnetic' && p.local_status === 'investigated').length / Math.max(1, filteredPoints.filter(p => p.instrument?.toLowerCase() === 'magnetic').length)) * 100}%`, 
-                        backgroundColor: '#fa5f1c',
-                        borderRadius: '3px'
-                      }} />
-                    </div>
-                  </div>
-
-                  {/* Stat 3: Georadar Targets Progress */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: 'var(--surface-text-muted)' }}>
-                      <span>{t('GEORADAR TARGETS')}</span>
-                      <span>
-                        {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'georadar' && p.local_status === 'investigated').length} / {filteredPoints.filter(p => p.instrument?.toLowerCase() === 'georadar').length}
-                      </span>
-                    </div>
-                    <div style={{ height: '6px', width: '100%', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ 
-                        height: '100%', 
-                        width: `${(filteredPoints.filter(p => p.instrument?.toLowerCase() === 'georadar' && p.local_status === 'investigated').length / Math.max(1, filteredPoints.filter(p => p.instrument?.toLowerCase() === 'georadar').length)) * 100}%`, 
-                        backgroundColor: '#38bdf8',
-                        borderRadius: '3px'
-                      }} />
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
-                <div className="collector-map-wrap" data-tour="field.map" style={{ height: '100%', width: '100%' }}>
+                <div className="collector-map-wrap" data-tour="field.map">
                   <FieldMap
                     lang={lang}
                     points={filteredPoints}

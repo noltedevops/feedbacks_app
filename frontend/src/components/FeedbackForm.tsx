@@ -322,96 +322,72 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const computedVolume = (lVal * bVal * tVal).toFixed(3);
 
   return (
-    <div className="feedback-form-root" data-tour="field.form" style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%', overflowY: 'auto', paddingRight: '4px' }}>
+    <div className="feedback-form-root ff" data-tour="field.form">
 
-      {/* Header Title without Logo */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px', flexShrink: 0 }}>
-        <div>
-          <h2 style={{ fontSize: '1.15rem', color: '#f1f5f9', fontWeight: 700, margin: 0 }}>{t('Field Application Form')}</h2>
-        </div>
-        <button 
-          onClick={onCancel}
-          style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
-        >
-          <X size={20} />
+      <div className="ff-head">
+        <h2 className="ff-title">{t('Field Application Form')}</h2>
+        <button type="button" className="ff-close" onClick={onCancel} aria-label={t('Cancel')} title={t('Cancel')}>
+          <X size={18} aria-hidden="true" />
         </button>
       </div>
 
       {/* Edit Location Info Banner */}
       {isEditLocationMode && (
-        <div style={{
-          backgroundColor: 'rgba(249, 115, 22, 0.12)',
-          border: '1px solid rgba(249, 115, 22, 0.3)',
-          borderRadius: 'var(--radius-sm)',
-          padding: '8px 12px',
-          fontSize: '0.72rem',
-          color: '#f97316',
-          lineHeight: '1.4',
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '8px',
-          flexShrink: 0
-        }}>
-          <Move size={14} style={{ marginTop: '2px', flexShrink: 0 }} />
+        <div className="ff-banner" role="status">
+          <Move size={16} aria-hidden="true" />
           <div>
             <strong>{t('Location Edit Mode Active:')}</strong> {t('Drag the target marker on the map to its exact location. Coordinates will update in real-time. Click "Submit" to save.')}
           </div>
         </div>
       )}
 
-      {/* MAIN FORM */}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        
-        {/* Section 1: bewertungsergebnis */}
-        <div className="glass-card" style={{ padding: '14px', borderLeft: '3px solid #10b981', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ fontWeight: 800, fontSize: '0.75rem', color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            bewertungsergebnis
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.78rem' }}>
+      <form onSubmit={handleSubmit} className="ff-form">
+
+        {/* Section 1: the survey's assessment of this target. Read-only - these are the
+            facts the crew digs against, so they sit in a well rather than in inputs. */}
+        <section className="ff-section">
+          <h3 className="ff-section-title">Bewertungsergebnis</h3>
+          <dl className="ff-facts">
             <div>
-              <span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>{t('Project ID')}</span>
-              <strong style={{ color: '#e2e8f0' }}>{point.project_id || '11-24-2736'}</strong>
+              <dt>{t('Project ID')}</dt>
+              <dd className="num">{point.project_id || '11-24-2736'}</dd>
             </div>
             <div>
-              <span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>{t('Instrument')}</span>
-              <strong style={{ color: '#e2e8f0', textTransform: 'uppercase' }}>{point.instrument || 'georadar'}</strong>
+              <dt>{t('Instrument')}</dt>
+              <dd className="ff-upper">{point.instrument || 'georadar'}</dd>
             </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>{t('Bewertete Tiefe (m)')}</span>
-              <strong style={{ color: '#e2e8f0' }}>{point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')}</strong>
+            <div className="ff-facts-wide">
+              <dt>{t('Bewertete Tiefe (m)')}</dt>
+              <dd className="num">{point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')}</dd>
             </div>
-            <div style={{ gridColumn: '1 / -1', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }}>
-              <div>
-                <span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>{t('Coordinate (X; Y)')}</span>
-                <strong style={{ color: '#e2e8f0' }}>X: {easting.toFixed(3)} | Y: {northing.toFixed(3)}</strong>
-              </div>
+            <div className="ff-facts-wide">
+              <dt>{t('Coordinate (X; Y)')}</dt>
+              <dd className="num">X: {easting.toFixed(3)} | Y: {northing.toFixed(3)}</dd>
             </div>
-          </div>
-        </div>
+          </dl>
+        </section>
 
         {/* Section 1b: Teams and Tools */}
-        <div className="glass-card" style={{ padding: '14px', borderLeft: '3px solid #38bdf8', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ fontWeight: 800, fontSize: '0.75rem', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Users size={13} />
+        <section className="ff-section">
+          <h3 className="ff-section-title">
+            <Users size={14} aria-hidden="true" />
             {t('Teams and Tools')}
-          </div>
+          </h3>
 
           {/* Need update? - when No, the fields below stay as last recorded for this project */}
-          <div className="form-group">
-            <label className="form-label" style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700 }}>{t('Need update?')} *</label>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '2px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', cursor: 'pointer', color: needUpdate ? '#38bdf8' : '#64748b', fontWeight: 600 }}>
+          <fieldset className="form-group ff-fieldset">
+            <legend className="form-label">{t('Need update?')} *</legend>
+            <div className="ff-choices">
+              <label className={`ff-choice${needUpdate ? ' is-checked' : ''}`}>
                 <input
                   type="radio"
                   name="teams_need_update"
                   checked={needUpdate}
                   onChange={() => setNeedUpdate(true)}
-                  style={{ cursor: 'pointer' }}
                 />
                 {t('Yes')}
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', cursor: 'pointer', color: !needUpdate ? '#10b981' : '#64748b', fontWeight: 600 }}>
+              <label className={`ff-choice${!needUpdate ? ' is-checked' : ''}`}>
                 <input
                   type="radio"
                   name="teams_need_update"
@@ -425,39 +401,32 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                     setSondierer(source?.sondierer || '');
                   }}
                   disabled={!point.feedback?.teams_tools && !lastTeamsTools}
-                  style={{ cursor: 'pointer' }}
                 />
                 {t('No')}
               </label>
             </div>
             {!point.feedback?.teams_tools && !lastTeamsTools && (
-              <span style={{ fontSize: '0.65rem', color: '#64748b', display: 'block', marginTop: '4px' }}>
+              <span className="ff-hint">
                 {t('No previous entry for this project yet - please fill the fields below.')}
               </span>
             )}
-          </div>
+          </fieldset>
 
           {/* Truppführer - always mirrors the signed-in user */}
           <div className="form-group">
-            <label className="form-label" style={{ fontSize: '0.7rem', color: '#64748b' }}>Truppführer</label>
-            <input
-              type="text"
-              className="form-input"
-              value={currentUser}
-              disabled
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.02)', color: '#94a3b8', cursor: 'not-allowed', border: '1px solid rgba(255, 255, 255, 0.05)', fontSize: '0.75rem', height: '30px' }}
-            />
+            <label className="form-label" htmlFor="ff-truppfuehrer">Truppführer</label>
+            <input id="ff-truppfuehrer" type="text" className="form-input" value={currentUser} disabled />
           </div>
 
-          <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          <div className="form-grid-2">
             {([
               ['Maschinenführer', maschinenfuehrer, setMaschinenfuehrer],
               ['Bez.Suchfeld', bezSuchfeld, setBezSuchfeld],
               ['Messgerät', messgeraet, setMessgeraet],
               ['Sondierer', sondierer, setSondierer]
             ] as const).map(([label, value, setter]) => (
-              <div className="form-group" key={label} style={{ margin: 0, minWidth: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.65rem' }}>{label} *</label>
+              <label className="form-group" key={label}>
+                <span className="form-label">{label} *</span>
                 <input
                   type="text"
                   className="form-input"
@@ -465,196 +434,160 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   onChange={(e) => setter(e.target.value)}
                   disabled={!needUpdate}
                   required
-                  style={{
-                    height: '32px',
-                    fontSize: '0.75rem',
-                    width: '100%',
-                    minWidth: 0,
-                    padding: '4px 8px',
-                    boxSizing: 'border-box',
-                    backgroundColor: needUpdate ? undefined : 'rgba(255, 255, 255, 0.02)',
-                    color: needUpdate ? undefined : '#94a3b8',
-                    cursor: needUpdate ? undefined : 'not-allowed'
-                  }}
                 />
-              </div>
+              </label>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* Section 2: Eroffnungsmassnahmen */}
-        <div className="glass-card" style={{ padding: '14px', borderLeft: '3px solid #fa5f1c', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ fontWeight: 800, fontSize: '0.75rem', color: '#fa5f1c', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Eroffnungsmassnahmen
-          </div>
-          
-          {/* Active Investigator (Read-only) */}
+        {/* Section 2: Eröffnungsmaßnahmen - the excavation itself */}
+        <section className="ff-section">
+          <h3 className="ff-section-title">Eröffnungsmaßnahmen</h3>
+
           <div className="form-group">
-            <label className="form-label" style={{ fontSize: '0.7rem', color: '#64748b' }}>{t('Investigator')}</label>
-            <input
-              type="text"
-              className="form-input"
-              value={currentUser}
-              disabled
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.02)', color: '#94a3b8', cursor: 'not-allowed', border: '1px solid rgba(255, 255, 255, 0.05)', fontSize: '0.75rem', height: '30px' }}
-            />
+            <label className="form-label" htmlFor="ff-investigator">{t('Investigator')}</label>
+            <input id="ff-investigator" type="text" className="form-input" value={currentUser} disabled />
           </div>
 
-          {/* Subsection 1: Öffnungsmessungen */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700 }}>Öffnungsmessungen</span>
-            <div className="form-grid-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-              <div className="form-group" style={{ margin: 0, minWidth: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.65rem' }}>Länge(m)</label>
+          {/* Öffnungsmessungen */}
+          <div className="ff-group">
+            <span className="ff-subtitle">Öffnungsmessungen</span>
+            <div className="form-grid-3">
+              <label className="form-group">
+                <span className="form-label">Länge (m)</span>
                 <input
                   type="number"
                   step="0.01"
-                  className="form-input"
+                  className="form-input num"
                   value={laenge}
                   onChange={(e) => setLaenge(e.target.value)}
                   placeholder={lang === 'DE' ? 'z. B. 1.20' : 'e.g. 1.20'}
-                  style={{ height: '32px', fontSize: '0.75rem', width: '100%', minWidth: 0, padding: '4px 8px', boxSizing: 'border-box' }}
                 />
-              </div>
-              <div className="form-group" style={{ margin: 0, minWidth: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.65rem' }}>Breite(m)</label>
+              </label>
+              <label className="form-group">
+                <span className="form-label">Breite (m)</span>
                 <input
                   type="number"
                   step="0.01"
-                  className="form-input"
+                  className="form-input num"
                   value={breite}
                   onChange={(e) => setBreite(e.target.value)}
                   placeholder={lang === 'DE' ? 'z. B. 1.00' : 'e.g. 1.00'}
-                  style={{ height: '32px', fontSize: '0.75rem', width: '100%', minWidth: 0, padding: '4px 8px', boxSizing: 'border-box' }}
                 />
-              </div>
-              <div className="form-group" style={{ margin: 0, minWidth: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.65rem' }}>Tiefe(m)</label>
+              </label>
+              <label className="form-group">
+                <span className="form-label">Tiefe (m)</span>
                 <input
                   type="number"
                   step="0.01"
-                  className="form-input"
+                  className="form-input num"
                   value={tiefe}
                   onChange={(e) => setTiefe(e.target.value)}
                   placeholder={lang === 'DE' ? 'z. B. 0.90' : 'e.g. 0.90'}
-                  style={{ height: '32px', fontSize: '0.75rem', width: '100%', minWidth: 0, padding: '4px 8px', boxSizing: 'border-box' }}
                 />
-              </div>
+              </label>
             </div>
-            
-            {/* Meter Cube Autopopulated */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', padding: '6px 10px', borderRadius: '6px', marginTop: '4px' }}>
-              <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 600 }}>{t('Meter Cube Volume (m³)')}</span>
-              <strong style={{ fontSize: '0.75rem', color: '#38bdf8' }}>{computedVolume} m³</strong>
+
+            {/* Volume, computed from the three above */}
+            <div className="ff-readout">
+              <span>{t('Meter Cube Volume (m³)')}</span>
+              <strong className="num">{computedVolume} m³</strong>
             </div>
           </div>
 
-          {/* Subsection 2: Fundstück */}
+          {/* Fundstück */}
           <div className="form-group">
-            <label className="form-label" style={{ fontSize: '0.72rem', color: '#f8fafc', fontWeight: 700 }}>Fundstück *</label>
+            <label className="form-label" htmlFor="ff-fundstueck">Fundstück *</label>
             <select
+              id="ff-fundstueck"
               className="form-input"
               value={fundstueck}
               onChange={(e) => setFundstueck(e.target.value)}
-              style={{
-                fontSize: '0.75rem',
-                height: '32px',
-                padding: '0 8px',
-                backgroundColor: 'var(--surface-sunken)',
-                borderColor: 'var(--surface-border)',
-                color: 'var(--surface-text)',
-                fontWeight: 600,
-                width: '100%',
-                cursor: 'pointer'
-              }}
               required
             >
-              <option value="ohne Fund" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>ohne Fund</option>
-              <option value="Eisenteil" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Eisenteil</option>
-              <option value="Eisenstange / Eisenstab" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Eisenstange / Eisenstab</option>
-              <option value="Eisendraht" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Eisendraht</option>
-              <option value="Eisenseil" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Eisenseil</option>
-              <option value="Eisennägel" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Eisennägel</option>
-              <option value="Steine" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Steine</option>
-              <option value="Sonstige" style={{ background: 'var(--surface)', color: 'var(--surface-text)' }}>Sonstige</option>
+              <option value="ohne Fund">ohne Fund</option>
+              <option value="Eisenteil">Eisenteil</option>
+              <option value="Eisenstange / Eisenstab">Eisenstange / Eisenstab</option>
+              <option value="Eisendraht">Eisendraht</option>
+              <option value="Eisenseil">Eisenseil</option>
+              <option value="Eisennägel">Eisennägel</option>
+              <option value="Steine">Steine</option>
+              <option value="Sonstige">Sonstige</option>
             </select>
           </div>
 
-          {/* Conditional Field: Schreibe (open if Sonstige selected) */}
+          {/* Specify - only when Sonstige is chosen */}
           {fundstueck === 'Sonstige' && (
-            <div className="form-group" style={{ animation: 'fade-in 0.15s ease-out' }}>
-              <label className="form-label" style={{ fontSize: '0.7rem' }}>{t('Schreibe (Specify) *')}</label>
+            <div className="form-group ff-reveal">
+              <label className="form-label" htmlFor="ff-other">{t('Schreibe (Specify) *')}</label>
               <input
+                id="ff-other"
                 type="text"
                 className="form-input"
                 value={other}
                 onChange={(e) => setOther(e.target.value)}
                 placeholder={t('Describe finding...')}
-                style={{ fontSize: '0.75rem', height: '32px' }}
                 required
               />
             </div>
           )}
 
           {/* Sohle status */}
-          <div className="form-group">
-            <label className="form-label" style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700 }}>Sohle Status *</label>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '2px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', cursor: 'pointer', color: sohleStatus === 'Frei' ? '#10b981' : '#64748b', fontWeight: 600 }}>
+          <fieldset className="form-group ff-fieldset">
+            <legend className="form-label">Sohle Status *</legend>
+            <div className="ff-choices">
+              <label className={`ff-choice${sohleStatus === 'Frei' ? ' is-checked' : ''}`}>
                 <input
                   type="radio"
                   name="sohle_status"
                   value="Frei"
                   checked={sohleStatus === 'Frei'}
                   onChange={() => setSohleStatus('Frei')}
-                  style={{ cursor: 'pointer' }}
                 />
                 {t('Frei (Clear)')}
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', cursor: 'pointer', color: sohleStatus === 'Nicht Frei' ? '#ef4444' : '#64748b', fontWeight: 600 }}>
+              <label className={`ff-choice${sohleStatus === 'Nicht Frei' ? ' is-checked' : ''}`}>
                 <input
                   type="radio"
                   name="sohle_status"
                   value="Nicht Frei"
                   checked={sohleStatus === 'Nicht Frei'}
                   onChange={() => setSohleStatus('Nicht Frei')}
-                  style={{ cursor: 'pointer' }}
                 />
                 {t('Nicht Frei (Not Clear)')}
               </label>
             </div>
-          </div>
+          </fieldset>
 
           {/* Bemerkung */}
           <div className="form-group">
-            <label className="form-label" style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700 }}>{t('Bemerkung (Remarks)')}</label>
+            <label className="form-label" htmlFor="ff-notes">{t('Bemerkung (Remarks)')}</label>
             <textarea
+              id="ff-notes"
               rows={3}
-              className="form-input"
+              className="form-input ff-textarea"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={t('Write any additional remarks...')}
-              style={{ fontSize: '0.75rem', resize: 'vertical' }}
             />
           </div>
 
           {/* Attached Photos */}
           <div className="form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-              <label className="form-label" style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: 0 }}>{t('Attached Photos (Multiple)')}</label>
-              <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontWeight: 800 }}>{t('Bilder Number')}: {photos.length}</span>
+            <div className="ff-photos-head">
+              <span className="form-label">{t('Attached Photos (Multiple)')}</span>
+              <span className="ff-count num">{t('Bilder Number')}: {photos.length}</span>
             </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div className="form-grid-2 photo-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+
+            <div className="ff-group">
+              <div className="form-grid-2 photo-actions">
                 <button
                   type="button"
                   className="btn-secondary"
                   onClick={startCamera}
-                  style={{ gap: '6px', justifyContent: 'center', padding: '8px 4px', fontSize: '0.72rem', cursor: 'pointer' }}
                   disabled={compressing}
                 >
-                  <Camera size={14} />
+                  <Camera size={16} aria-hidden="true" />
                   {compressing ? t('Saving...') : t('Take Photo')}
                 </button>
                 <input
@@ -663,57 +596,34 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                   accept="image/*"
                   capture="environment"
                   onChange={handlePhotoUpload}
-                  style={{ display: 'none' }}
+                  hidden
                 />
-                
-                <label className="btn-secondary" style={{ cursor: 'pointer', gap: '6px', justifyContent: 'center', padding: '8px 4px', fontSize: '0.72rem' }}>
-                  <Upload size={14} />
+
+                <label className="btn-secondary">
+                  <Upload size={16} aria-hidden="true" />
                   {compressing ? t('Saving...') : t('Upload Image')}
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handlePhotoUpload}
-                    style={{ display: 'none' }}
+                    hidden
                     disabled={compressing}
                   />
                 </label>
               </div>
 
-              {/* Photos List Grid */}
               {photos.length > 0 && (
-                <div className="photo-thumb-grid" style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))',
-                  gap: '8px',
-                  maxHeight: '130px',
-                  overflowY: 'auto',
-                  padding: '6px',
-                  backgroundColor: 'var(--surface-sunken)',
-                  borderRadius: 'var(--radius-sm)'
-                }}>
+                <div className="photo-thumb-grid">
                   {photos.map((base64Src, idx) => (
-                    <div key={idx} style={{ position: 'relative', width: '100%', height: '54px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--surface-border)' }}>
-                      <img src={base64Src} alt={`Attachment ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div key={idx} className="ff-thumb">
+                      <img src={base64Src} alt={`Attachment ${idx + 1}`} />
                       <button
                         type="button"
+                        className="ff-thumb-remove"
                         onClick={() => removePhoto(idx)}
-                        style={{
-                          position: 'absolute',
-                          top: '2px',
-                          right: '2px',
-                          backgroundColor: 'rgba(239, 68, 68, 0.95)',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '50%',
-                          width: '18px',
-                          height: '18px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer'
-                        }}
+                        aria-label={`${t('Cancel')} ${idx + 1}`}
                       >
-                        <X size={10} />
+                        <X size={12} aria-hidden="true" />
                       </button>
                     </div>
                   ))}
@@ -721,75 +631,34 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
               )}
             </div>
           </div>
+        </section>
 
-        </div>
-
-        {/* Action Buttons. Sticky on mobile so Submit stays reachable without scrolling
-            back down a long form. */}
-        <div className="form-actions" style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-          <button type="button" className="btn-secondary" onClick={onCancel} style={{ flex: 1, padding: '10px', fontSize: '0.8rem' }}>
+        {/* Sticky on a phone so Submit stays reachable without scrolling back down. */}
+        <div className="form-actions">
+          <button type="button" className="btn-secondary" onClick={onCancel}>
             {t('Cancel')}
           </button>
-          <button type="submit" className="btn-primary" style={{ flex: 1, padding: '10px', fontSize: '0.8rem' }} disabled={compressing}>
-            <Send size={14} />
+          <button type="submit" className="btn-primary" disabled={compressing}>
+            <Send size={16} aria-hidden="true" />
             {t('Submit')}
           </button>
         </div>
 
       </form>
 
+      {/* Camera capture. A media viewer: dark in both themes, because it frames a
+          live video, not app content. */}
       {showCameraModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          zIndex: 99999,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '16px',
-          padding: '20px',
-          boxSizing: 'border-box'
-        }}>
-          <h3 style={{ color: '#fff', margin: 0, fontFamily: 'var(--font-heading)' }}>{t('Camera Capture')}</h3>
-          <div style={{
-            position: 'relative',
-            width: '100%',
-            maxWidth: '640px',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            border: '2px solid rgba(255,255,255,0.2)',
-            backgroundColor: '#000'
-          }}>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              style={{
-                width: '100%',
-                display: 'block'
-              }}
-            />
+        <div className="ff-camera" role="dialog" aria-label={t('Camera Capture')}>
+          <h3 className="ff-camera-title">{t('Camera Capture')}</h3>
+          <div className="ff-camera-frame">
+            <video ref={videoRef} autoPlay playsInline />
           </div>
-          <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '320px' }}>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={stopCamera}
-              style={{ flex: 1, padding: '10px', fontSize: '0.8rem', color: '#fff', borderColor: 'rgba(255,255,255,0.2)' }}
-            >
+          <div className="ff-camera-actions">
+            <button type="button" className="btn-secondary" onClick={stopCamera}>
               {t('Cancel')}
             </button>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={capturePhoto}
-              style={{ flex: 1, padding: '10px', fontSize: '0.8rem' }}
-            >
+            <button type="button" className="btn-primary" onClick={capturePhoto}>
               {t('Capture')}
             </button>
           </div>

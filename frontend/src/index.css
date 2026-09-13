@@ -1249,30 +1249,33 @@ select.form-input--compact option {
 }
 
 .basemap-menu-caption {
-  font-size: 0.58rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
   text-transform: uppercase;
   color: var(--surface-text-muted);
-  padding: 3px 8px 5px;
+  padding: var(--space-1) var(--space-2) var(--space-2);
   border-bottom: 1px solid var(--overlay-border);
-  margin-bottom: 3px;
+  margin-bottom: var(--space-1);
 }
 
 .basemap-option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-3);
   width: 100%;
-  padding: 6px 8px;
+  min-height: 32px;
+  padding: var(--space-1) var(--space-2);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: none;
   color: var(--overlay-text);
   font-family: var(--font-body);
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-medium);
   text-align: left;
   cursor: pointer;
   transition: background-color var(--transition-fast), color var(--transition-fast);
@@ -1283,12 +1286,13 @@ select.form-input--compact option {
 }
 
 .basemap-option:focus-visible {
-  outline: 2px solid var(--accent-ink);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
 
 .basemap-option[aria-pressed="true"] {
-  color: var(--accent-ink);
+  color: var(--surface-text-strong);
+  font-weight: var(--weight-semibold);
   background-color: rgb(var(--accent-rgb) / 0.14);
 }
 
@@ -1298,13 +1302,19 @@ select.form-input--compact option {
   white-space: nowrap;
 }
 
-/* Status chip: the coloured pill on a target row saying what was found, or that the
- * target is still open. Colour is the information here, so it comes from the theme
- * tokens rather than an inline hex, and the class is what exempts it from the
- * light-theme text override above. Size and spacing stay with the call site, which
- * varies them per surface and breakpoint. */
+/* Status chip: the pill on a target row saying what was found, or that the target is
+ * still open. Colour is the information here, so it comes from the status tokens. One
+ * size everywhere - the caption step in spaced capitals. */
 .status-chip {
-  font-weight: 800;
+  display: inline-block;
+  flex-shrink: 0;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-caption);
+  line-height: 18px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1323,8 +1333,7 @@ select.form-input--compact option {
 /* Surfaces that stay white in both themes: the target cards and the map's quick
  * summary. They are deliberate white cards on dark chrome rather than surfaces that
  * invert, so the ink on them is the light-theme ink even when the app is dark. */
-.target-card-white,
-.quick-summary-panel {
+.target-card-white {
   /* This card stays white in both themes - it is a deliberate white card on dark
    * chrome, not a surface that inverts. So the ink on it is the light-theme ink even
    * when the app is dark. Redeclaring the tokens here rather than hardcoding hexes at
@@ -1648,101 +1657,58 @@ body.light-theme .target-card-white {
     min-height: 44px;
   }
 
-  /* --- Field App (collector) ------------------------------------------- */
-  /* Single column; the bottom padding keeps the last field clear of the fixed
-     nav bar. */
-  .collector-main {
-    flex-direction: column !important;
-    height: auto !important;
-    overflow: visible !important;
-    padding: 10px 10px calc(var(--mobile-nav-total) + 16px) !important;
-    gap: 12px !important;
-  }
-
-  .collector-sidebar {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    padding: 12px !important;
-  }
-
-  /* The form is the page on mobile, not a box that scrolls inside the page. */
-  .feedback-form-root,
-  .collector-panel-body,
-  .collector-list-wrap {
-    height: auto !important;
-    overflow: visible !important;
-  }
-
-  /* The target list keeps its own scroller so it cannot grow to 1500 rows tall,
-     but contains its overscroll so it does not swallow the page's momentum. */
-  .collector-list-scroll {
-    max-height: 60vh;
-    overscroll-behavior: contain;
-  }
-
-  /* Compacted target cards: the desktop card is 14px padding with a 14px radius and
-     roomy rows, which fits about four per screen on a phone. Tightening padding and
-     line spacing (not font size - the VM number stays 14px) fits noticeably more
-     while the whole card stays a comfortable tap target well over 44px. */
-  .collector-list-scroll .target-card-white {
-    padding: 7px 9px;
-    border-radius: 10px;
-    gap: 0;
-  }
-
-  /* The lift-on-hover transform is meaningless on touch and costs a repaint per card. */
-  .collector-list-scroll .target-card-white:hover {
-    transform: none;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  }
-
-  /* --- Collapsed filter bar -------------------------------------------- */
+  /* --- Collapsed filter bar (phone; Field App and Dashboard) --------------- */
   .filter-bar {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--space-2);
     min-width: 0;
   }
 
+  /* An outlined control, like the inputs it folds away. */
   .filter-bar-toggle {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: var(--space-2);
     width: 100%;
     min-height: 44px;
-    padding: 0 10px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(10, 22, 18, 0.6);
-    color: #f1f5f9;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-control);
+    border: 1px solid var(--surface-border-strong);
+    background: var(--surface);
+    color: var(--surface-text-strong);
     cursor: pointer;
     text-align: left;
     font-family: var(--font-body);
   }
 
+  .filter-bar-toggle:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
   .filter-bar-icon {
-    color: #10b981;
+    color: var(--surface-text-muted);
     flex-shrink: 0;
   }
 
   .filter-bar-label {
-    font-size: 0.72rem;
-    font-weight: 800;
+    font-size: var(--text-overline);
+    line-height: var(--lh-overline);
+    font-weight: var(--weight-bold);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: #8c9f96;
+    letter-spacing: var(--tracking-overline);
+    color: var(--surface-text-muted);
     flex-shrink: 0;
   }
 
   /* The active selection is the reason folding is safe - it must stay on one line and
      ellipsize rather than wrap the bar to two rows. */
   .filter-bar-summary {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #f1f5f9;
+    font-size: var(--text-label);
+    line-height: var(--lh-label);
+    font-weight: var(--weight-semibold);
+    color: var(--surface-text-strong);
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
@@ -1751,15 +1717,15 @@ body.light-theme .target-card-white {
   }
 
   .filter-bar-chevron {
-    color: #8c9f96;
+    color: var(--surface-text-muted);
     flex-shrink: 0;
-    transition: transform 0.18s ease;
+    transition: transform var(--transition-fast);
   }
 
   .filter-bar-body {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--space-3);
     min-width: 0;
     animation: filter-bar-open 0.16s ease-out;
   }
@@ -1769,40 +1735,6 @@ body.light-theme .target-card-white {
   @keyframes filter-bar-open {
     from { opacity: 0; }
     to { opacity: 1; }
-  }
-
-  body.light-theme .filter-bar-toggle {
-    background: #ffffff;
-    border-color: #e2e8f0;
-    color: #0f172a;
-  }
-
-  body.light-theme .filter-bar-summary {
-    color: #0f172a;
-  }
-
-  .map-container-section {
-    display: flex !important;
-    flex-direction: column;
-    gap: 10px;
-    height: auto !important;
-    flex-grow: 0 !important;
-    padding: 10px !important;
-  }
-
-  /* Out of the overlay and into the flow: a 260px floating card would cover most
-     of a 380px-wide map. */
-  .quick-summary-panel {
-    position: static !important;
-    width: 100% !important;
-    top: auto !important;
-    right: auto !important;
-  }
-
-  .collector-map-wrap {
-    height: 55vh !important;
-    min-height: 300px;
-    width: 100% !important;
   }
 
   /* --- Dashboard -------------------------------------------------------- */
@@ -1845,58 +1777,27 @@ body.light-theme .target-card-white {
   }
 
   /* --- Forms: tap targets ---------------------------------------------- */
-  /* 44px is the minimum comfortable touch target; 16px text is what stops iOS
-     Safari zooming the viewport on focus. Both need !important because the
-     components set height and font-size inline. */
+  /* 44px is the minimum comfortable touch target; 16px text (the body-lg step) is what
+     stops iOS Safari zooming the viewport on focus. !important because some surfaces
+     not yet swept still size their inputs inline. */
   .form-input,
   select.form-input,
   input.form-input {
     min-height: 44px !important;
     height: auto !important;
-    font-size: 16px !important;
-    padding: 10px 12px !important;
+    font-size: var(--text-body-lg) !important;
+    padding: var(--space-2) var(--space-3) !important;
   }
 
   textarea.form-input {
     min-height: 88px !important;
-    padding: 10px 12px !important;
   }
 
-  .form-label {
-    font-size: 0.75rem !important;
-    margin-bottom: 4px;
-  }
-
-  /* The 44px rule above sets padding on every .form-input, which would slide the text
-     of these controls under their absolutely-positioned leading icon. */
+  /* The rule above sets padding on every .form-input, which would slide the text of
+     these controls under their absolutely-positioned leading icon. */
   .select-with-icon select.form-input,
   .select-with-icon input.form-input {
-    padding-left: 32px !important;
-  }
-
-  /* Laenge / Breite / Tiefe stack rather than squeezing three number fields plus
-     their labels into a 380px row. */
-  .form-grid-3,
-  .form-grid-2 {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
-  }
-
-  /* Take Photo / Upload stay side by side - they are buttons, not inputs, and
-     both fit at 44px. */
-  .photo-actions {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-  }
-
-  .photo-actions .btn-secondary {
-    min-height: 44px;
-    padding: 8px 6px !important;
-  }
-
-  .photo-thumb-grid {
-    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)) !important;
-    max-height: 200px !important;
+    padding-left: calc(var(--space-3) + 14px + var(--space-2)) !important;
   }
 
   .btn-primary,
@@ -1909,20 +1810,6 @@ body.light-theme .target-card-white {
   input[type="checkbox"] {
     width: 20px;
     height: 20px;
-  }
-
-  /* Submit/Cancel ride along at the bottom of the form. */
-  .form-actions {
-    position: sticky;
-    bottom: 0;
-    z-index: 50;
-    padding: 10px 0 4px;
-    margin-top: 4px;
-    background: linear-gradient(to top, rgba(9, 13, 22, 0.98) 55%, rgba(9, 13, 22, 0));
-  }
-
-  body.light-theme .form-actions {
-    background: linear-gradient(to top, rgba(248, 250, 252, 0.98) 55%, rgba(248, 250, 252, 0));
   }
 
   /* Leaflet's own popup can otherwise be wider than the screen. */
@@ -1944,11 +1831,11 @@ body.light-theme .target-card-white {
    inside no longer carries its own colours.
    ========================================================================== */
 .target-popup .leaflet-popup-content-wrapper {
-  background: var(--surface);
+  background: var(--surface-raised);
   color: var(--surface-text);
   border: 1px solid var(--surface-border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-float);
   padding: 0;
 }
 
@@ -1959,7 +1846,7 @@ body.light-theme .target-card-white {
 
 /* The tip is a rotated square, so it needs the surface colour of its own. */
 .target-popup .leaflet-popup-tip {
-  background: var(--surface);
+  background: var(--surface-raised);
   border: 1px solid var(--surface-border);
 }
 
@@ -1970,12 +1857,13 @@ body.light-theme .target-card-white {
 
 .tp {
   font-family: var(--font-body);
-  font-size: 0.76rem;
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
   color: var(--surface-text);
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  padding: 12px 14px 14px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-4);
   /* A definite width, not just a max.
    *
    * Leaflet sizes .leaflet-popup-content shrink-to-fit, which resolves the width
@@ -1990,26 +1878,23 @@ body.light-theme .target-card-white {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding-bottom: 8px;
+  gap: var(--space-3);
+  /* Clears Leaflet's close button, which sits in the popup's top-right corner. */
+  padding-right: var(--space-5);
+  padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--surface-border);
 }
 
 .tp-vm {
   font-family: var(--font-heading);
-  font-weight: 800;
-  font-size: 0.98rem;
-  letter-spacing: 0.01em;
-  color: var(--accent);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-body-lg);
+  line-height: var(--lh-body-lg);
+  color: var(--surface-text-strong);
 }
 
 .tp-status {
-  font-size: 0.56rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  padding: 3px 9px;
-  border-radius: 9999px;
-  white-space: nowrap;
+  max-width: 55%;
 }
 
 
@@ -2023,30 +1908,31 @@ body.light-theme .target-card-white {
 .tp-section {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .tp-section-title {
-  font-size: 0.58rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
   text-transform: uppercase;
   color: var(--surface-text-muted);
-  margin-bottom: 4px;
-  padding-bottom: 3px;
+  margin-bottom: var(--space-1);
+  padding-bottom: var(--space-1);
   border-bottom: 1px solid var(--surface-border);
 }
 
 .tp-feedback {
-  padding: 8px 10px 9px;
-  border-radius: 8px;
-  border-left: 3px solid #10b981;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  border-left: 3px solid rgb(var(--status-found-rgb));
   background: var(--surface-sunken);
 }
 
 .tp-feedback-title {
-  color: #10b981;
-  border-bottom-color: rgba(16, 185, 129, 0.28);
+  color: rgb(var(--status-found-rgb));
+  border-bottom-color: rgb(var(--status-found-rgb) / 0.28);
 }
 
 /* Two real columns rather than flex space-between. The label column is capped so
@@ -2056,7 +1942,7 @@ body.light-theme .target-card-white {
   display: grid;
   grid-template-columns: minmax(0, 104px) minmax(0, 1fr);
   align-items: baseline;
-  gap: 10px;
+  gap: var(--space-3);
   padding: 2px 0;
 }
 
@@ -2098,36 +1984,38 @@ body.light-theme .target-card-white {
 }
 
 .tp-logged {
-  font-size: 0.6rem;
-  color: var(--surface-text-muted);
-  margin-top: 4px;
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  color: var(--surface-text-subtle);
+  margin-top: var(--space-1);
 }
 
 .tp-photos {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .tp-photos-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
   text-transform: uppercase;
   color: var(--surface-text-muted);
 }
 
 .tp-count {
   font-variant-numeric: tabular-nums;
-  color: var(--accent);
+  color: var(--surface-text-strong);
 }
 
 .tp-stage {
   position: relative;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   overflow: hidden;
   border: 1px solid var(--surface-border);
   background: var(--surface-sunken);
@@ -2146,21 +2034,21 @@ body.light-theme .target-card-white {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  /* Fixed dark chip in both themes: it sits on a photograph, not on the popup
-     surface, and the photo behind it can be any colour. */
-  background: rgba(15, 23, 42, 0.62);
-  color: #ffffff;
+  /* The media chip in both themes: it sits on a photograph, not on the popup, and the
+     photo behind it can be any colour. */
+  background: var(--media-chip);
+  color: var(--on-media);
 }
 
-.tp-nav:hover { background: rgba(15, 23, 42, 0.82); }
+.tp-nav:hover { background: var(--media-chip-hover); }
 .tp-nav-prev { left: 6px; }
 .tp-nav-next { right: 6px; }
 
@@ -2168,55 +2056,57 @@ body.light-theme .target-card-white {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-2);
   width: 100%;
-  padding: 7px;
-  border-radius: 8px;
-  border: 1px solid var(--surface-border);
-  background: var(--surface-sunken);
-  color: var(--surface-text);
+  min-height: var(--control-h);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--surface-border-strong);
+  background: var(--surface);
+  color: var(--surface-text-strong);
   font-family: var(--font-body);
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: var(--text-button);
+  line-height: var(--lh-button);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-button);
   cursor: pointer;
 }
 
 .tp-download:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--surface-sunken);
 }
 
 .tp-lightbox {
   position: fixed;
   inset: 0;
   z-index: 100000;
-  background: rgba(2, 6, 23, 0.92);
+  background: var(--media-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: var(--space-5);
   cursor: zoom-out;
 }
 
 .tp-lightbox img {
   max-width: 100%;
   max-height: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
 }
 
 .tp-lightbox-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 34px;
-  height: 34px;
+  top: var(--space-4);
+  right: var(--space-4);
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  color: #ffffff;
+  background: var(--media-chip);
+  color: var(--on-media);
   cursor: pointer;
 }
 
@@ -2227,8 +2117,7 @@ body.light-theme .target-card-white {
     /* Narrower phones cannot give the card its full width; min() keeps the
        definite width so the grid never falls back to shrink-to-fit. */
     width: min(302px, calc(100vw - 72px));
-    font-size: 0.74rem;
-    padding: 11px 12px 12px;
+    padding: var(--space-3);
   }
   .tp-row {
     grid-template-columns: minmax(0, 92px) minmax(0, 1fr);

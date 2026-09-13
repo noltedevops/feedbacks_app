@@ -3,9 +3,10 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 're
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { type LocalPoint, getResolvedStatus } from '../db/indexedDb';
-import { Layers, FolderPlus, Home, ChevronLeft, ChevronRight, Download, X, Check } from 'lucide-react';
+import { Layers, FolderPlus, Home, ChevronLeft, ChevronRight, Download, X, Check, Plus, Minus } from 'lucide-react';
 import { makeT, type AppLang, type Translator } from '../i18n';
 import { useTheme } from '../useTheme';
+import { useTokenColors } from '../useTokenColors';
 
 interface FieldMapProps {
   lang: AppLang;
@@ -21,21 +22,32 @@ interface FieldMapProps {
   isMobile?: boolean;
 }
 
-/* Marker and legend fills.
+/* Marker fills, from the status tokens.
  *
- * These deliberately do NOT follow the app theme, unlike the .status-chip text in
- * index.css. A chip is a word on a white card and has to darken to stay readable; a
- * marker is a dot on the basemap, and the basemap is chosen independently of the theme -
- * dark canvas is the default in light mode too. Darkening these would put a dark dot on
- * a dark map. They keep the bright hue and their white stroke, which reads on canvas,
- * streets and satellite alike, and the legend matches the markers it explains. */
-const STATUS_FILL = { found: '#10b981', pending: '#ef4444' } as const;
+ * The canvas basemap now follows the theme - light grey under the light theme, dark
+ * under the dark - so the markers follow it too: the darkened status hues on the light
+ * canvas, the bright ones on the dark. The bright green the markers used to keep in
+ * both themes was about 2:1 on the light canvas, under the 3:1 a marker needs.
+ *
+ * Leaflet paints CircleMarkers on a canvas, and a canvas fill cannot read var(), so
+ * the tokens are resolved here, once per theme. The stroke is the surface colour, which
+ * separates a dot from its neighbours on every basemap. The legend reads the same
+ * tokens in CSS, so it always matches the markers it explains. */
+function useStatusFill() {
+  const theme = useTheme();
+  const c = useTokenColors(['--status-found-rgb', '--status-pending-rgb', '--surface'] as const);
+  return useMemo(() => ({
+    found: c['--status-found-rgb'],
+    pending: c['--status-pending-rgb'],
+    stroke: c['--surface'],
+    theme
+  }), [c, theme]);
+}
 
 
-/* The popup's status pill sits inside .map-container-section, which is a .glass-panel,
- * so the light-theme text override flattened it the same way it flattened the target
- * list chips. It carries .status-chip to opt out of that and to take its colour from
- * the same tokens - the popup is where a target's status is read most closely. */
+/* Maps a target's resolved status to the .status-chip vocabulary, so the popup's pill
+ * takes the same status tokens as the target lists - the popup is where a target's
+ * status is read most closely. */
 const STATUS_CHIP: Record<string, string> = {
   clear: 'found',
   uxo: 'pending',
@@ -404,33 +416,14 @@ const MapToolbar: React.FC<{
     }
   };
 
+  // Everything here is styled by the map-toolbar classes in field.css; the only thing
+  // that varies by caller is which side of the dashboard column the stack clears.
   return (
-    <div style={{
-      position: 'absolute',
-      bottom: isMobile ? '10px' : '16px',
-      // On desktop the dashboard's 360px left column sits over the map, so the toolbar
-      // clears it. On mobile the map is a block in the flow with nothing over it, and
-      // that offset would push the whole stack off a 380px screen.
-      left: !isMobile && viewMode === 'dashboard' ? '444px' : (isMobile ? '10px' : '16px'),
-      right: isMobile ? '10px' : undefined,
-      zIndex: 1000,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-start',
-      gap: '10px',
-      pointerEvents: 'auto',
-      transition: 'left 0.2s ease-in-out'
-    }}>
-      
-      {/* Basemap switcher options popout.
-       *
-       * Three near-identical inline-styled buttons before this, on a card that only
-       * looked right in dark theme: the labels were a hardcoded #fff, and the active
-       * option was distinguished by an orange tint that the light theme's blanket text
-       * override flattened along with its orange label. Styling lives in index.css now
-       * and reads the overlay tokens, so both themes come from the same source, and the
-       * active option is marked by a tick as well as by colour. */}
-      <div style={{ position: 'relative' }}>
+    <div className={`map-toolbar${viewMode === 'dashboard' ? ' map-toolbar--dashboard' : ''}`}>
+
+      {/* Basemap switcher popout. The active option is marked by a tick as well as by
+          colour. */}
+      <div className="map-toolbar-anchor">
         {basemapOpen && (
           <div className="basemap-menu" role="group" aria-label={t('Basemap')}>
             <div className="basemap-menu-caption">{t('Basemap')}</div>
@@ -445,7 +438,7 @@ const MapToolbar: React.FC<{
                   onClick={() => { setActiveBasemap(key); setBasemapOpen(false); }}
                 >
                   <span className="basemap-option-label">{t(label)}</span>
-                  {isActive && <Check size={13} strokeWidth={3} aria-hidden="true" />}
+                  {isActive && <Check size={14} strokeWidth={3} aria-hidden="true" />}
                 </button>
               );
             })}
@@ -453,154 +446,45 @@ const MapToolbar: React.FC<{
         )}
       </div>
 
-      {/* Vertical control widgets stack */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: 'var(--overlay)',
-        border: '1px solid var(--overlay-border)',
-        borderRadius: '10px',
-        boxShadow: 'var(--shadow-lg)',
-        overflow: 'hidden',
-        zIndex: 1000
-      }}>
-        {/* Zoom In */}
-        <button
-          onClick={handleZoomIn}
-          style={{
-            background: 'none',
-            border: 'none',
-            borderBottom: '1px solid var(--overlay-border)',
-            color: 'var(--overlay-text)',
-            width: '36px',
-            height: '36px',
-            fontSize: '1.2rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'background-color 0.2s'
-          }}
-          title={t('Zoom In')}
-        >
-          +
+      <div className="map-controls">
+        <button type="button" className="map-control" onClick={handleZoomIn} title={t('Zoom In')} aria-label={t('Zoom In')}>
+          <Plus size={16} aria-hidden="true" />
         </button>
-        {/* Zoom Out */}
-        <button
-          onClick={handleZoomOut}
-          style={{
-            background: 'none',
-            border: 'none',
-            borderBottom: '1px solid var(--overlay-border)',
-            color: 'var(--overlay-text)',
-            width: '36px',
-            height: '36px',
-            fontSize: '1.2rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'background-color 0.2s'
-          }}
-          title={t('Zoom Out')}
-        >
-          &minus;
+        <button type="button" className="map-control" onClick={handleZoomOut} title={t('Zoom Out')} aria-label={t('Zoom Out')}>
+          <Minus size={16} aria-hidden="true" />
         </button>
-        {/* Home */}
-        <button
-          onClick={handleHome}
-          style={{
-            background: 'none',
-            border: 'none',
-            borderBottom: '1px solid var(--overlay-border)',
-            color: 'var(--overlay-text)',
-            width: '36px',
-            height: '36px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'background-color 0.2s'
-          }}
-          title={t('Fit bounds')}
-        >
-          <Home size={16} />
+        <button type="button" className="map-control" onClick={handleHome} title={t('Fit bounds')} aria-label={t('Fit bounds')}>
+          <Home size={16} aria-hidden="true" />
         </button>
-        {/* Basemap Switcher */}
         <button
+          type="button"
+          className="map-control"
           onClick={() => setBasemapOpen(!basemapOpen)}
-          style={{
-            background: 'none',
-            border: 'none',
-            borderBottom: viewMode === 'dashboard' && onAddDataClick ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
-            color: 'var(--overlay-text)',
-            width: '36px',
-            height: '36px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'background-color 0.2s'
-          }}
+          aria-expanded={basemapOpen}
           title={t('Basemap switcher')}
+          aria-label={t('Basemap switcher')}
         >
-          <Layers size={16} />
+          <Layers size={16} aria-hidden="true" />
         </button>
-        {/* Add Data Button */}
         {viewMode === 'dashboard' && onAddDataClick && (
-          <button
-            onClick={onAddDataClick}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#38bdf8',
-              width: '36px',
-              height: '36px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background-color 0.2s'
-            }}
-            title={t('Add Data Layer')}
-          >
-            <FolderPlus size={16} />
+          <button type="button" className="map-control" onClick={onAddDataClick} title={t('Add Data Layer')} aria-label={t('Add Data Layer')}>
+            <FolderPlus size={16} aria-hidden="true" />
           </button>
         )}
       </div>
 
-      {/* Horizontal Map Legend Bar (Screenshot Match) */}
-      <div className="glass-panel" style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: isMobile ? '8px' : '12px',
-        padding: isMobile ? '5px 10px' : '6px 14px',
-        borderRadius: '9999px',
-        border: '1px solid var(--surface-border)',
-        boxShadow: 'var(--shadow-lg)',
-        maxWidth: '100%',
-        flexWrap: 'wrap'
-      }}>
-        {/* The "MAP LEGEND" caption is the first thing to go on a 380px screen - the two
-            colour chips next to it already say what it says. */}
-        {!isMobile && (
-          <span style={{ fontWeight: 800, color: 'var(--surface-text)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.04em', borderRight: '1px solid var(--surface-border)', paddingRight: '10px' }}>
-            {t('Map Legend')}
-          </span>
-        )}
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.7rem', color: 'var(--surface-text-muted)', fontWeight: 600 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: STATUS_FILL.found, border: '0.75px solid white' }}></div>
-            <span>{t('Investigated')}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: STATUS_FILL.pending, border: '0.75px solid white' }}></div>
-            <span>{t('Pending')}</span>
-          </div>
-        </div>
+      {/* Legend. The caption is the first thing to go on a phone - the two swatches
+          next to it already say what it says. */}
+      <div className="map-legend">
+        {!isMobile && <span className="map-legend-caption">{t('Map Legend')}</span>}
+        <span className="map-legend-item">
+          <span className="map-legend-dot" data-status="found" aria-hidden="true" />
+          {t('Investigated')}
+        </span>
+        <span className="map-legend-item">
+          <span className="map-legend-dot" data-status="pending" aria-hidden="true" />
+          {t('Pending')}
+        </span>
       </div>
 
     </div>
@@ -709,14 +593,17 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
   // actually changes - not on every parent render. Without this, any unrelated state
   // update in App re-creates ~1500 elements and react-leaflet re-applies styles to
   // every one of them.
+  const statusFill = useStatusFill();
+
   const markers = useMemo(() => (
     points.map((point) => {
       const isSelected = selectedPoint?.id === point.id;
       const isInvestigated = point.local_status === 'investigated';
-      const color = isInvestigated ? STATUS_FILL.found : STATUS_FILL.pending;
+      const color = isInvestigated ? statusFill.found : statusFill.pending;
 
       if (isSelected && isEditLocationMode) {
-        // Render a draggable standard Marker for editing location
+        // A draggable marker for editing the location. Styled by .marker-edit in
+        // field.css from the same status tokens, so it needs no colour of its own here.
         return (
           <Marker
             key={point.id}
@@ -724,14 +611,9 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
             draggable={true}
             icon={L.divIcon({
               className: 'custom-leaflet-marker',
-              html: `
-                <div class="map-marker-pin marker-selected"
-                     style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px #fa5f1c;">
-                  <div style="width: 4px; height: 4px; background-color: white; border-radius: 50%;"></div>
-                </div>
-              `,
-              iconSize: [14, 14],
-              iconAnchor: [7, 7]
+              html: `<div class="map-marker-pin marker-selected marker-edit" data-status="${isInvestigated ? 'found' : 'pending'}"><span></span></div>`,
+              iconSize: [16, 16],
+              iconAnchor: [8, 8]
             })}
             eventHandlers={{
               dragend: (e) => {
@@ -743,10 +625,10 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
               }
             }}
           >
-            <Popup>
-              <div style={{ color: '#0f172a', fontFamily: 'var(--font-body)', fontSize: '0.8rem', minWidth: '150px' }}>
-                <h4 style={{ fontWeight: 700, color: '#f97316', marginBottom: '4px' }}>VM Nr. {point.vm_nr}</h4>
-                <p style={{ margin: '2px 0', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>{t('DRAG TO RE-POSITION')}</p>
+            <Popup className="target-popup">
+              <div className="tp tp--compact">
+                <span className="tp-vm num">VM Nr. {point.vm_nr}</span>
+                <span className="tp-section-title">{t('DRAG TO RE-POSITION')}</span>
               </div>
             </Popup>
           </Marker>
@@ -756,14 +638,17 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
       // Otherwise, render a high-performance CircleMarker (small point size), drawn
       // into the shared canvas renderer rather than as its own SVG path. Touch
       // targets get a bigger radius - 2.5px is unhittable with a finger.
+      // Keyed by theme as well as target: react-leaflet applies a CircleMarker's colour
+      // props when it creates the layer and not on later renders, so a theme switch has
+      // to build the markers afresh to repaint them.
       return (
         <CircleMarker
-          key={point.id}
+          key={`${point.id}-${statusFill.theme}`}
           center={[point.latitude, point.longitude]}
           renderer={renderer}
           radius={isSelected ? 6 : (isMobile ? 4 : 2.5)}
           fillColor={color}
-          color="#ffffff"
+          color={statusFill.stroke}
           weight={isSelected ? 1.5 : 0.4}
           fillOpacity={0.9}
           eventHandlers={{
@@ -779,10 +664,10 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
         />
       );
     })
-  ), [points, selectedPoint, isEditLocationMode, onSelectPoint, openPopupFor, onPointPositionChange, renderer, isMobile, t]);
+  ), [points, selectedPoint, isEditLocationMode, onSelectPoint, openPopupFor, onPointPositionChange, renderer, isMobile, t, statusFill]);
 
   return (
-    <div style={{ height: '100%', width: '100%', position: 'relative', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+    <div className="field-map">
       <MapContainer
         center={center}
         zoom={18}
@@ -847,34 +732,11 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
       {isMobile && !touchActivated && (
         <button
           type="button"
+          className="map-shield"
           onClick={() => setTouchActivated(true)}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 900,
-            border: 'none',
-            background: 'transparent',
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'center',
-            paddingTop: '10px',
-            cursor: 'pointer',
-            // Let the browser handle the swipe as a page scroll rather than Leaflet.
-            touchAction: 'pan-y'
-          }}
           aria-label={t('Tap to activate map')}
         >
-          <span className="glass-panel" style={{
-            padding: '5px 12px',
-            borderRadius: '9999px',
-            fontSize: '0.65rem',
-            fontWeight: 800,
-            color: 'var(--surface-text)',
-            letterSpacing: '0.02em',
-            pointerEvents: 'none'
-          }}>
-            {t('Tap to activate map')}
-          </span>
+          <span className="map-shield-hint">{t('Tap to activate map')}</span>
         </button>
       )}
     </div>

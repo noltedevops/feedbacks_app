@@ -170,79 +170,52 @@ export const ImportExport: React.FC<ImportExportProps> = ({ lang, onImportSucces
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-      
-      {/* Seeding Section */}
-      <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <h3 style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Database size={16} color="hsl(var(--primary))" /> {t('Seedeich Seeding (Wilhelmshaven)')}
+    <div className="io">
+
+      <section className="io-card">
+        <h3 className="io-title">
+          <Database size={16} aria-hidden="true" /> {t('Seedeich Seeding (Wilhelmshaven)')}
         </h3>
-        <p style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: '1.4' }}>
+        <p className="io-body">
           {t('Load the exact 29 survey target points transcribed from the Wilhelmshaven Excel table. Converts Germany UTM coordinates to coordinates mapped on the Seedeich dyke.')}
         </p>
-        <button
-          onClick={handleSeed}
-          className="btn-primary"
-          style={{ width: '100%', marginTop: '6px' }}
-          disabled={loading || !isOnline}
-        >
-          {loading ? <RefreshCw className="animate-spin" size={16} /> : <Database size={16} />}
+        <button onClick={handleSeed} className="btn-primary" disabled={loading || !isOnline}>
+          {loading ? <RefreshCw className="animate-spin" size={16} aria-hidden="true" /> : <Database size={16} aria-hidden="true" />}
           {isOnline ? t('Seed Wilhelmshaven Targets') : t('Seed Targets (Requires Online)')}
         </button>
-      </div>
+      </section>
 
-      {/* CSV upload */}
-      <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <h3 style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Upload size={16} color="hsl(var(--primary))" /> {t('Upload GPR Coordinate File')}
+      <section className="io-card">
+        <h3 className="io-title">
+          <Upload size={16} aria-hidden="true" /> {t('Upload GPR Coordinate File')}
         </h3>
-        <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
-          {t('Choose a CSV file with coordinate columns X and Y (Germany UTM).')}
-        </p>
-        <label className="btn-secondary" style={{ width: '100%', cursor: 'pointer', gap: '8px', justifyContent: 'center' }}>
-          <Upload size={16} />
+        <p className="io-body">{t('Choose a CSV file with coordinate columns X and Y (Germany UTM).')}</p>
+        <label className="btn-secondary">
+          <Upload size={16} aria-hidden="true" />
           {t('Choose CSV File')}
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleFileUpload}
-            style={{ display: 'none' }}
-          />
+          <input type="file" accept=".csv" onChange={handleFileUpload} hidden />
         </label>
-      </div>
+      </section>
 
-      {/* Manual Paste */}
-      <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <h3 style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600 }}>{t('Paste CSV Coordinates')}</h3>
-        <form onSubmit={handleTextImport} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <section className="io-card">
+        <h3 className="io-title">{t('Paste CSV Coordinates')}</h3>
+        <form onSubmit={handleTextImport} className="io-form">
           <textarea
             rows={4}
-            className="form-input"
+            className="form-input io-code"
             value={csvText}
             onChange={(e) => setCsvText(e.target.value)}
             placeholder="vm_nr,x,y,depth,find,remark&#10;161,442972.981,5937097.795,1.2,Eisenstange,Kunstoffleitung&#10;1518,442973.039,5937094.115,1.1,ohne Fund,Kunstoffleitung"
-            style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
           />
-          <button type="submit" className="btn-primary" style={{ width: '100%' }}>
+          <button type="submit" className="btn-primary">
             {t('Parse and Load Points')}
           </button>
         </form>
-      </div>
+      </section>
 
-      {/* Status Message */}
       {message && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '10px',
-          padding: '12px',
-          borderRadius: 'var(--radius-sm)',
-          backgroundColor: message.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-          border: `1px solid ${message.type === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
-          fontSize: '0.8rem',
-          color: message.type === 'success' ? '#10b981' : '#f87171'
-        }}>
-          {message.type === 'success' ? <Check size={18} style={{ flexShrink: 0 }} /> : <AlertCircle size={18} style={{ flexShrink: 0 }} />}
+        <div className="io-message" data-type={message.type} role="status">
+          {message.type === 'success' ? <Check size={18} aria-hidden="true" /> : <AlertCircle size={18} aria-hidden="true" />}
           <div>{message.text}</div>
         </div>
       )}

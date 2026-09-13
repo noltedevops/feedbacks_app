@@ -1,0 +1,1235 @@
+/* ============================================================================
+   FIELD APP — the collector: target list, map, field application form.
+
+   The crew's working surface, used outdoors on whatever tablet or phone they own,
+   so legibility wins every trade-off here: 14px inputs and values, 12px floor for
+   everything else, strong ink for anything read at arm's length. Colour is kept for
+   state (a target's status, the sync result); sections are separated by hairlines,
+   not by a colour each.
+
+   Every value comes from tokens.css.
+   ========================================================================== */
+
+/* --- Layout ------------------------------------------------------------ */
+
+.collector-main {
+  display: flex;
+  flex-grow: 1;
+  gap: var(--panel-gap);
+  padding: var(--panel-gap);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.collector-sidebar {
+  width: 380px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--panel-pad);
+  overflow: hidden;
+}
+
+.collector-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* --- Survey area header ------------------------------------------------ */
+
+.collector-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.collector-kicker {
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+
+.collector-kicker--muted {
+  color: var(--surface-text-muted);
+}
+
+.collector-title {
+  font-size: var(--text-title);
+  line-height: var(--lh-title);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collector-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.collector-field-label {
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  font-weight: var(--weight-medium);
+  color: var(--surface-text-muted);
+}
+
+.collector-count {
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  color: var(--surface-text-muted);
+}
+
+.field-export {
+  width: 100%;
+}
+
+/* --- Filters ----------------------------------------------------------- */
+
+.collector-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.collector-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.field-control {
+  width: 100%;
+  min-height: var(--control-h);
+}
+
+/* The list's status filter sits in the list header, beside its title. */
+.field-control--status {
+  width: auto;
+  min-width: 140px;
+  min-height: var(--control-h-sm);
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* A control with a leading glyph: search, VM number, instrument. */
+.select-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.select-with-icon-glyph {
+  position: absolute;
+  left: var(--space-3);
+  z-index: 1;
+  color: var(--surface-text-muted);
+  pointer-events: none;
+}
+
+.select-with-icon .form-input {
+  width: 100%;
+  padding-left: calc(var(--space-3) + 14px + var(--space-2));
+}
+
+/* --- Target list ------------------------------------------------------- */
+
+.collector-list-wrap {
+  flex-grow: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow: hidden;
+}
+
+.collector-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.collector-list-scroll {
+  flex-grow: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow-y: auto;
+  padding-right: var(--space-1);
+}
+
+.list-more {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+/* A target row. A button, so a keyboard can reach and open it. Selected is marked
+   the way the rail marks it: an inner accent rule on a sunken wash. */
+.target-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  flex-shrink: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+  color: var(--surface-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.target-card:hover {
+  border-color: var(--surface-border-strong);
+}
+
+.target-card.active {
+  background: var(--surface-sunken);
+  border-color: var(--surface-border-strong);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.target-card:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.target-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.target-card-vm {
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+.target-card .status-chip {
+  max-width: 60%;
+}
+
+.target-card-meta {
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  color: var(--surface-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.target-card-depth {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+}
+
+.target-card.active .target-card-depth {
+  background: var(--surface);
+}
+
+.target-card-depth-label {
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  color: var(--surface-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.target-card-depth-value {
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+  white-space: nowrap;
+}
+
+/* --- Map and its quick summary ----------------------------------------- */
+
+.map-container-section {
+  position: relative;
+  flex-grow: 1;
+  padding: var(--space-1);
+  overflow: hidden;
+}
+
+.collector-map-wrap {
+  height: 100%;
+  width: 100%;
+  border-radius: calc(var(--radius-panel) - var(--space-1));
+  overflow: hidden;
+}
+
+/* Floating chrome over the map, so it takes the overlay tokens the map's own
+   controls use. */
+.quick-summary-panel {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 1000;
+  transition: opacity var(--transition-normal), transform var(--transition-normal);
+  width: 272px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-panel);
+  background: var(--overlay);
+  border: 1px solid var(--overlay-border);
+  box-shadow: var(--shadow-float);
+  color: var(--overlay-text);
+}
+
+/* Steps aside while a target's popup is open. No z-index can slot it between the
+   markers and the popup: Leaflet moves the map with a transform, so its panes form
+   their own stacking context and the popup's 700 only counts inside it. */
+.map-container-section[data-popup-open] .quick-summary-panel {
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+}
+
+.quick-summary-title {
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--surface-text-strong);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--overlay-border);
+}
+
+.quick-summary-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.quick-summary-row-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-muted);
+}
+
+.quick-summary-row-head .num {
+  color: var(--surface-text-strong);
+  white-space: nowrap;
+}
+
+.quick-summary-bar {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-border);
+  overflow: hidden;
+}
+
+.quick-summary-bar span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: rgb(var(--status-found-rgb));
+}
+
+/* --- Map chrome (shared by the Field App and Dashboard maps) ------------ */
+
+.field-map {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* The toolbar stack in the map's lower-left corner: basemap popout, controls, legend. */
+.map-toolbar {
+  position: absolute;
+  bottom: var(--space-4);
+  left: var(--space-4);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  pointer-events: auto;
+  transition: left var(--transition-normal);
+}
+
+/* On the dashboard the left column floats over the map, so the stack clears it: the
+   column's 360px plus the grid's outer padding, its gap, and the usual inset. */
+.map-toolbar--dashboard {
+  left: calc(360px + 3 * var(--panel-gap));
+}
+
+.map-toolbar-anchor {
+  position: relative;
+}
+
+.map-controls {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--overlay);
+  border: 1px solid var(--overlay-border);
+  box-shadow: var(--shadow-float);
+}
+
+.map-control {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--overlay-border);
+  background: none;
+  color: var(--overlay-text);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.map-control:last-child {
+  border-bottom: none;
+}
+
+.map-control:hover,
+.map-control[aria-expanded='true'] {
+  background: rgb(var(--overlay-hover-rgb) / 0.08);
+}
+
+.map-control:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.map-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  max-width: 100%;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--overlay);
+  border: 1px solid var(--overlay-border);
+  box-shadow: var(--shadow-float);
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-muted);
+}
+
+.map-legend-caption {
+  padding-right: var(--space-3);
+  border-right: 1px solid var(--overlay-border);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--surface-text-strong);
+}
+
+.map-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* The same status tokens the markers are drawn with, so the key matches the map. */
+.map-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--surface);
+  box-shadow: 0 0 0 1px rgb(var(--status-empty-rgb) / 0.3);
+}
+
+.map-legend-dot[data-status='found'] { background: rgb(var(--status-found-rgb)); }
+.map-legend-dot[data-status='pending'] { background: rgb(var(--status-pending-rgb)); }
+
+/* The location-edit marker: the target's status fill, the accent ring while dragged. */
+.marker-edit {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--surface);
+  background: rgb(var(--status-pending-rgb));
+}
+
+.marker-edit[data-status='found'] {
+  background: rgb(var(--status-found-rgb));
+}
+
+.marker-edit span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+/* The location-edit popup, a compact .tp. */
+.tp--compact {
+  width: auto;
+  min-width: 160px;
+  gap: var(--space-1);
+}
+
+/* Phone: the map stays inert until tapped, so a swipe over it scrolls the page. */
+.map-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-3) 0 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  /* Let the browser handle the swipe as a page scroll rather than Leaflet. */
+  touch-action: pan-y;
+}
+
+.map-shield-hint {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--overlay);
+  border: 1px solid var(--overlay-border);
+  box-shadow: var(--shadow-float);
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+  pointer-events: none;
+}
+
+/* --- Submission confirmation ------------------------------------------- */
+
+.submit-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  height: 100%;
+  padding: var(--space-2) var(--space-1);
+  text-align: center;
+  overflow-y: auto;
+  animation: field-fade 0.25s ease-out;
+}
+
+.submit-done-mark {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgb(var(--status-found-rgb) / 0.12);
+  border: 1px solid rgb(var(--status-found-rgb) / 0.35);
+  color: rgb(var(--status-found-rgb));
+}
+
+.submit-done-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.submit-done-title {
+  font-size: var(--text-title);
+  line-height: var(--lh-title);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+.submit-done-body {
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  color: var(--surface-text-muted);
+}
+
+.submit-done-meta {
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  color: var(--surface-text-subtle);
+}
+
+/* The sync result. The words and the icon carry it; the colour repeats it. */
+.submit-done-sync {
+  --sync-rgb: var(--status-scrap-rgb);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  font-weight: var(--weight-semibold);
+  color: rgb(var(--sync-rgb));
+  background: rgb(var(--sync-rgb) / 0.1);
+  border: 1px solid rgb(var(--sync-rgb) / 0.3);
+}
+
+.submit-done-sync[data-state='synced'] { --sync-rgb: var(--status-found-rgb); }
+.submit-done-sync[data-state='syncing'] { color: var(--info-ink); background: var(--surface-sunken); border-color: var(--surface-border); }
+
+.submit-done-ask {
+  width: 100%;
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--surface-border);
+  font-size: var(--text-body-lg);
+  line-height: var(--lh-body-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+.submit-done-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+@keyframes field-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* --- Field application form -------------------------------------------- */
+
+.ff {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  height: 100%;
+  overflow-y: auto;
+  padding-right: var(--space-1);
+}
+
+.ff-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--surface-border);
+  flex-shrink: 0;
+}
+
+.ff-title {
+  font-size: var(--text-heading);
+  line-height: var(--lh-heading);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+.ff-close {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--surface-text-muted);
+  cursor: pointer;
+}
+
+.ff-close:hover {
+  background: var(--surface-sunken);
+  color: var(--surface-text-strong);
+}
+
+.ff-close:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Location-edit mode: an instruction, so the accent's wash and rule. */
+.ff-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: rgb(var(--accent-rgb) / 0.12);
+  border: 1px solid rgb(var(--accent-rgb) / 0.45);
+  border-left: 3px solid var(--accent);
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  color: var(--surface-text);
+}
+
+.ff-banner svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--accent-ink);
+}
+
+.ff-banner strong {
+  color: var(--surface-text-strong);
+}
+
+.ff-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Sections are separated by a hairline and named by an overline - one system, where
+   each used to carry a colour of its own. */
+.ff-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--surface-border);
+}
+
+.ff-section:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.ff-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--surface-text-strong);
+}
+
+.ff-section-title svg {
+  color: var(--surface-text-muted);
+}
+
+/* The survey's facts about this target: read-only, so a well of strong values
+   rather than inputs. This is the block that shipped near-white on white. */
+.ff-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  border: 1px solid var(--surface-border);
+}
+
+.ff-facts dt {
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-medium);
+  color: var(--surface-text-muted);
+}
+
+.ff-facts dd {
+  margin: 0;
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+  overflow-wrap: anywhere;
+}
+
+.ff-facts-wide {
+  grid-column: 1 / -1;
+}
+
+.ff-upper {
+  text-transform: uppercase;
+}
+
+.ff-fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.ff-fieldset legend {
+  padding: 0;
+  margin-bottom: var(--space-1);
+}
+
+.ff-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+}
+
+.ff-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  color: var(--surface-text);
+  cursor: pointer;
+}
+
+.ff-choice.is-checked {
+  color: var(--surface-text-strong);
+  font-weight: var(--weight-semibold);
+}
+
+.ff-choice input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.ff-choice input:disabled {
+  cursor: not-allowed;
+}
+
+.ff-hint {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  color: var(--surface-text-subtle);
+}
+
+.ff-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ff-subtitle {
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+/* Form grids. A label may wrap its input, so a label can be the grid cell. */
+.form-grid-2,
+.form-grid-3 {
+  display: grid;
+  gap: var(--space-3) var(--space-2);
+}
+
+.form-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.form-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.ff .form-group {
+  min-width: 0;
+}
+
+.ff .form-input {
+  width: 100%;
+  min-height: var(--control-h);
+}
+
+.ff-readout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+}
+
+.ff-readout span {
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  color: var(--surface-text-muted);
+}
+
+.ff-readout strong {
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+.ff-textarea {
+  resize: vertical;
+  min-height: 88px;
+}
+
+.ff-reveal {
+  animation: field-fade 0.15s ease-out;
+}
+
+.ff-photos-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.ff-count {
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-muted);
+}
+
+.photo-thumb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: var(--space-2);
+  max-height: 144px;
+  overflow-y: auto;
+  padding: var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+}
+
+.ff-thumb {
+  position: relative;
+  height: 56px;
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  border: 1px solid var(--surface-border);
+}
+
+.ff-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Sits on a photograph, so it is the media chip in both themes. */
+.ff-thumb-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--media-chip);
+  color: var(--on-media);
+  cursor: pointer;
+}
+
+.ff-thumb-remove:hover {
+  background: var(--media-chip-hover);
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.form-actions > * {
+  flex: 1;
+}
+
+/* Camera capture: a media viewer, dark in both themes. */
+.ff-camera {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--media-scrim);
+}
+
+.ff-camera-title {
+  font-size: var(--text-heading);
+  line-height: var(--lh-heading);
+  color: var(--on-media);
+}
+
+.ff-camera-frame {
+  width: 100%;
+  max-width: 640px;
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+  border: 1px solid var(--media-border);
+  background: var(--media-ground);
+}
+
+.ff-camera-frame video {
+  display: block;
+  width: 100%;
+}
+
+.ff-camera-actions {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 320px;
+}
+
+.ff-camera-actions > * {
+  flex: 1;
+}
+
+/* --- Import (the collector's data tab) ---------------------------------- */
+
+.io {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.io-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  border: 1px solid var(--surface-border);
+}
+
+.io-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-body-lg);
+  line-height: var(--lh-body-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+.io-title svg {
+  color: var(--surface-text-muted);
+}
+
+.io-body {
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  color: var(--surface-text-muted);
+}
+
+.io-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.io-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--text-label);
+}
+
+.io-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+}
+
+.io-message svg {
+  flex-shrink: 0;
+}
+
+.io-message[data-type='success'] {
+  color: rgb(var(--status-found-rgb));
+  background: rgb(var(--status-found-rgb) / 0.1);
+  border: 1px solid rgb(var(--status-found-rgb) / 0.3);
+}
+
+.io-message[data-type='error'] {
+  color: var(--danger-ink);
+  background: rgb(var(--danger-rgb) / 0.08);
+  border: 1px solid rgb(var(--danger-rgb) / 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .submit-done,
+  .ff-reveal {
+    animation: none;
+  }
+}
+
+/* --- Tablet (769-1024) -------------------------------------------------- */
+/* The 380px panel leaves ~350px of map at 769px, and the panel does not need that
+   width for a project picker and a target list. */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .collector-sidebar {
+    width: 300px;
+  }
+
+  .quick-summary-panel {
+    width: 232px;
+  }
+
+  /* The dashboard's columns narrow to 264px here, so the stack clears less. */
+  .map-toolbar--dashboard {
+    left: calc(264px + 3 * var(--panel-gap));
+  }
+}
+
+/* --- Phone (<=768) ------------------------------------------------------ */
+@media (max-width: 768px) {
+  /* One column; the bottom padding keeps the last field clear of the fixed bar. */
+  .collector-main {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+    padding: var(--space-2) var(--space-2) calc(var(--mobile-nav-total) + var(--space-4));
+    gap: var(--space-3);
+  }
+
+  .collector-sidebar {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    overflow: visible;
+    padding: var(--space-3);
+  }
+
+  /* The form is the page on a phone, not a box that scrolls inside the page. */
+  .ff,
+  .collector-panel-body,
+  .collector-list-wrap {
+    height: auto;
+    overflow: visible;
+  }
+
+  /* The target list keeps its own scroller so it cannot grow to 1500 rows tall, but
+     contains its overscroll so it does not swallow the page's momentum. */
+  .collector-list-scroll {
+    max-height: 60vh;
+    overscroll-behavior: contain;
+  }
+
+  .target-card {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .target-card:hover {
+    border-color: var(--surface-border);
+  }
+
+  .map-container-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    height: auto;
+    flex-grow: 0;
+    padding: var(--space-2);
+  }
+
+  /* Out of the overlay and into the flow: a floating card would cover most of a
+     380px-wide map. */
+  .quick-summary-panel,
+  .map-container-section[data-popup-open] .quick-summary-panel {
+    position: static;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    width: 100%;
+    box-shadow: none;
+    background: var(--surface-sunken);
+    border-color: var(--surface-border);
+  }
+
+  .collector-map-wrap {
+    height: 55vh;
+    min-height: 300px;
+  }
+
+  /* The map is a block in the flow on a phone, with nothing floating over it. */
+  .map-toolbar,
+  .map-toolbar--dashboard {
+    bottom: var(--space-2);
+    left: var(--space-2);
+    right: var(--space-2);
+  }
+
+  /* Länge / Breite / Tiefe stack rather than squeezing three number fields into a
+     row; so do the teams fields. */
+  .form-grid-2,
+  .form-grid-3 {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  /* Take Photo / Upload stay side by side - buttons, not inputs, and both fit. */
+  .photo-actions {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+
+  .photo-thumb-grid {
+    max-height: 200px;
+  }
+
+  .ff-choice input {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ff-choice {
+    min-height: 44px;
+  }
+
+  /* Submit and Cancel ride along at the bottom of the form. A solid surface with a
+     hairline, not a fade: the fade had to name a colour to fade from. */
+  .form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    padding: var(--space-3) 0 var(--space-1);
+    margin-top: var(--space-1);
+    background: var(--surface);
+    border-top: 1px solid var(--surface-border);
+  }
+}
