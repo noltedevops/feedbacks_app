@@ -241,21 +241,26 @@ const de: Record<string, string> = {
   'High-throughput towed magnetometer array for large open areas':
     'Leistungsstarkes Schlepp-Magnetometerarray für große Freiflächen',
 
-  // --- Auth modal ---
+  // --- Sign-in dialog ---
+  'NOLTE Geoservices platform': 'NOLTE Geoservices Plattform',
+  'Create account': 'Konto erstellen',
   'Username / Operator ID': 'Benutzername / Betreiber-ID',
-  'Security Password': 'Passwort',
-  'Enter collector or dashboard': 'collector oder dashboard eingeben',
-  'Database Accounts:': 'Datenbank-Konten:',
-  'Field Collector': 'Feld-Erfasser',
-  'Dashboard Viewer': 'Dashboard-Betrachter',
+  'Enter your username': 'Benutzernamen eingeben',
+  'Password': 'Passwort',
+  'Forgot password?': 'Passwort vergessen?',
   'Full Name': 'Vollständiger Name',
+  'Jane Smith': 'Max Mustermann',
+  'e.g. j.smith': 'z. B. m.mustermann',
   'Corporate Email': 'Firmen-E-Mail',
   'Create Password': 'Passwort erstellen',
-  'Development Mode:': 'Entwicklungsmodus:',
-  'Account will be registered and logged in instantly. Access/Role is assigned at database level.':
-    'Das Konto wird sofort angelegt und angemeldet. Zugriff/Rolle wird auf Datenbankebene vergeben.',
+  'New accounts start with the Field App; Dashboard access is requested from an administrator.':
+    'Neue Konten beginnen mit der Feld-App; Zugang zum Dashboard wird bei einem Administrator angefragt.',
+  'Create & sign in': 'Erstellen & anmelden',
+  'Back to sign in': 'Zurück zur Anmeldung',
   'Username or Email': 'Benutzername oder E-Mail',
   'Enter your email': 'E-Mail-Adresse eingeben',
+  'An administrator will issue a temporary password.': 'Ein Administrator vergibt ein vorläufiges Passwort.',
+  'Request reset': 'Zurücksetzen anfordern',
 
   // --- Toasts ---
   'Connection restored. Cloud sync enabled.': 'Verbindung wiederhergestellt. Cloud-Sync aktiv.',

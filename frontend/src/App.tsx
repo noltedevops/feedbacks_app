@@ -8,6 +8,7 @@ import { ReportDialog, type ProjectOption } from './components/ReportDialog';
 import { FilterBar } from './components/FilterBar';
 import { Select } from './components/Select';
 import { Overview } from './components/Overview';
+import { AuthDialog, type AuthView } from './components/AuthDialog';
 import { Landing } from './components/Landing';
 import { LangSwitch } from './components/LangSwitch';
 import { TourHost } from './tour/TourHost';
@@ -25,7 +26,6 @@ import {
   AlertTriangle, 
   LogOut, 
   Shield, 
-  ArrowRight,
   X,
   Layers,
   Sun,
@@ -335,7 +335,7 @@ export default function App() {
   }, []);
   
   // Auth Form State
-  const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot'>('login');
+  const [authView, setAuthView] = useState<AuthView>('login');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
@@ -1457,212 +1457,26 @@ export default function App() {
             onRequestAccess={() => { setAuthView('signup'); setShowAuthModal(true); }}
           />
 
-          {/* Glassmorphic Login/Signup Modal Overlay */}
           {showAuthModal && (
-            <div style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100vw',
-              height: '100vh',
-              backgroundColor: 'rgba(9, 13, 22, 0.8)',
-              backdropFilter: 'blur(16px)',
-              zIndex: 9999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px'
-            }}>
-              
-              <div className="glass-panel" style={{
-                width: '100%',
-                maxWidth: '420px',
-                padding: '32px 28px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '20px',
-                boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                position: 'relative',
-                animation: 'modal-scale-up 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                textAlign: 'left',
-                backgroundColor: 'var(--surface)',
-                borderRadius: '14px'
-              }}>
-                
-                {/* Close Button */}
-                <button 
-                  onClick={() => setShowAuthModal(false)}
-                  style={{
-                    position: 'absolute',
-                    top: '16px',
-                    right: '16px',
-                    background: 'none',
-                    border: 'none',
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <X size={18} />
-                </button>
-
-                {/* Modal Header with Original Logo */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '14px' }}>
-                  <img src="/logo.png" alt="Nolte Logo" style={{ height: '42px', width: 'auto', objectFit: 'contain' }} />
-                  <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', margin: 0 }}>
-                    {authView === 'login' ? (lang === 'EN' ? 'Sign In' : 'Anmelden') : authView === 'signup' ? (lang === 'EN' ? 'Create Account' : 'Konto erstellen') : (lang === 'EN' ? 'Reset Password' : 'Passwort zurücksetzen')}
-                  </h2>
-                  <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.05em' }}>
-                    NOLTE GEOSERVICES PLATFORM
-                  </span>
-                </div>
-
-                {/* Login View */}
-                {authView === 'login' && (
-                  <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="login-username">{t('Username / Operator ID')}</label>
-                      <input
-                        id="login-username"
-                        type="text"
-                        className="form-input"
-                        value={usernameInput}
-                        onChange={(e) => setUsernameInput(e.target.value)}
-                        placeholder={t('Enter collector or dashboard')}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="login-password">{t('Security Password')}</label>
-                      <input
-                        id="login-password"
-                        type="password"
-                        className="form-input"
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        placeholder="••••••••"
-                        required
-                      />
-                    </div>
-                    
-                    {/* Demo helpers */}
-                    <div style={{ padding: '8px 10px', backgroundColor: 'rgba(245, 130, 32, 0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(245, 130, 32, 0.2)', fontSize: '0.68rem', color: '#f58220', lineHeight: '1.4' }}>
-                      <b>{t('Database Accounts:')}</b><br />
-                      - {t('Field Collector')}: <b>collector</b> | password<br />
-                      - {t('Dashboard Viewer')}: <b>dashboard</b> | password
-                    </div>
-
-                    <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '4px', backgroundColor: '#f58220' }}>
-                      {lang === 'EN' ? 'Sign In' : 'Anmelden'} <ArrowRight size={14} />
-                    </button>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', marginTop: '4px' }}>
-                      <span onClick={() => setAuthView('forgot')} style={{ color: '#64748b', cursor: 'pointer' }}>
-                        {lang === 'EN' ? 'Forgot Password?' : 'Passwort vergessen?'}
-                      </span>
-                      <span onClick={() => setAuthView('signup')} style={{ color: '#f58220', cursor: 'pointer', fontWeight: 600 }}>
-                        {lang === 'EN' ? 'Create Account' : 'Konto erstellen'}
-                      </span>
-                    </div>
-                  </form>
-                )}
-
-                {/* Create Account View */}
-                {authView === 'signup' && (
-                  <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="signup-fullname">{t('Full Name')}</label>
-                      <input 
-                        id="signup-fullname"
-                        type="text" 
-                        className="form-input" 
-                        value={signupFullName}
-                        onChange={(e) => setSignupFullName(e.target.value)}
-                        placeholder="Eric Musonera" 
-                        required 
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="signup-username">{t('Username / Operator ID')}</label>
-                      <input 
-                        id="signup-username"
-                        type="text" 
-                        className="form-input" 
-                        value={signupUsername}
-                        onChange={(e) => setSignupUsername(e.target.value)}
-                        placeholder="e.g. collector_west" 
-                        required 
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="signup-email">{t('Corporate Email')}</label>
-                      <input 
-                        id="signup-email"
-                        type="email" 
-                        className="form-input" 
-                        value={signupEmail} 
-                        onChange={(e) => setSignupEmail(e.target.value)} 
-                        placeholder="name@nolte-geoservices.de" 
-                        required 
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="signup-password">{t('Create Password')}</label>
-                      <input 
-                        id="signup-password"
-                        type="password" 
-                        className="form-input" 
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        placeholder="••••••••" 
-                        required 
-                      />
-                    </div>
-                    
-                    <div style={{ padding: '6px 8px', backgroundColor: 'rgba(16, 185, 129, 0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(16,185,129,0.2)', fontSize: '0.68rem', color: '#10b981', lineHeight: '1.3' }}>
-                      <b>{t('Development Mode:')}</b> {t('Account will be registered and logged in instantly. Access/Role is assigned at database level.')}
-                    </div>
-
-                    <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '4px', backgroundColor: '#f58220' }}>
-                      {lang === 'EN' ? 'Create & Sign In' : 'Erstellen & Anmelden'}
-                    </button>
-                    <div style={{ textAlign: 'center', fontSize: '0.72rem', marginTop: '4px' }}>
-                      <span onClick={() => setAuthView('login')} style={{ color: '#64748b', cursor: 'pointer' }}>
-                        {lang === 'EN' ? 'Back to Sign In' : 'Zurück zur Anmeldung'}
-                      </span>
-                    </div>
-                  </form>
-                )}
-
-                {authView === 'forgot' && (
-                  <form onSubmit={handleForgot} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="forgot-email">{t('Username or Email')}</label>
-                      <input 
-                        id="forgot-email"
-                        type="text" 
-                        className="form-input" 
-                        placeholder={t('Enter your email')}
-                        required 
-                      />
-                    </div>
-                    <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '4px', backgroundColor: '#f58220' }}>
-                      {lang === 'EN' ? 'Send Recovery Email' : 'Wiederherstellungs-E-Mail senden'}
-                    </button>
-                    <div style={{ textAlign: 'center', fontSize: '0.72rem', marginTop: '4px' }}>
-                      <span onClick={() => setAuthView('login')} style={{ color: '#64748b', cursor: 'pointer' }}>
-                        {lang === 'EN' ? 'Back to Sign In' : 'Zurück zur Anmeldung'}
-                      </span>
-                    </div>
-                  </form>
-                )}
-
-              </div>
-            </div>
+            <AuthDialog
+              lang={lang}
+              view={authView}
+              onViewChange={setAuthView}
+              onClose={() => setShowAuthModal(false)}
+              username={usernameInput}
+              onUsernameChange={setUsernameInput}
+              password={passwordInput}
+              onPasswordChange={setPasswordInput}
+              signupFullName={signupFullName}
+              onSignupFullNameChange={setSignupFullName}
+              signupUsername={signupUsername}
+              onSignupUsernameChange={setSignupUsername}
+              signupEmail={signupEmail}
+              onSignupEmailChange={setSignupEmail}
+              onLogin={handleLogin}
+              onSignup={handleSignup}
+              onForgot={handleForgot}
+            />
           )}
 
         </>

@@ -288,6 +288,19 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--surface-text-subtle);
 }
 
+/* Browser autofill paints its own blue ground, which no background declaration can
+   override; an inset shadow covers it, so a saved sign-in keeps the surface and ink
+   of both themes. */
+.form-input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset;
+  -webkit-text-fill-color: var(--surface-text-strong);
+  caret-color: var(--surface-text-strong);
+}
+
+.form-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset, 0 0 0 1px var(--focus-ring);
+}
+
 .form-input:disabled,
 .form-input[readonly] {
   background: var(--surface-sunken) !important;
@@ -1379,6 +1392,149 @@ select.report-field {
 .permission-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* --- Sign-in dialog (components/AuthDialog) -------------------------------
+   The same dialog, holding a form: the logo over an overline and the title, a
+   hairline, then the fields at the form rhythm. Its links are buttons in muted
+   ink, underlined on hover - gold stays with the one submit action. */
+.auth-dialog {
+  position: relative;
+  max-width: 420px;
+  padding: var(--space-6) var(--space-5) var(--space-5);
+}
+
+.auth-close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h);
+  height: var(--control-h);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--surface-text-muted);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.auth-close:hover {
+  background: var(--surface-sunken);
+  color: var(--surface-text-strong);
+}
+
+.auth-close:focus-visible,
+.auth-link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.auth-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--surface-border);
+  text-align: center;
+}
+
+.auth-logo {
+  width: auto;
+  height: 40px;
+  margin-bottom: var(--space-2);
+}
+
+.auth-kicker {
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--surface-text-muted);
+}
+
+.auth-title {
+  margin: 0;
+  font-size: var(--text-heading);
+  line-height: var(--lh-heading);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.auth-submit {
+  width: 100%;
+  min-height: 44px;
+}
+
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.auth-links--center {
+  justify-content: center;
+}
+
+.auth-link {
+  min-height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  font-weight: var(--weight-medium);
+  color: var(--surface-text-muted);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color var(--transition-fast), text-decoration-color var(--transition-fast);
+}
+
+.auth-link:hover {
+  color: var(--surface-text-strong);
+  text-decoration-color: currentColor;
+}
+
+.auth-link--strong {
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+/* Two classes: .permission-dialog p would otherwise restyle it. */
+.auth-dialog .auth-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  border: 1px solid var(--surface-border);
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  color: var(--surface-text-muted);
+}
+
+.auth-note svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--info-ink);
 }
 
 /* Rows in the admin lists: a sunken well per person. */
