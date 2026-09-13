@@ -32,6 +32,7 @@
   --text-title: 1.375rem;    --lh-title: 1.875rem;     /* 22/30  surface headers */
   --text-heading: 1.125rem;  --lh-heading: 1.625rem;   /* 18/26  panel and dialog titles */
   --text-body-lg: 1rem;      --lh-body-lg: 1.5rem;     /* 16/24  reading copy */
+                             --lh-reading: 1.75rem;    /* 16/28  long-form paragraphs, the brand's open leading */
   --text-body: 0.875rem;     --lh-body: 1.25rem;       /* 14/20  default UI text */
   --text-label: 0.8125rem;   --lh-label: 1.125rem;     /* 13/18  labels, list metadata */
   --text-caption: 0.75rem;   --lh-caption: 1rem;       /* 12/16  axes, legends, timestamps */

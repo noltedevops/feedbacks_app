@@ -1,18 +1,16 @@
 /* ============================================================================
    OVERVIEW — the post-login home page.
 
-   Content-led: one column, wide margins, large type, and colour used only where
-   it means something (the accent on kickers and on the way into a tour). The
-   panels and glass of the two working surfaces are deliberately absent - this
-   page is a doorway, not a workspace.
+   Built the way nolteservices.com builds a page: a large regular-weight headline,
+   an introduction set against the 3px yellow rule, generous space, and the one
+   gold word per section. A doorway, not a workspace - so no working chrome, just
+   the way into a tour of each surface this account can open.
 
-   Every colour comes from the theme tokens in index.css. No hardcoded hex: the
-   components that carried their own hex are exactly what left the app half dark
-   in light mode, and this page is new surface area for that same bug.
+   Every value comes from tokens.css.
    ========================================================================== */
 
 /* The desktop shell pins the viewport and scrolls inside panels, so this pane owns
-   its own scroller rather than growing the page. On mobile index.css hands the
+   its own scroller rather than growing the page. On a phone index.css hands the
    scroll back to the document, and the height cap comes off with it. */
 .overview-main {
   flex-grow: 1;
@@ -27,94 +25,101 @@
 .overview-inner {
   max-width: 920px;
   margin: 0 auto;
-  padding: 120px 48px 112px;
+  padding: calc(var(--space-8) + var(--space-7)) var(--space-7) var(--space-8);
 }
 
-/* --- Type ------------------------------------------------------------- */
+/* --- Introduction --------------------------------------------------------- */
 
+/* The brand's intro motif: the text block set off by the logo-yellow rule. */
+.overview-hero {
+  padding-left: var(--space-5);
+  border-left: 3px solid var(--brand-yellow);
+}
+
+/* The one gold word on the page, in the darkened ink that holds AA on light. */
 .overview-kicker {
   display: block;
-  font-family: var(--font-heading);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
   text-transform: uppercase;
   color: var(--accent-ink);
-  margin-bottom: 18px;
+  margin-bottom: var(--space-4);
 }
 
+/* Regular weight at size, as the brand sets its headlines. */
 .overview-title {
-  font-size: 3rem;
-  line-height: 1.08;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-size: var(--text-display);
+  line-height: var(--lh-display);
+  font-weight: var(--weight-regular);
+  letter-spacing: var(--tracking-display);
   color: var(--surface-text-strong);
-  max-width: 17ch;
-  margin-bottom: 28px;
+  max-width: 20ch;
+  margin-bottom: var(--space-5);
 }
 
 .overview-lead {
-  font-size: 1.15rem;
-  line-height: 1.6;
+  font-size: var(--text-body-lg);
+  line-height: var(--lh-reading);
   color: var(--surface-text-muted);
-  max-width: 58ch;
+  max-width: 60ch;
 }
 
 .overview-h2 {
-  font-size: 1.9rem;
-  line-height: 1.15;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: var(--text-title);
+  line-height: var(--lh-title);
+  font-weight: var(--weight-semibold);
   color: var(--surface-text-strong);
-  margin-bottom: 20px;
+  margin-bottom: var(--space-3);
 }
 
 .overview-copy {
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: var(--text-body-lg);
+  line-height: var(--lh-body-lg);
   color: var(--surface-text-muted);
-  max-width: 58ch;
+  max-width: 60ch;
 }
 
-/* --- Tour entry points ------------------------------------------------ */
+/* --- Tour entry points ---------------------------------------------------- */
 
 .overview-tours {
-  margin-top: 72px;
+  margin-top: var(--space-8);
 }
 
-/* Two across when the account has both surfaces; one card keeps the same width
-   rather than stretching across the page. */
+/* Two across when the account has both surfaces; one keeps the same width rather
+   than stretching across the page. */
 .overview-tour-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: var(--space-5);
 }
 
-/* The whole card is the button: one target, one action. */
+/* A panel, and the whole panel is the button: one target, one action. */
 .overview-tour {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
-  padding: 24px 24px 22px;
-  border-radius: var(--radius-lg);
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border-radius: var(--radius-panel);
   border: 1px solid var(--surface-border);
-  background: var(--surface-sunken);
+  background: var(--surface);
+  box-shadow: var(--shadow-panel);
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.2s ease-out, transform 0.2s ease-out, box-shadow 0.2s ease-out;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .overview-tour:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: 0 16px 32px -20px rgba(0, 0, 0, 0.5);
+  border-color: var(--surface-border-strong);
+  box-shadow: var(--shadow-float);
 }
 
 .overview-tour:focus-visible {
-  outline: 2px solid var(--accent-ink);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -124,39 +129,43 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  margin-bottom: 10px;
-  border-radius: 12px;
-  background: var(--surface-raised);
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
   border: 1px solid var(--surface-border);
-  color: var(--accent-ink);
+  color: var(--surface-text-strong);
 }
 
 .overview-tour-name {
-  font-family: var(--font-heading);
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-size: var(--text-heading);
+  line-height: var(--lh-heading);
+  font-weight: var(--weight-semibold);
   color: var(--surface-text-strong);
 }
 
 .overview-tour-covers {
-  font-size: 0.9rem;
-  line-height: 1.55;
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
   color: var(--surface-text-muted);
 }
 
+/* The call to action reads as the button it is part of: strong ink, the gold only
+   on the arrow - a mark, not a word. */
 .overview-tour-go {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 14px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--accent-ink);
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  font-size: var(--text-button);
+  line-height: var(--lh-button);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-button);
+  color: var(--surface-text-strong);
 }
 
 .overview-tour-go svg {
-  transition: transform 0.2s ease-out;
+  color: var(--accent);
+  transition: transform var(--transition-fast);
 }
 
 .overview-tour:hover .overview-tour-go svg {
@@ -164,29 +173,31 @@
 }
 
 .overview-tours-note {
-  margin-top: 20px;
-  font-size: 0.82rem;
-  line-height: 1.55;
+  margin-top: var(--space-4);
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
   color: var(--surface-text-muted);
   max-width: 62ch;
 }
 
-/* --- No-access block -------------------------------------------------- */
+/* --- No-access block ------------------------------------------------------ */
 
 .overview-section {
-  margin-top: 72px;
-  padding-top: 56px;
-  border-top: 1px solid var(--surface-border);
+  margin-top: var(--space-8);
+  padding: var(--space-5);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
 }
 
 .overview-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 28px;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
 }
 
-/* --- Motion ----------------------------------------------------------- */
+/* --- Motion --------------------------------------------------------------- */
 
 /* Scoped to .js-reveal, which the component adds itself: if the script does not run,
    the selector never matches and the content is simply visible. An animation is not
@@ -195,9 +206,9 @@
    observer. */
 .overview-main.js-reveal .reveal {
   opacity: 0;
-  transform: translateY(14px);
-  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-              transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(12px);
+  transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .overview-main.js-reveal .reveal.is-visible {
@@ -218,7 +229,6 @@
   }
 
   .overview-tour,
-  .overview-tour:hover,
   .overview-tour-go svg,
   .overview-tour:hover .overview-tour-go svg {
     transition: none;
@@ -226,32 +236,19 @@
   }
 }
 
-/* --- Tablet (769-1024) ------------------------------------------------ */
+/* --- Tablet (769-1024) ---------------------------------------------------- */
 @media (max-width: 1024px) {
   .overview-inner {
-    padding: 88px 40px 96px;
-  }
-
-  .overview-title {
-    font-size: 2.4rem;
-    max-width: 20ch;
-  }
-
-  .overview-lead {
-    font-size: 1.05rem;
-  }
-
-  .overview-h2 {
-    font-size: 1.6rem;
+    padding: var(--space-8) var(--space-6) var(--space-7);
   }
 
   .overview-tours,
   .overview-section {
-    margin-top: 56px;
+    margin-top: var(--space-7);
   }
 }
 
-/* --- Phone (<=768) ---------------------------------------------------- */
+/* --- Phone (<=768) -------------------------------------------------------- */
 @media (max-width: 768px) {
   /* The document scrolls on a phone; a 100vh pane with its own scroller would trap
      the page inside it and fight the fixed bottom nav bar. */
@@ -262,40 +259,34 @@
   }
 
   .overview-inner {
-    padding: 48px 20px calc(var(--mobile-nav-total) + 40px);
+    padding: var(--space-7) var(--space-4) calc(var(--mobile-nav-total) + var(--space-6));
+  }
+
+  .overview-hero {
+    padding-left: var(--space-4);
   }
 
   .overview-title {
-    font-size: 1.85rem;
-    letter-spacing: -0.02em;
     max-width: none;
-    margin-bottom: 20px;
+    margin-bottom: var(--space-4);
   }
 
   .overview-lead {
-    font-size: 0.98rem;
+    line-height: var(--lh-body-lg);
   }
 
-  .overview-h2 {
-    font-size: 1.4rem;
-  }
-
-  .overview-tours {
-    margin-top: 40px;
+  .overview-tours,
+  .overview-section {
+    margin-top: var(--space-6);
   }
 
   .overview-tour-grid {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: var(--space-3);
   }
 
   .overview-tour {
-    padding: 20px 20px 18px;
-  }
-
-  .overview-section {
-    margin-top: 48px;
-    padding-top: 40px;
+    padding: var(--space-4);
   }
 
   /* Full-width targets: 44px is the touch minimum. */
