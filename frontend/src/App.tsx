@@ -2479,15 +2479,13 @@ export default function App() {
           ) : view === 'dashboard' ? (
             
             // ROLE B: END USER / DASHBOARD VIEW (DASHBOARD)
-            <main className={`dashboard-main${isMobile ? ' dashboard-main--mobile' : ''}`} style={isMobile
-              ? { display: 'block', flexGrow: 1, minWidth: 0, position: 'relative' }
-              : { display: 'flex', flexGrow: 1, height: '100vh', overflow: 'hidden', position: 'relative' }}>
+            <main className={`dashboard-main${isMobile ? ' dashboard-main--mobile' : ''}`}>
 
               {/* On desktop the map is a full-bleed background the panels float over. On
                   mobile there is nothing to float over - the map becomes one block in the
                   reading order, handed to Dashboard as a slot. */}
               {!isMobile && (
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
+                <div className="dashboard-map-layer">
                   <FieldMap
                     lang={lang}
                     points={dashboardFilteredPoints}
@@ -2499,22 +2497,9 @@ export default function App() {
                 </div>
               )}
 
-              {/* Floating translucent overlay panels */}
-              <div style={isMobile ? undefined : {
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                zIndex: 10,
-                pointerEvents: 'none',
-                display: 'flex',
-                padding: '8px',
-                gap: '8px',
-                boxSizing: 'border-box',
-                width: '100%',
-                height: '100%'
-              }}>
+              {/* The panels' layer over the map. Transparent to the pointer, so the map
+                  between the panels stays usable; each panel takes the pointer back. */}
+              <div className={isMobile ? undefined : 'dashboard-panel-layer'}>
                 <Dashboard
                   lang={lang}
                   points={points}

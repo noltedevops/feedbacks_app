@@ -1190,14 +1190,11 @@ select.form-input--compact option {
   text-decoration: underline;
 }
 
-/* Recharts.
- *
- * Axis colour used to be a `stroke="#8c9f96"` prop on every XAxis and YAxis, and the
- * grid an inline rgba white. An SVG presentation attribute cannot hold a var(), so the
- * only way a token can reach them is from CSS - which also wins over the attribute, so
- * a stray prop cannot quietly override the theme again. Axis text paints with `fill`,
- * not `color`, which is why it was never touched by the light-theme text rules and was
- * failing at 2.79:1 on white while everything around it passed. */
+/* Recharts chrome: grid, axes and legend text come from CSS so the theme reaches them -
+ * an SVG attribute cannot hold a var(), and CSS wins over the attribute, so a stray prop
+ * cannot quietly override the theme. Axis text paints with `fill`, not `color`. Series
+ * colours are the exception: they are resolved per theme in useTokenColors. Hairline,
+ * solid gridlines - never dashed - per the chart spec. */
 .recharts-cartesian-grid line {
   stroke: var(--chart-grid);
 }
@@ -1330,111 +1327,11 @@ select.form-input--compact option {
 .status-chip[data-status="scrap"]   { --chip-rgb: var(--status-scrap-rgb); }
 .status-chip[data-status="alarm"]   { --chip-rgb: var(--status-alarm-rgb); }
 
-/* Surfaces that stay white in both themes: the target cards and the map's quick
- * summary. They are deliberate white cards on dark chrome rather than surfaces that
- * invert, so the ink on them is the light-theme ink even when the app is dark. */
-.target-card-white {
-  /* This card stays white in both themes - it is a deliberate white card on dark
-   * chrome, not a surface that inverts. So the ink on it is the light-theme ink even
-   * when the app is dark. Redeclaring the tokens here rather than hardcoding hexes at
-   * each call site means everything inside the card follows, the status chip included:
-   * before this, a chip on a white card in dark theme was emerald-500 at 2.5:1. */
-  --surface-text: #0f172a;
-  --surface-text-muted: #475569;
-  --surface-text-strong: #020617;
-  --status-found-rgb: 4 120 87;
-  --status-pending-rgb: 185 28 28;
-  --status-empty-rgb: 71 85 105;
-  --status-scrap-rgb: 180 83 9;
-  --status-alarm-rgb: 109 40 217;
-  --accent-ink: #c2410c;
-
-  background: #ffffff !important;
-  border-radius: 14px;
-  padding: 14px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease-in-out;
-  cursor: pointer;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  color: #0f172a !important;
-}
-
-.target-card-white:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-.target-card-white.active {
-  border-color: #10b981;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-/* Responsive layout overrides for phones live at the end of this file, so they
-   win against the theme and control rules that follow. */
-
-/* Light-theme override still to be retired by the Field App sweep: the target card.
-   Everything else resolves its colour through the tokens in both themes. */
-
-body.light-theme .target-card-white {
-  background: #ffffff !important;
-  border-color: #cbd5e1 !important;
-  color: #0f172a !important;
-}
-
 /* ==========================================================================
-   Responsive layout overrides for phones (<= 768px).
-
-   Additive only: every rule below is scoped to this media query, so the desktop
-   layout above is untouched. It sits last in the file so it outranks the theme
-   and control rules that precede it.
-
-   `!important` is load-bearing here rather than lazy - the components carry
-   their desktop geometry in inline style objects, which no plain stylesheet
-   rule can outrank.
-
-   The one thing CSS cannot do from here is move the dashboard map out of its
-   background layer and into the reading order; useIsMobile() handles that,
-   keyed to this same 768px.
+   Phone (<= 768px): the shell reflows into one scrolling column, the rail becomes
+   a bottom bar, and every control grows to a 44px target. Surface-specific phone
+   rules live with their surface - field.css, dashboard.css, overview.css.
    ========================================================================== */
-/* ===========================================================================
-   TABLET: 769-1024px
-
-   Between the phone reflow and the desktop layout. Desktop is untouched above
-   1024px - these rules exist only because both surfaces were built for a wide
-   viewport and simply run out of room before the mobile breakpoint is reached.
-
-   Everything here needs !important. The desktop geometry lives in inline style
-   attributes on the components, and an inline style beats a stylesheet rule at
-   any specificity - the same reason the mobile block below is written this way.
-   ========================================================================== */
-@media (min-width: 769px) and (max-width: 1024px) {
-
-  /* Dashboard: two 360px columns plus their gutters occupy 744px, which at 769px
-     leaves 25px of map visible between them - the map may as well not be there.
-     Narrowing both to 264px gives back 192px at the low end and 480px at 1024px,
-     so the map remains a map. The columns keep their own vertical stacking, so
-     the charts inside them stay full-width and stacked. */
-  .dashboard-col-left,
-  .dashboard-col-right {
-    width: 264px !important;
-  }
-
-  /* Tracks the right column: its width plus both 12px gutters. */
-  .dashboard-header-bar {
-    right: 288px !important;
-  }
-
-  /* Field App: the 380px panel leaves ~350px of map at 769px, and the panel does
-     not need that width for a project picker and a target list. */
-  .collector-sidebar {
-    width: 300px !important;
-  }
-}
-
 @media (max-width: 768px) {
 
   /* The bottom nav bar's content height. Everything that has to clear it - the page's
@@ -1735,45 +1632,6 @@ body.light-theme .target-card-white {
   @keyframes filter-bar-open {
     from { opacity: 0; }
     to { opacity: 1; }
-  }
-
-  /* --- Dashboard -------------------------------------------------------- */
-  .dashboard-main--mobile {
-    display: block !important;
-    height: auto !important;
-    overflow: visible !important;
-    padding: 10px 10px calc(var(--mobile-nav-total) + 16px);
-    box-sizing: border-box;
-    width: 100%;
-  }
-
-  .dashboard-mobile {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    width: 100%;
-    max-width: 100%;
-    pointer-events: auto;
-  }
-
-  /* Nothing in the column may be wider than the column - this is what keeps the
-     charts (which will happily report an intrinsic min-width) from producing a
-     horizontal scrollbar. */
-  .dashboard-mobile > * {
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  .dashboard-mobile-map {
-    height: 55vh;
-    min-height: 300px;
-    padding: 4px;
-    overflow: hidden;
-    border-radius: 12px;
-  }
-
-  .dashboard-mobile .recharts-responsive-container {
-    max-width: 100%;
   }
 
   /* --- Forms: tap targets ---------------------------------------------- */

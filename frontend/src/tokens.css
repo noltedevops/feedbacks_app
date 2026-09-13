@@ -138,6 +138,15 @@
   --scrim: rgba(20, 20, 20, 0.45);
   --chart-grid: rgba(20, 20, 20, 0.08);
 
+  /* Chart series, in fixed order - slot 1 first, never cycled. Validated as a set with
+     the dataviz six checks against the white panel: lightness band, chroma floor,
+     adjacent CVD separation (worst dE 27.3), normal-vision floor (30.5), and every
+     slot >= 3:1 on the surface. The first three also pass all-pairs. Gold is slot 2
+     at #b88400 - the brand gold stepped down until it clears 3:1 as a mark. */
+  --chart-1: #2a78d6;
+  --chart-2: #b88400;
+  --chart-3: #4a3aa7;
+
   /* Media: the camera, the photo lightbox and the chips that sit on a photograph. The
      same in both themes, because what they frame is an image, not the app. */
   --media-scrim: rgba(10, 10, 10, 0.92);
@@ -197,6 +206,12 @@ body.dark-theme {
 
   --scrim: rgba(0, 0, 0, 0.6);
   --chart-grid: rgba(255, 255, 255, 0.08);
+
+  /* The same three hues stepped for the dark panel, validated against #1c1c1c: all in
+     the dark lightness band, adjacent CVD dE 27.1, every slot >= 3:1. */
+  --chart-1: #3987e5;
+  --chart-2: #b88400;
+  --chart-3: #9085e9;
 
   --shadow-float: 0 16px 40px -12px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.4);
   --shadow-panel: none;

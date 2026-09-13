@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { type LocalPoint } from '../db/indexedDb';
 import { makeT, type AppLang } from '../i18n';
 import { FilterBar } from './FilterBar';
+import { useTokenColors } from '../useTokenColors';
 import {
   CheckCircle2,
   Database,
@@ -73,21 +74,10 @@ const LOG_PAGE_SIZE = 40;
 // Panels whose numbers only exist after a target has been dug. When the current selection
 // holds no excavated targets there is genuinely nothing to plot, so the panel says so
 // rather than borrowing rows from a status the user filtered out.
-const ExcavationOnly: React.FC<{ note: string; minHeight?: number }> = ({ note, minHeight }) => (
-  <div style={{
-    flex: 1,
-    minHeight: minHeight ?? 0,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px',
-    padding: '10px',
-    textAlign: 'center',
-    color: 'var(--surface-text-muted)'
-  }}>
-    <Info size={15} />
-    <span style={{ fontSize: '0.62rem', fontWeight: 700, lineHeight: 1.3 }}>{note}</span>
+const ExcavationOnly: React.FC<{ note: string }> = ({ note }) => (
+  <div className="dash-empty">
+    <Info size={16} aria-hidden="true" />
+    <span>{note}</span>
   </div>
 );
 
@@ -367,82 +357,76 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     [filteredPoints, visibleLogCount]
   );
 
-  // ---- Shared style tokens -------------------------------------------------
-  // Desktop panels are flex children of a fixed-height column, so they size themselves
-  // with flex + minHeight:0. In the mobile column there is no height to divide, so each
-  // panel needs an explicit chart height instead.
-  const panelStyle: React.CSSProperties = isMobile
-    ? { padding: '12px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }
-    : { padding: '10px 12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minHeight: 0, overflow: 'hidden' };
+  // ---- Chart colours --------------------------------------------------------
+  // Recharts writes series colours into SVG attributes, legends and tooltips, none of
+  // which can read var(), so the tokens are resolved here - per theme, from the one
+  // source in tokens.css.
+  const c = useTokenColors([
+    '--chart-1', '--chart-2', '--chart-3',
+    '--status-found-rgb', '--status-pending-rgb',
+    '--surface', '--surface-raised', '--surface-sunken', '--surface-border',
+    '--surface-text', '--surface-text-muted'
+  ] as const);
 
-  const chartBodyStyle: React.CSSProperties = isMobile
-    ? { width: '100%', height: '220px' }
-    : { width: '100%', flex: 1, minHeight: 0 };
-
-  const panelKickerStyle: React.CSSProperties = {
-    fontSize: isMobile ? '0.6rem' : '0.5rem',
-    fontWeight: 800,
-    letterSpacing: '0.05em',
-    textTransform: 'uppercase'
+  // Chart type is the caption step - 12px, the floor - on every chart.
+  const AXIS = 12;
+  const axisProps = { fontSize: AXIS, tickLine: false, axisLine: false } as const;
+  const tooltipProps = {
+    contentStyle: {
+      backgroundColor: c['--surface-raised'],
+      border: `1px solid ${c['--surface-border']}`,
+      borderRadius: 2,
+      color: c['--surface-text'],
+      fontSize: AXIS,
+      boxShadow: 'var(--shadow-float)'
+    },
+    itemStyle: { color: c['--surface-text'] },
+    labelStyle: { color: c['--surface-text-muted'], fontWeight: 600 },
+    cursor: { fill: c['--surface-sunken'] }
   };
-  const panelTitleStyle: React.CSSProperties = {
-    fontSize: isMobile ? '0.85rem' : '0.72rem',
-    fontWeight: 800,
-    color: 'var(--surface-text)',
-    margin: 0
+  const legendProps = {
+    verticalAlign: 'top' as const,
+    align: 'left' as const,
+    height: 28,
+    iconType: 'circle' as const,
+    iconSize: 8,
+    wrapperStyle: { fontSize: AXIS }
   };
-  // Chart type. 7px was the desktop value for both of these and 8px for the tooltip,
-  // which is smaller than anything else in the app and below what is readable on a
-  // monitor at a normal viewing distance. 11px is still compact enough for four charts
-  // in a 360px column.
-  const axisFontSize = isMobile ? 11 : 11;
-  const legendFontSize = isMobile ? 11 : 11;
-  const tooltipFontSize = isMobile ? 11 : 11;
 
-  // Native selects on iOS zoom the page in when focused below 16px. Full-width and
-  // 40px tall also makes them a real tap target.
-  const selectStyle: React.CSSProperties = isMobile
-    ? {
-        fontSize: '16px',
-        padding: '8px 10px',
-        fontWeight: 700,
-        backgroundColor: 'var(--surface-sunken)',
-        borderColor: 'var(--surface-border)',
-        color: 'var(--surface-text)',
-        cursor: 'pointer',
-        borderRadius: '8px',
-        height: '44px',
-        width: '100%',
-        maxWidth: '100%'
-      }
-    : {
-        fontSize: '0.72rem',
-        padding: '4px 20px 4px 8px',
-        fontWeight: 700,
-        backgroundColor: 'var(--surface-sunken)',
-        borderColor: 'var(--surface-border)',
-        color: 'var(--surface-text)',
-        cursor: 'pointer',
-        borderRadius: '6px',
-        height: '26px'
-      };
+  // Findings and the Sohle split share one category order - most frequent first - so
+  // the two panels read against each other row by row.
+  const findingsDesc = useMemo(() => [...fundstueckChartData].reverse(), [fundstueckChartData]);
+  const sohleDesc = useMemo(() => {
+    const order = findingsDesc.map(d => d.name);
+    return [...sohleSplitChartData].sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name));
+  }, [findingsDesc, sohleSplitChartData]);
 
-  const labelStyle: React.CSSProperties = {
-    fontSize: isMobile ? '0.62rem' : '0.68rem',
-    color: 'var(--surface-text-muted)',
-    fontWeight: 700,
-    textTransform: isMobile ? 'uppercase' : 'none',
-    letterSpacing: isMobile ? '0.04em' : undefined
-  };
+  // Sensor accuracy as a share of each set. Evaluated depth exists for every target
+  // and excavated depth only for the dug ones - ~1700 against ~70 - so on a shared
+  // count axis the excavated line lay flat along zero and compared nothing. Indexed to
+  // a common base, the two distributions can be read against each other; the counts
+  // stay in the tooltip.
+  const depthShareData = useMemo(() => {
+    const evalTotal = depthCompData.reduce((s, d) => s + d['Evaluated (Sensor)'], 0) || 1;
+    const excTotal = depthCompData.reduce((s, d) => s + d['Excavated (Actual)'], 0) || 1;
+    return depthCompData.map(d => ({
+      limit: d.limit,
+      evaluated: Math.round((d['Evaluated (Sensor)'] / evalTotal) * 1000) / 10,
+      excavated: Math.round((d['Excavated (Actual)'] / excTotal) * 1000) / 10,
+      evaluatedCount: d['Evaluated (Sensor)'],
+      excavatedCount: d['Excavated (Actual)']
+    }));
+  }, [depthCompData]);
 
   // ---- Controls ------------------------------------------------------------
+  // One control style for all four; the design system owns their colour.
   const projectSelect = (
     <select
       value={filterProjectId}
       onChange={(e) => setFilterProjectId(e.target.value)}
-      className="form-input"
+      className="form-input dash-control dash-control--project"
       title={t('Project ID')}
-      style={{ ...selectStyle, maxWidth: isMobile ? '100%' : '260px' }}
+      aria-label={t('Project ID')}
     >
       <option value="all">{t('All Projects')}</option>
       {projectOptions.map((p) => (
@@ -457,9 +441,9 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     <select
       value={filterInstrument}
       onChange={(e) => setFilterInstrument(e.target.value)}
-      className="form-input"
+      className="form-input dash-control"
       title={t('Instrument')}
-      style={selectStyle}
+      aria-label={t('Instrument')}
     >
       <option value="all">{t('All Instruments')}</option>
       <option value="georadar">{t('Georadar Array')}</option>
@@ -473,9 +457,9 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     <select
       value={filterDepth}
       onChange={(e) => setFilterDepth(e.target.value)}
-      className="form-input"
+      className="form-input dash-control dash-control--sm"
       title={t('Depth filter')}
-      style={isMobile ? selectStyle : { fontSize: '0.65rem', padding: '2px 14px 2px 4px', height: '20px', backgroundColor: 'var(--surface-sunken)', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', cursor: 'pointer', borderRadius: '4px' }}
+      aria-label={t('Depth filter')}
     >
       {DEPTH_BUCKETS.map(bucket => (
         <option key={bucket.id} value={bucket.id}>{bucket.label}</option>
@@ -487,9 +471,9 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     <select
       value={filterStatus}
       onChange={(e) => setFilterStatus(e.target.value)}
-      className="form-input"
+      className="form-input dash-control dash-control--sm"
       title={t('Status filter')}
-      style={isMobile ? selectStyle : { fontSize: '0.65rem', padding: '2px 14px 2px 4px', height: '20px', backgroundColor: 'var(--surface-sunken)', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', cursor: 'pointer', borderRadius: '4px' }}
+      aria-label={t('Status filter')}
     >
       <option value="all">{t('All Targets')}</option>
       <option value="investigated">{t('Investigated')}</option>
@@ -516,184 +500,117 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   const reportButton = (
     <button
       type="button"
-      className="btn-primary"
+      className="btn-primary dash-report"
       data-tour="dash.report"
       onClick={onGenerateReport}
-      title={t('Generate Report')}
-      style={isMobile
-        ? { height: '44px', width: '100%', padding: '0 12px', fontSize: '0.85rem', fontWeight: 700, gap: '8px', borderRadius: '8px', justifyContent: 'center' }
-        : { height: '26px', padding: '0 12px', fontSize: '0.72rem', fontWeight: 700, gap: '6px', borderRadius: '6px', whiteSpace: 'nowrap' }}
     >
-      <FileText size={isMobile ? 15 : 13} />
+      <FileText size={16} aria-hidden="true" />
       {t('Generate Report')}
     </button>
   );
 
-  // The desktop branch must reproduce the original styles exactly - no lineHeight, no
-  // minWidth - or the header's measured height shifts by a pixel and drags the whole
-  // left column down with it.
   const headerTitle = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', ...(isMobile ? { minWidth: 0 } : {}) }}>
-      <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'rgb(var(--status-found-rgb))', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-        {t('Operations Overview')}
-      </span>
-      <h2 style={{ fontSize: isMobile ? '1rem' : '1.1rem', color: 'var(--surface-text)', fontWeight: 800, margin: 0, fontFamily: 'var(--font-heading)', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>
-        {t('Clearance Analytics Dashboard')}
-      </h2>
+    <div className="dash-title-block">
+      <span className="dash-kicker">{t('Operations Overview')}</span>
+      <h2 className="dash-title">{t('Clearance Analytics Dashboard')}</h2>
     </div>
   );
 
-  // ---- Stat cards ----------------------------------------------------------
-  // The desktop branch reproduces the original inline styles exactly; the mobile-only
-  // additions (larger type, minWidth:0 for ellipsis) are gated behind isMobile so wide
-  // screens render byte-identically to before.
-  const statCard = (
-    label: string,
-    value: React.ReactNode,
-    accent: string,
-    iconBg: string,
-    valueColor: string,
-    icon: React.ReactNode
-  ) => (
-    <div className="glass-panel" style={{
-      // Compacted on mobile: tighter padding and a smaller icon chip shave roughly a
-      // fifth off the 2x2 grid's height. The value itself stays at 16px - this is
-      // compacting, not shrinking the numbers people actually read.
-      padding: isMobile ? '6px 8px' : '8px 10px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: isMobile ? '7px' : '8px',
-      borderLeft: `3px solid ${accent}`,
-      borderRadius: '8px',
-      ...(isMobile ? { minWidth: 0 } : {})
-    }}>
-      <div style={{ backgroundColor: iconBg, padding: isMobile ? '4px' : '5px', borderRadius: '5px', color: accent, display: 'flex', alignItems: 'center', ...(isMobile ? { flexShrink: 0 } : {}) }}>
-        {icon}
-      </div>
-      <div style={isMobile ? { minWidth: 0 } : undefined}>
-        <div style={{ fontSize: isMobile ? '0.55rem' : '0.5rem', color: 'var(--surface-text-muted)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', ...(isMobile ? { lineHeight: 1.15 } : {}) }}>{label}</div>
-        <div style={{ fontSize: isMobile ? '1rem' : '0.9rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: valueColor, ...(isMobile ? { lineHeight: 1.2 } : {}) }}>{value}</div>
-      </div>
+  // ---- Stat tiles ------------------------------------------------------------
+  // Label, value, and an icon for recognition. The value is ink, not a status colour:
+  // text wears text tokens, and the icon beside it carries the identity.
+  const statCard = (label: string, value: React.ReactNode, icon: React.ReactNode, tone?: 'found' | 'pending') => (
+    <div className="dash-stat" data-tone={tone}>
+      <span className="dash-stat-icon" aria-hidden="true">{icon}</span>
+      <span className="dash-stat-text">
+        <span className="dash-stat-label">{label}</span>
+        <span className="dash-stat-value">{value}</span>
+      </span>
     </div>
   );
 
   const statCards = (
-    <div data-tour="dash.stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? '6px' : '8px', flexShrink: 0 }}>
-      {statCard(t('TOTAL TARGETS'), total, '#f97316', 'rgba(249, 115, 22, 0.12)', 'var(--surface-text)', <Database size={14} />)}
-      {statCard(t('INVESTIGATED'), investigated, '#10b981', 'rgba(16, 185, 129, 0.12)', 'rgb(var(--status-found-rgb))', <CheckCircle2 size={14} />)}
-      {statCard(t('PENDING'), pending, '#ef4444', 'rgba(239, 68, 68, 0.12)', 'rgb(var(--status-pending-rgb))', <Clock size={14} />)}
-      {statCard(t('SURVEY PROJECTS'), projectsCount, '#8b5cf6', 'rgba(139, 92, 246, 0.12)', 'rgb(var(--status-alarm-rgb))', <Briefcase size={14} />)}
+    <div className="dash-stats" data-tour="dash.stats">
+      {statCard(t('TOTAL TARGETS'), total, <Database size={16} />)}
+      {statCard(t('INVESTIGATED'), investigated, <CheckCircle2 size={16} />, 'found')}
+      {statCard(t('PENDING'), pending, <Clock size={16} />, 'pending')}
+      {statCard(t('SURVEY PROJECTS'), projectsCount, <Briefcase size={16} />)}
     </div>
   );
 
-  // ---- Chart panels --------------------------------------------------------
+  // ---- Panels ---------------------------------------------------------------
+  const panelHead = (kicker: string, title: string) => (
+    <div className="dash-panel-head">
+      <span className="dash-kicker">{kicker}</span>
+      <h3 className="dash-panel-title">{title}</h3>
+    </div>
+  );
+
   const fundstueckPanel = (
-    <div className="glass-panel" data-tour="dash.findings" style={panelStyle}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
-        <span style={{ ...panelKickerStyle, color: 'var(--accent-ink)' }}>{t('Findings Status')}</span>
-        <h3 style={panelTitleStyle}>{t('Grouped Findings (Sorted Low to High)')}</h3>
-      </div>
+    <section className="glass-panel dash-panel" data-tour="dash.findings">
+      {panelHead(t('Findings Status'), t('Findings by type'))}
       {hasExcavationData ? (
-        <div style={chartBodyStyle}>
+        <div className="dash-chart">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={fundstueckChartData}
-              margin={{ top: 5, right: 5, left: isMobile ? -22 : -32, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
-              <YAxis fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
-              <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: tooltipFontSize }}
-              itemStyle={{ color: 'var(--surface-text)' }}
-              labelStyle={{ color: 'var(--surface-text-muted)' }} />
-              <Bar dataKey="count" name={t('Frequency')} fill="#fa5f1c" radius={[3, 3, 0, 0]} isAnimationActive={!isMobile} />
+            {/* Horizontal: the finding names are long ("Eisenstange / Eisenstab") and
+                need a row each, not a slanted tick under a column. One series, so no
+                legend - the title names it. */}
+            <BarChart data={findingsDesc} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }} barCategoryGap={4}>
+              <CartesianGrid horizontal={false} />
+              <XAxis type="number" allowDecimals={false} {...axisProps} />
+              <YAxis type="category" dataKey="name" width={isMobile ? 112 : 124} interval={0} {...axisProps} />
+              <Tooltip {...tooltipProps} />
+              <Bar dataKey="count" name={t('Frequency')} fill={c['--chart-1']} radius={[0, 4, 4, 0]} maxBarSize={16} isAnimationActive={!isMobile} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       ) : (
-        <ExcavationOnly note={excavationOnlyNote} minHeight={isMobile ? 120 : 0} />
+        <ExcavationOnly note={excavationOnlyNote} />
       )}
-    </div>
+    </section>
   );
 
   const sohlePanel = (
-    <div className="glass-panel" style={panelStyle}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
-        <span style={{ ...panelKickerStyle, color: 'rgb(var(--status-found-rgb))' }}>{t('Excavation Integrity')}</span>
-        <h3 style={panelTitleStyle}>{t('Sohle Status Split by Finding')}</h3>
-      </div>
+    <section className="glass-panel dash-panel">
+      {panelHead(t('Excavation Integrity'), t('Sohle Status Split by Finding'))}
       {hasExcavationData ? (
-        <div style={chartBodyStyle}>
+        <div className="dash-chart">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={sohleSplitChartData}
-              margin={{ top: 5, right: 5, left: isMobile ? -22 : -32, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
-              <YAxis fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
-              <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: tooltipFontSize }}
-              itemStyle={{ color: 'var(--surface-text)' }}
-              labelStyle={{ color: 'var(--surface-text-muted)' }} />
-              <Legend verticalAlign="top" height={isMobile ? 22 : 16} iconSize={isMobile ? 9 : 6} wrapperStyle={{ fontSize: legendFontSize }} />
-              <Bar dataKey="Frei" name={t('Frei (Clear)')} fill="#10b981" stackId="sohle" isAnimationActive={!isMobile} />
-              <Bar dataKey="Nicht Frei" name={t('Nicht Frei')} fill="#ef4444" stackId="sohle" isAnimationActive={!isMobile} />
+            {/* A state, so the status pair rather than series colours; the 2px surface
+                stroke is the gap between the stacked segments. */}
+            <BarChart data={sohleDesc} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }} barCategoryGap={4}>
+              <CartesianGrid horizontal={false} />
+              <XAxis type="number" allowDecimals={false} {...axisProps} />
+              <YAxis type="category" dataKey="name" width={isMobile ? 112 : 124} interval={0} {...axisProps} />
+              <Tooltip {...tooltipProps} />
+              <Legend {...legendProps} />
+              <Bar dataKey="Frei" name={t('Frei (Clear)')} stackId="sohle" fill={c['--status-found-rgb']} stroke={c['--surface']} strokeWidth={2} maxBarSize={16} isAnimationActive={!isMobile} />
+              <Bar dataKey="Nicht Frei" name={t('Nicht Frei')} stackId="sohle" fill={c['--status-pending-rgb']} stroke={c['--surface']} strokeWidth={2} radius={[0, 4, 4, 0]} maxBarSize={16} isAnimationActive={!isMobile} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       ) : (
-        <ExcavationOnly note={excavationOnlyNote} minHeight={isMobile ? 120 : 0} />
+        <ExcavationOnly note={excavationOnlyNote} />
       )}
-    </div>
+    </section>
   );
 
   // ---- Target log ----------------------------------------------------------
   const logPanel = (
-    <div className="glass-panel" data-tour="dash.log" style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
-      padding: '12px',
-      borderRadius: '12px',
-      ...(isMobile ? { maxHeight: '70vh' } : { flex: 1.2, minHeight: 0 }),
-      overflow: 'hidden'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flexShrink: 0 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-          <span style={{ ...panelKickerStyle, color: 'rgb(var(--status-found-rgb))' }}>{t('Target Log')}</span>
-          <h3 style={{ ...panelTitleStyle, fontSize: isMobile ? '0.85rem' : '0.75rem' }}>{t('Excavated Targets Database')} ({filteredPoints.length})</h3>
-        </div>
+    <section className="glass-panel dash-panel dash-log" data-tour="dash.log">
+      <div className="dash-log-head">
+        {panelHead(t('Target Log'), `${t('Excavated Targets Database')} (${filteredPoints.length})`)}
 
-        {/* On mobile these two live in the controls bar at the top of the column instead,
-            where they sit with the other filters. */}
+        {/* On a phone these two live in the folded filter bar with the rest. */}
         {!isMobile && (
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
+          <div className="dash-log-filters">
             {depthSelect}
             {statusSelect}
           </div>
         )}
       </div>
 
-      <div
-        ref={logScrollRef}
-        onScroll={handleLogScroll}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: isMobile ? '5px' : '6px',
-          overflowY: 'auto',
-          flex: 1,
-          paddingRight: '2px',
-          // Mobile only: give the list a floor inside the flow, and keep its momentum
-          // scroll from chaining into the page behind it. Desktop keeps the original
-          // (unset) values so its geometry is untouched.
-          ...(isMobile ? {
-            minHeight: '180px',
-            overscrollBehavior: 'contain',
-            WebkitOverflowScrolling: 'touch'
-          } : {})
-        }}
-      >
+      <div ref={logScrollRef} onScroll={handleLogScroll} className="dash-log-scroll">
         {visibleLogPoints.map((point: LocalPoint) => {
           const isInvestigated = point.local_status === 'investigated';
           let statusText = t('PENDING');
@@ -706,225 +623,168 @@ const DashboardImpl: React.FC<DashboardProps> = ({
             status = fund === 'ohne Fund' ? 'empty' : 'found';
           }
 
+          const isSelected = selectedPoint?.id === point.id;
           return (
-            <div
+            <button
+              type="button"
               key={point.id}
-              className={`target-card-white ${selectedPoint?.id === point.id ? 'active' : ''}`}
-              onClick={() => { onSelectPoint(point); }}
-              style={{
-                // Mobile cards are compacted so noticeably more fit per screen: tighter
-                // padding, no row gap, and a slimmer depth strip. The card stays well
-                // over the 44px tap minimum and the VM number stays at 14px.
-                padding: isMobile ? '6px 8px' : '6px 8px',
-                borderRadius: '6px',
-                backgroundColor: '#fff',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: isMobile ? '0px' : '1px',
-                border: selectedPoint?.id === point.id ? '1.5px solid rgb(var(--status-found-rgb))' : '1px solid #e2e8f0',
-                cursor: 'pointer',
-                flexShrink: 0
-              }}
+              className={`target-card${isSelected ? ' active' : ''}`}
+              aria-pressed={isSelected}
+              onClick={() => onSelectPoint(point)}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...(isMobile ? { gap: '6px' } : {}) }}>
-                <span style={{ fontWeight: 800, fontSize: isMobile ? '0.875rem' : '0.68rem', color: 'var(--surface-text)', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>VM {point.vm_nr}</span>
-                <span className="status-chip" data-status={status} style={{
-                   fontSize: isMobile ? '0.58rem' : '0.5rem',
-                   padding: '1px 4px',
-                   borderRadius: '3px',
-                   maxWidth: isMobile ? '55%' : '90px'
-                }} title={statusText}>
-                  {statusText.toUpperCase()}
-                </span>
-              </div>
-              <div style={{ fontSize: isMobile ? '0.64rem' : '0.55rem', color: 'var(--surface-text-muted)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(isMobile ? { lineHeight: 1.2 } : {}) }}>
-                {point.instrument?.toUpperCase()} • {point.layer?.replace('Stoerkoerper ', '') || t('Target')}
-              </div>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                ...(isMobile ? { gap: '6px' } : {}),
-                marginTop: isMobile ? '2px' : '1px',
-                padding: isMobile ? '1px 5px' : '1px 4px',
-                backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                borderRadius: '3px',
-                fontSize: isMobile ? '0.62rem' : '0.55rem',
-                ...(isMobile ? { lineHeight: 1.25 } : {})
-              }}>
-                {/* The measurement itself is held at ~13px on mobile while its label stays
-                    small - compacting the row without shrinking the number being read. */}
-                <span style={{ color: 'var(--surface-text-muted)', fontWeight: 700 }}>
-                  {t('EVAL')}: <span style={isMobile ? { fontSize: '0.82rem' } : undefined}>{point.evaluated_depth ? `${point.evaluated_depth}m` : t('N/A')}</span>
-                </span>
+              <span className="target-card-head">
+                <span className="target-card-vm num">VM {point.vm_nr}</span>
+                <span className="status-chip" data-status={status} title={statusText}>{statusText}</span>
+              </span>
+              <span className="target-card-meta">
+                {point.instrument?.toUpperCase()} · {point.layer?.replace('Stoerkoerper ', '') || t('Target')}
+              </span>
+              <span className="target-card-depth">
+                <span className="target-card-depth-label">{t('EVAL')}: <span className="target-card-depth-value num">{point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')}</span></span>
                 {isInvestigated && point.feedback?.actual_depth && (
-                  <span style={{ color: 'rgb(var(--status-found-rgb))', fontWeight: 800 }}>
-                    {t('EXCAV')}: <span style={isMobile ? { fontSize: '0.82rem' } : undefined}>{point.feedback.actual_depth}m</span>
-                  </span>
+                  <span className="target-card-depth-label">{t('EXCAV')}: <span className="target-card-depth-value num">{point.feedback.actual_depth} m</span></span>
                 )}
-              </div>
-            </div>
+              </span>
+            </button>
           );
         })}
 
         {visibleLogPoints.length < filteredPoints.length && (
-          <button
-            type="button"
-            onClick={() => setVisibleLogCount(c => c + LOG_PAGE_SIZE)}
-            style={{
-              flexShrink: 0,
-              background: 'var(--surface-sunken)',
-              border: '1px solid var(--surface-border)',
-              borderRadius: '6px',
-              color: 'var(--surface-text-muted)',
-              fontWeight: 700,
-              fontSize: isMobile ? '0.72rem' : '0.6rem',
-              padding: isMobile ? '11px' : '6px',
-              cursor: 'pointer'
-            }}
-          >
-            {t('Show more')} ({filteredPoints.length - visibleLogPoints.length})
+          <button type="button" className="btn-secondary list-more" onClick={() => setVisibleLogCount(c2 => c2 + LOG_PAGE_SIZE)}>
+            {t('Show more')} <span className="num">({filteredPoints.length - visibleLogPoints.length})</span>
           </button>
         )}
       </div>
-    </div>
+    </section>
   );
 
   // ---- Sensor accuracy -----------------------------------------------------
   const accuracyPanel = (
-    <div className="glass-panel" data-tour="dash.accuracy" style={panelStyle}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
-        <span style={{ ...panelKickerStyle, color: 'var(--info-ink)' }}>{t('Sensor Accuracy')}</span>
-        <h3 style={panelTitleStyle}>{t('Evaluated vs Excavated Depth')}</h3>
-      </div>
+    <section className="glass-panel dash-panel" data-tour="dash.accuracy">
+      {panelHead(t('Sensor Accuracy'), t('Evaluated vs Excavated Depth'))}
 
-      {/* The curve always renders: Evaluated (Sensor) comes from errechnete Tiefe and
-          is valid for pending targets too. Only the Excavated series and the accuracy
-          KPIs below need an excavation to exist, so only those two empty out. */}
-      <div style={chartBodyStyle}>
+      {/* The curve always renders: Evaluated (Sensor) comes from errechnete Tiefe and is
+          valid for pending targets too. Only the Excavated series and the KPIs below
+          need an excavation to exist. Two series: legend, plus direct identity from
+          the 2px lines' own colour beside their names. */}
+      <div className="dash-chart">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            data={depthCompData}
-            margin={{ top: 5, right: 5, left: isMobile ? -22 : -32, bottom: 0 }}
-          >
-            <defs>
-              <linearGradient id="colorEval" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#fa5f1c" stopOpacity={0.2}/>
-                <stop offset="95%" stopColor="#fa5f1c" stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="colorExec" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="limit" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
-            <YAxis fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
-            <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: tooltipFontSize }}
-              itemStyle={{ color: 'var(--surface-text)' }}
-              labelStyle={{ color: 'var(--surface-text-muted)' }} />
-            <Legend verticalAlign="top" height={isMobile ? 22 : 16} iconSize={isMobile ? 9 : 6} wrapperStyle={{ fontSize: legendFontSize }} />
-            <Area type="monotone" dataKey="Evaluated (Sensor)" name={t('Evaluated (Sensor)')} stroke="#fa5f1c" fillOpacity={1} fill="url(#colorEval)" strokeWidth={1.2} isAnimationActive={!isMobile} />
+          <AreaChart data={depthShareData} margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid vertical={false} />
+            <XAxis dataKey="limit" {...axisProps} interval="preserveStartEnd" />
+            <YAxis {...axisProps} width={44} unit="%" />
+            <Tooltip
+              {...tooltipProps}
+              formatter={(value, name, item) => {
+                const row = item?.payload as { evaluatedCount?: number; excavatedCount?: number } | undefined;
+                const count = name === t('Excavated (Actual)') ? row?.excavatedCount : row?.evaluatedCount;
+                return [`${value ?? 0}% (${count ?? 0})`, name];
+              }}
+            />
+            <Legend {...legendProps} />
+            <Area type="monotone" dataKey="evaluated" name={t('Evaluated (Sensor)')} stroke={c['--chart-1']} fill={c['--chart-1']} fillOpacity={0.1} strokeWidth={2} isAnimationActive={!isMobile} />
             {hasExcavationData && (
-              <Area type="monotone" dataKey="Excavated (Actual)" name={t('Excavated (Actual)')} stroke="#10b981" fillOpacity={1} fill="url(#colorExec)" strokeWidth={1.2} isAnimationActive={!isMobile} />
+              <Area type="monotone" dataKey="excavated" name={t('Excavated (Actual)')} stroke={c['--chart-2']} fill={c['--chart-2']} fillOpacity={0.1} strokeWidth={2} isAnimationActive={!isMobile} />
             )}
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Geophysics KPI mini list - evaluated-vs-excavated measures, so undefined
-          without an excavation to compare against. */}
+      {/* Evaluated-vs-excavated measures, so undefined without an excavation. */}
       {hasExcavationData ? (
-        <div className="glass-card" style={{ padding: '6px 8px', display: 'flex', justifyContent: 'space-between', gap: '6px', border: '1px solid rgba(255,255,255,0.04)', fontSize: isMobile ? '0.62rem' : '0.55rem', flexShrink: 0 }}>
-          <div style={{ textAlign: 'center', flex: 1, ...(isMobile ? { minWidth: 0 } : {}) }}>
-            <div style={{ color: 'var(--surface-text-muted)', fontWeight: 700 }}>{t('MEAN ERROR')}</div>
-            <strong style={{ color: 'var(--surface-text)', fontSize: isMobile ? '0.78rem' : '0.68rem' }}>&plusmn; {meanDepthError}m</strong>
+        <dl className="dash-kpis">
+          <div>
+            <dt>{t('MEAN ERROR')}</dt>
+            <dd className="num">&plusmn; {meanDepthError} m</dd>
           </div>
-          <div style={{ textAlign: 'center', flex: 1, ...(isMobile ? { minWidth: 0 } : {}), borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ color: 'var(--surface-text-muted)', fontWeight: 700 }}>{t('ESTIMATION BIAS')}</div>
-            <strong style={{ color: 'var(--accent-ink)', fontSize: isMobile ? '0.7rem' : '0.62rem', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={biasText}>{biasText}</strong>
+          <div>
+            <dt>{t('ESTIMATION BIAS')}</dt>
+            <dd title={biasText}>{biasText}</dd>
           </div>
-          <div style={{ textAlign: 'center', flex: 1, ...(isMobile ? { minWidth: 0 } : {}) }}>
-            <div style={{ color: 'var(--surface-text-muted)', fontWeight: 700 }}>{t('FPR (EMPTY)')}</div>
-            <strong style={{ color: 'rgb(var(--status-pending-rgb))', fontSize: isMobile ? '0.78rem' : '0.68rem' }}>{falsePositiveRate}%</strong>
+          <div>
+            <dt>{t('FPR (EMPTY)')}</dt>
+            <dd className="num">{falsePositiveRate}%</dd>
           </div>
-        </div>
+        </dl>
       ) : (
-        <div className="glass-card" style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', border: '1px solid rgba(255,255,255,0.04)', color: '#64748b', flexShrink: 0 }}>
-          <Info size={12} />
-          <span style={{ fontSize: isMobile ? '0.68rem' : '0.58rem', fontWeight: 700, ...(isMobile ? { textAlign: 'center' } : {}) }}>{excavationOnlyNote}</span>
+        <div className="dash-kpis dash-kpis--empty">
+          <Info size={14} aria-hidden="true" />
+          <span>{excavationOnlyNote}</span>
         </div>
       )}
-    </div>
+    </section>
   );
 
   // ---- Target profiling ----------------------------------------------------
+  // Mean length, width and depth per finding, grouped. These were stacked with the
+  // volume, which summed metres with cubic metres into one meaningless bar; the three
+  // linear measures share a unit and an axis, and the volume rides in the tooltip.
+  const profilingTooltip = (
+    <Tooltip
+      {...tooltipProps}
+      formatter={(value, name) => [`${value ?? 0} m`, name]}
+      labelFormatter={(label) => {
+        const row = metricsChartData.find(r => r.name === label);
+        return row ? `${String(label)} · ${t('Volume (m³)')}: ${row['Volume (m³)']}` : label;
+      }}
+    />
+  );
+
   const profilingPanel = (
-    <div className="glass-panel" style={panelStyle}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
-        <span style={{ ...panelKickerStyle, color: 'var(--accent-ink)' }}>{t('Target Profiling')}</span>
-        <h3 style={panelTitleStyle}>{t('Target Dimensions (Stacked Serial Chart)')}</h3>
-      </div>
+    <section className="glass-panel dash-panel">
+      {panelHead(t('Target Profiling'), t('Mean target dimensions by finding'))}
 
       {hasExcavationData ? (
-        <div style={chartBodyStyle}>
+        <div className="dash-chart">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={metricsChartData}
-              margin={{ top: 5, right: 5, left: isMobile ? -22 : -32, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" fontSize={axisFontSize} tickLine={false} axisLine={false} interval={isMobile ? 'preserveStartEnd' : undefined} />
-              <YAxis fontSize={axisFontSize} tickLine={false} axisLine={false} width={isMobile ? 30 : undefined} />
-              <Tooltip contentStyle={{ backgroundColor: 'var(--surface-raised)', borderColor: 'var(--surface-border)', borderRadius: '6px', color: 'var(--surface-text)', fontSize: tooltipFontSize }}
-              itemStyle={{ color: 'var(--surface-text)' }}
-              labelStyle={{ color: 'var(--surface-text-muted)' }} />
-              <Legend verticalAlign="top" height={isMobile ? 30 : 16} iconSize={isMobile ? 9 : 6} wrapperStyle={{ fontSize: legendFontSize }} />
-              <Bar dataKey="Depth (m)" name={t('Depth (m)')} fill="#fa5f1c" stackId="metrics" isAnimationActive={!isMobile} />
-              <Bar dataKey="Length (m)" name={t('Length (m)')} fill="#38bdf8" stackId="metrics" isAnimationActive={!isMobile} />
-              <Bar dataKey="Width (m)" name={t('Width (m)')} fill="#8b5cf6" stackId="metrics" isAnimationActive={!isMobile} />
-              <Bar dataKey="Volume (m³)" name={t('Volume (m³)')} fill="#10b981" stackId="metrics" isAnimationActive={!isMobile} />
+            <BarChart data={metricsChartData} margin={{ top: 0, right: 8, left: 0, bottom: 0 }} barGap={2} barCategoryGap="20%">
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="name" {...axisProps} interval="preserveStartEnd" />
+              <YAxis {...axisProps} width={48} unit=" m" />
+              {profilingTooltip}
+              <Legend {...legendProps} />
+              <Bar dataKey="Length (m)" name={t('Length (m)')} fill={c['--chart-1']} radius={[4, 4, 0, 0]} maxBarSize={12} isAnimationActive={!isMobile} />
+              <Bar dataKey="Width (m)" name={t('Width (m)')} fill={c['--chart-2']} radius={[4, 4, 0, 0]} maxBarSize={12} isAnimationActive={!isMobile} />
+              <Bar dataKey="Depth (m)" name={t('Depth (m)')} fill={c['--chart-3']} radius={[4, 4, 0, 0]} maxBarSize={12} isAnimationActive={!isMobile} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       ) : (
-        <ExcavationOnly note={excavationOnlyNote} minHeight={isMobile ? 120 : 0} />
+        <ExcavationOnly note={excavationOnlyNote} />
       )}
-    </div>
+    </section>
   );
 
   // ==========================================================================
-  // MOBILE: one scrolling column. Reading order is controls -> headline numbers
+  // PHONE: one scrolling column. Reading order is controls -> headline numbers
   // -> the two findings charts -> the map -> the log and the accuracy panels.
   // ==========================================================================
   if (isMobile) {
     return (
       <div className="dashboard-mobile">
-        <div className="glass-panel" data-tour="dash.filters" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px 12px', borderRadius: '12px' }}>
+        <div className="glass-panel dash-header dash-header--mobile" data-tour="dash.filters">
           {headerTitle}
 
-          {/* Folded by default so the dashboard opens on the stat cards and charts
-              rather than on a screenful of dropdowns. The bar itself carries the
-              active selection, so nothing is hidden - only collapsed. */}
+          {/* Folded by default so the dashboard opens on the numbers and charts rather
+              than on a screenful of dropdowns. The bar carries the active selection,
+              so nothing is hidden - only collapsed. */}
           <FilterBar label={t('Filter')} summary={filterSummary} toggleLabel={t('Show filters')}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={labelStyle}>{t('PROJECT:')}</span>
+            <label className="dash-field">
+              <span className="dash-field-label">{t('PROJECT:')}</span>
               {projectSelect}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={labelStyle}>{t('INSTRUMENT:')}</span>
+            </label>
+            <label className="dash-field">
+              <span className="dash-field-label">{t('INSTRUMENT:')}</span>
               {instrumentSelect}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={labelStyle}>{t('Depth filter')}</span>
+            </label>
+            <label className="dash-field">
+              <span className="dash-field-label">{t('Depth filter')}</span>
               {depthSelect}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={labelStyle}>{t('Status filter')}</span>
+            </label>
+            <label className="dash-field">
+              <span className="dash-field-label">{t('Status filter')}</span>
               {statusSelect}
-            </div>
+            </label>
             {reportButton}
           </FilterBar>
         </div>
@@ -947,81 +807,33 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   }
 
   // ==========================================================================
-  // DESKTOP: unchanged floating-panel layout over the full-bleed map.
+  // DESKTOP: floating panels over the full-bleed map.
   // ==========================================================================
   return (
-    <div style={{
-      position: 'relative',
-      width: '100%',
-      height: '100%',
-      overflow: 'hidden',
-      boxSizing: 'border-box',
-      pointerEvents: 'none'
-    }}>
+    <div className="dash-float">
 
-      {/* 1. Horizontal top-floating Dashboard Section Header */}
-      <div className="glass-panel dashboard-header-bar" style={{
-        position: 'absolute',
-        top: '12px',
-        left: '12px',
-        right: '384px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '10px 16px',
-        borderRadius: '12px',
-        pointerEvents: 'auto',
-        zIndex: 10
-      }}>
+      <div className="glass-panel dash-header dashboard-header-bar">
         {headerTitle}
 
-        {/* Dropdown Selector */}
-        <div data-tour="dash.filters" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <div className="dash-header-controls" data-tour="dash.filters">
           {/* Project scope. Narrows every card, chart, the log and the map markers, and
               composes with instrument + status + depth. */}
-          <span style={labelStyle}>{t('PROJECT:')}</span>
+          {/* The controls carry their own names (aria-label, and a value that reads as
+              what it is), so no visible label beside each: that is what wrapped the
+              header onto a second row and squeezed the charts below it. */}
           {projectSelect}
-
-          <span style={labelStyle}>{t('INSTRUMENT:')}</span>
           {instrumentSelect}
-
           {reportButton}
         </div>
       </div>
 
-      {/* 2. LEFT COLUMN: Floating analytics widgets & stacked charts */}
-      <div className="dashboard-col-left" style={{
-        position: 'absolute',
-        top: '90px',
-        left: '12px',
-        bottom: '12px',
-        width: '360px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-        overflow: 'hidden',
-        pointerEvents: 'auto',
-        zIndex: 10
-      }}>
+      <div className="dash-col dashboard-col-left">
         {statCards}
         {fundstueckPanel}
         {sohlePanel}
       </div>
 
-      {/* 3. RIGHT COLUMN: Target Clearance Log points listing and charts stacked vertically */}
-      <div className="dashboard-col-right" style={{
-        position: 'absolute',
-        top: '12px',
-        right: '12px',
-        bottom: '12px',
-        width: '360px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-        overflow: 'hidden',
-        pointerEvents: 'auto',
-        zIndex: 10
-      }}>
+      <div className="dash-col dashboard-col-right">
         {logPanel}
         {accuracyPanel}
         {profilingPanel}

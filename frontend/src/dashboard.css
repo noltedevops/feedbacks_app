@@ -1,0 +1,478 @@
+/* ============================================================================
+   DASHBOARD — analytics over the survey map.
+
+   Panels float over a full-bleed map on a desktop, stack in one column on a phone.
+   Restraint does the work: panels are the white surface with a hairline, kickers
+   are muted overlines (not a colour each), numbers are ink, and colour is left to
+   the data - the validated chart series and the status pair.
+
+   Every value comes from tokens.css.
+   ========================================================================== */
+
+/* --- Shell: map layer, panel layer -------------------------------------- */
+
+.dashboard-main {
+  position: relative;
+  display: flex;
+  flex-grow: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.dashboard-map-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Transparent to the pointer so the map between the panels stays usable; each panel
+   takes the pointer back. */
+.dashboard-panel-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* A grid rather than absolute boxes: the header's height is whatever its content
+   needs, and the columns follow it instead of guessing a fixed offset. The middle
+   cell is empty - that is where the map shows. */
+.dash-float {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr) 360px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--panel-gap);
+  padding: var(--panel-gap);
+  pointer-events: none;
+}
+
+.dash-float > * {
+  pointer-events: auto;
+}
+
+.dashboard-header-bar {
+  grid-column: 1 / 3;
+  grid-row: 1;
+  align-self: start;
+}
+
+/* The side columns scroll over the map rather than squeezing their panels to fit the
+   window: on a laptop-height screen the header, the stat tiles and two charts do not
+   fit one column, and a chart shrunk to fit is one whose labels collide. Each panel
+   keeps a readable height instead. */
+.dash-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--panel-gap);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-right: 2px;
+}
+
+.dash-col > * {
+  flex: none;
+}
+
+.dashboard-col-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.dashboard-col-right {
+  grid-column: 3;
+  grid-row: 1 / 3;
+}
+
+/* --- Header --------------------------------------------------------------- */
+
+.dash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-float);
+}
+
+.dash-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dash-kicker {
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--surface-text-muted);
+}
+
+.dash-title {
+  font-size: var(--text-title);
+  line-height: var(--lh-title);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+.dash-header-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.dash-inline-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.dash-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.dash-field-label {
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--surface-text-muted);
+  white-space: nowrap;
+}
+
+.dash-control {
+  min-height: var(--control-h);
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.dash-control--project {
+  max-width: 220px;
+}
+
+.dash-control--sm {
+  min-height: var(--control-h-sm);
+  font-size: var(--text-label);
+}
+
+/* --- Stat tiles ----------------------------------------------------------- */
+
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.dash-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-float);
+}
+
+.dash-stat-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  color: var(--surface-text-muted);
+}
+
+/* The icon carries the state; the number stays ink. */
+.dash-stat[data-tone='found'] .dash-stat-icon {
+  color: rgb(var(--status-found-rgb));
+  background: rgb(var(--status-found-rgb) / 0.1);
+}
+
+.dash-stat[data-tone='pending'] .dash-stat-icon {
+  color: rgb(var(--status-pending-rgb));
+  background: rgb(var(--status-pending-rgb) / 0.1);
+}
+
+.dash-stat-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Wraps rather than ellipsizes: "Survey projects" is the label, and cutting it to
+   "Survey proj..." loses the one word that says what the number counts. */
+.dash-stat-label {
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--surface-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.dash-stat-value {
+  font-size: var(--text-stat);
+  line-height: var(--lh-stat);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+/* --- Panels --------------------------------------------------------------- */
+
+.dash-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  box-shadow: var(--shadow-float);
+}
+
+.dash-panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.dash-panel-title {
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+/* A fixed plot height: tall enough for eight finding rows at the 12px floor. */
+.dash-chart {
+  flex: none;
+  height: 208px;
+  width: 100%;
+}
+
+.dash-empty {
+  flex: 1;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  text-align: center;
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  font-weight: var(--weight-medium);
+  color: var(--surface-text-muted);
+}
+
+/* The accuracy measures under the curve. */
+.dash-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex-shrink: 0;
+  margin: 0;
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  border: 1px solid var(--surface-border);
+}
+
+.dash-kpis > div {
+  min-width: 0;
+  padding: var(--space-2);
+  text-align: center;
+}
+
+.dash-kpis > div + div {
+  border-left: 1px solid var(--surface-border);
+}
+
+.dash-kpis dt {
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--surface-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-kpis dd {
+  margin: 0;
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-kpis--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  font-size: var(--text-label);
+  color: var(--surface-text-muted);
+}
+
+/* --- Target log ----------------------------------------------------------- */
+
+/* The log scrolls inside a fixed height; the column around it scrolls too. */
+.dash-log {
+  height: 320px;
+}
+
+.dash-log-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.dash-log-filters {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.dash-log-scroll {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow-y: auto;
+  padding-right: var(--space-1);
+}
+
+/* Two figures on a log row: evaluated and, once dug, excavated. */
+.dash-log-scroll .target-card-depth-label .target-card-depth-value {
+  margin-left: var(--space-1);
+}
+
+/* --- Tablet (769-1024) ---------------------------------------------------- */
+/* Two 360px columns plus gutters leave almost no map at 769px. At 264px they give
+   back 192px at the low end and 480px at 1024px, so the map remains a map. */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .dash-float {
+    grid-template-columns: 264px minmax(0, 1fr) 264px;
+  }
+
+  .dash-title {
+    font-size: var(--text-heading);
+    line-height: var(--lh-heading);
+  }
+
+  .dash-control--project {
+    max-width: 200px;
+  }
+
+  .dash-stat {
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  .dash-stat-icon {
+    display: none;
+  }
+}
+
+/* --- Phone (<=768) -------------------------------------------------------- */
+@media (max-width: 768px) {
+  .dashboard-main,
+  .dashboard-main--mobile {
+    display: block;
+    height: auto;
+    overflow: visible;
+    padding: var(--space-2) var(--space-2) calc(var(--mobile-nav-total) + var(--space-4));
+    width: 100%;
+  }
+
+  .dashboard-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Nothing in the column may be wider than the column - this is what keeps the
+     charts (which will happily report an intrinsic min-width) from producing a
+     horizontal scrollbar. */
+  .dashboard-mobile > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .dash-header--mobile {
+    flex-direction: column;
+    align-items: stretch;
+    box-shadow: var(--shadow-panel);
+  }
+
+  .dash-header--mobile .dash-report {
+    width: 100%;
+  }
+
+  .dash-stat,
+  .dash-panel {
+    box-shadow: var(--shadow-panel);
+  }
+
+  .dash-panel {
+    flex: none;
+    overflow: visible;
+  }
+
+  .dash-chart {
+    flex: none;
+    height: 240px;
+  }
+
+  .dash-log {
+    max-height: 70vh;
+  }
+
+  /* The log keeps its own scroller, but contains its momentum. */
+  .dash-log-scroll {
+    min-height: 180px;
+    overscroll-behavior: contain;
+  }
+
+  .dashboard-mobile-map {
+    height: 55vh;
+    min-height: 300px;
+    padding: var(--space-1);
+    overflow: hidden;
+  }
+
+  .dashboard-mobile .recharts-responsive-container {
+    max-width: 100%;
+  }
+}
