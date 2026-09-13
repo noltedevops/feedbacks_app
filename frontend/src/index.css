@@ -289,6 +289,236 @@ h1, h2, h3, h4, h5, h6 {
  * dark under body.dark-theme. Inline styles read them through var() and follow the
  * theme with no prop threaded through the tree. */
 
+/* ============================================================================
+   SELECT (components/Select.tsx) - the app's dropdown on desktop and tablet
+
+   The control is an input's twin: same outline, same focus ring, same height. The
+   menu is a raised panel that eases in just under it; options are rows with a soft
+   hover wash, grouped under overline headers, the current one ticked. Phones get
+   the native <select> instead and never see any of this.
+   ========================================================================== */
+.sel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+  min-height: var(--control-h);
+  padding: 0 var(--space-2) 0 var(--space-3);
+  border: 1px solid var(--surface-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--surface-text-strong);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+
+.sel:hover {
+  border-color: var(--surface-text-muted);
+}
+
+.sel:focus-visible,
+.sel[aria-expanded='true'] {
+  outline: none;
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 1px var(--focus-ring);
+}
+
+.sel:disabled {
+  background: var(--surface-sunken);
+  color: var(--surface-text-muted);
+  cursor: not-allowed;
+}
+
+.sel--sm {
+  min-height: var(--control-h-sm);
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+}
+
+.sel-icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--surface-text-muted);
+}
+
+.sel-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sel-chevron {
+  flex-shrink: 0;
+  color: var(--surface-text-muted);
+  transition: transform var(--transition-normal);
+}
+
+.sel[aria-expanded='true'] .sel-chevron {
+  transform: rotate(180deg);
+}
+
+/* The menu. Above every dialog (the report dialog is 99999), below the tour. */
+.sel-panel {
+  position: fixed;
+  z-index: 100050;
+  max-width: min(420px, calc(100vw - 16px));
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--radius-panel);
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-float);
+  outline: none;
+  transform-origin: top center;
+  animation: menu-in var(--duration-base) var(--ease-out);
+}
+
+.sel-panel--above {
+  transform-origin: bottom center;
+  animation-name: menu-in-above;
+}
+
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes menu-in-above {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.sel-group {
+  padding: var(--space-3) var(--space-3) var(--space-1);
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--surface-text-muted);
+}
+
+.sel-group:first-child {
+  padding-top: var(--space-2);
+}
+
+.sel-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-item);
+  color: var(--surface-text);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-in-out);
+}
+
+.sel-option[data-active] {
+  background: rgb(var(--overlay-hover-rgb) / 0.06);
+}
+
+.sel-option[aria-selected='true'] {
+  color: var(--surface-text-strong);
+}
+
+.sel-option[aria-selected='true'] .sel-option-label {
+  font-weight: var(--weight-semibold);
+}
+
+.sel-option-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.sel-option-label {
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+
+.sel-option-desc {
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  color: var(--surface-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.sel-option-check {
+  flex-shrink: 0;
+  color: var(--accent-ink);
+}
+
+/* ============================================================================
+   MOTION - things that appear arrive the same way everywhere
+   ========================================================================== */
+@keyframes surface-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Dialogs and the report dialog rise into place over a scrim that fades in. */
+.permission-overlay,
+.report-overlay {
+  animation: fade-in var(--duration-base) var(--ease-out);
+}
+
+.permission-dialog,
+.report-dialog {
+  animation: surface-in var(--duration-base) var(--ease-out);
+}
+
+/* A surface fades in when it becomes the view. Opacity only: a transform here would
+   make the view a containing block for fixed descendants while it runs, and the map
+   inside measures itself at mount. */
+.overview-main,
+.collector-main,
+.dashboard-main {
+  animation: fade-in var(--duration-base) var(--ease-out);
+}
+
+/* Buttons answer a press. */
+.btn-primary:active:not(:disabled),
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sel-panel,
+  .sel-chevron,
+  .permission-overlay,
+  .report-overlay,
+  .permission-dialog,
+  .report-dialog,
+  .overview-main,
+  .collector-main,
+  .dashboard-main {
+    animation: none;
+    transition: none;
+  }
+
+  .btn-primary:active,
+  .btn-secondary:active {
+    transform: none;
+  }
+}
+
 /* A <select> paints its closed value with the element's own color, not the option's, so
    both have to be set: the first for the collapsed control, the second for the open list
    (which some platforms render with the OS default background). */

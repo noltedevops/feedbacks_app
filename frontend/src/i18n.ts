@@ -97,6 +97,7 @@ const de: Record<string, string> = {
   'Show filters': 'Filter anzeigen',
   'Profile and settings': 'Profil und Einstellungen',
   'Findings by type': 'Funde nach Art',
+  'Projects': 'Projekte',
   'Mean target dimensions by finding': 'Mittlere Zielabmessungen nach Fund',
   'Main navigation': 'Hauptnavigation',
   'Language': 'Sprache',

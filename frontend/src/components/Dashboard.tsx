@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { type LocalPoint } from '../db/indexedDb';
 import { makeT, type AppLang } from '../i18n';
 import { FilterBar } from './FilterBar';
+import { Select } from './Select';
 import { useTokenColors } from '../useTokenColors';
 import {
   CheckCircle2,
@@ -421,64 +422,58 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   // ---- Controls ------------------------------------------------------------
   // One control style for all four; the design system owns their colour.
   const projectSelect = (
-    <select
+    <Select
+      className="dash-control dash-control--project"
       value={filterProjectId}
-      onChange={(e) => setFilterProjectId(e.target.value)}
-      className="form-input dash-control dash-control--project"
-      title={t('Project ID')}
-      aria-label={t('Project ID')}
-    >
-      <option value="all">{t('All Projects')}</option>
-      {projectOptions.map((p) => (
-        <option key={p.project_id} value={p.project_id}>
-          {p.project_name ? `${p.project_id} — ${p.project_name}` : p.project_id}
-        </option>
-      ))}
-    </select>
+      onChange={setFilterProjectId}
+      ariaLabel={t('Project ID')}
+      options={[
+        { value: 'all', label: t('All Projects') },
+        ...projectOptions.map(p => ({ value: p.project_id, label: p.project_id, description: p.project_name || undefined, group: t('Projects') }))
+      ]}
+    />
   );
 
   const instrumentSelect = (
-    <select
+    <Select
+      className="dash-control"
       value={filterInstrument}
-      onChange={(e) => setFilterInstrument(e.target.value)}
-      className="form-input dash-control"
-      title={t('Instrument')}
-      aria-label={t('Instrument')}
-    >
-      <option value="all">{t('All Instruments')}</option>
-      <option value="georadar">{t('Georadar Array')}</option>
-      <option value="magnetic">{t('Magnetics')}</option>
-    </select>
+      onChange={setFilterInstrument}
+      ariaLabel={t('Instrument')}
+      options={[
+        { value: 'all', label: t('All Instruments') },
+        { value: 'georadar', label: t('Georadar Array') },
+        { value: 'magnetic', label: t('Magnetics') }
+      ]}
+    />
   );
 
   // Depth bucket. Reads tief or errechnete Tiefe depending on the status next to it,
   // and narrows every card, chart and map marker.
   const depthSelect = (
-    <select
+    <Select
+      className="dash-control"
+      size="sm"
       value={filterDepth}
-      onChange={(e) => setFilterDepth(e.target.value)}
-      className="form-input dash-control dash-control--sm"
-      title={t('Depth filter')}
-      aria-label={t('Depth filter')}
-    >
-      {DEPTH_BUCKETS.map(bucket => (
-        <option key={bucket.id} value={bucket.id}>{bucket.label}</option>
-      ))}
-    </select>
+      onChange={setFilterDepth}
+      ariaLabel={t('Depth filter')}
+      options={DEPTH_BUCKETS.map(bucket => ({ value: bucket.id, label: bucket.label }))}
+    />
   );
 
   const statusSelect = (
-    <select
+    <Select
+      className="dash-control"
+      size="sm"
       value={filterStatus}
-      onChange={(e) => setFilterStatus(e.target.value)}
-      className="form-input dash-control dash-control--sm"
-      title={t('Status filter')}
-      aria-label={t('Status filter')}
-    >
-      <option value="all">{t('All Targets')}</option>
-      <option value="investigated">{t('Investigated')}</option>
-      <option value="pending">{t('Pending')}</option>
-    </select>
+      onChange={setFilterStatus}
+      ariaLabel={t('Status filter')}
+      options={[
+        { value: 'all', label: t('All Targets') },
+        { value: 'investigated', label: t('Investigated') },
+        { value: 'pending', label: t('Pending') }
+      ]}
+    />
   );
 
   // What the folded filter bar shows, so the active selection stays readable without
@@ -814,6 +809,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
 
       <div className="glass-panel dash-header dashboard-header-bar">
         {headerTitle}
+        {reportButton}
 
         <div className="dash-header-controls" data-tour="dash.filters">
           {/* Project scope. Narrows every card, chart, the log and the map markers, and
@@ -823,7 +819,6 @@ const DashboardImpl: React.FC<DashboardProps> = ({
               header onto a second row and squeezed the charts below it. */}
           {projectSelect}
           {instrumentSelect}
-          {reportButton}
         </div>
       </div>
 

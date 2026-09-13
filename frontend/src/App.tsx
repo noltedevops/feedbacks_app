@@ -6,6 +6,7 @@ import { FeedbackForm } from './components/FeedbackForm';
 import { ImportExport } from './components/ImportExport';
 import { ReportDialog, type ProjectOption } from './components/ReportDialog';
 import { FilterBar } from './components/FilterBar';
+import { Select } from './components/Select';
 import { Overview } from './components/Overview';
 import { TourHost } from './tour/TourHost';
 import { TourLaunchers } from './tour/TourLaunchers';
@@ -1412,64 +1413,65 @@ export default function App() {
   // Field app controls defined once and placed differently per breakpoint: inline on
   // desktop exactly as before, folded into the filter bar on mobile. Behaviour and
   // styling are identical in both - only their position changes.
+  // The Field App's filter controls. Menus on desktop and tablet, the OS picker on a
+  // phone (components/Select). A project shows its name under its id, where the name
+  // is known - the same list the dashboard and the report dialog offer.
+  const projectName = (id: string) => projectOptions.find(p => p.project_id === id)?.project_name || undefined;
   const projectIdSelect = (
-    <select
-      className="form-input field-control"
+    <Select
+      className="field-control"
       value={filterProjectId}
-      onChange={(e) => setFilterProjectId(e.target.value)}
-      title={t('Project ID')}
-    >
-      <option value="all">{t('All Projects')}</option>
-      {uniqueProjectIds.map(id => (
-        <option key={id} value={id}>{id}</option>
-      ))}
-    </select>
+      onChange={setFilterProjectId}
+      ariaLabel={t('Project ID')}
+      options={[
+        { value: 'all', label: t('All Projects') },
+        ...uniqueProjectIds.map(id => ({ value: id, label: id, description: projectName(id), group: t('Projects') }))
+      ]}
+    />
   );
 
   const vmNrSelect = (
-    <div className="select-with-icon">
-      <Shield size={14} className="select-with-icon-glyph" aria-hidden="true" />
-      <select
-        className="form-input field-control"
-        value={filterVmNr}
-        onChange={(e) => setFilterVmNr(e.target.value)}
-        title={t('All VM Nr.')}
-      >
-        <option value="all">{t('All VM Nr.')}</option>
-        {allVmNumbers.map(vm => (
-          <option key={vm} value={vm.toString()}>VM {vm}</option>
-        ))}
-      </select>
-    </div>
+    <Select
+      className="field-control"
+      icon={<Shield size={14} />}
+      value={filterVmNr}
+      onChange={setFilterVmNr}
+      ariaLabel={t('All VM Nr.')}
+      options={[
+        { value: 'all', label: t('All VM Nr.') },
+        ...allVmNumbers.map(vm => ({ value: vm.toString(), label: `VM ${vm}` }))
+      ]}
+    />
   );
 
   const instrumentSelect = (
-    <div className="select-with-icon">
-      <Layers size={14} className="select-with-icon-glyph" aria-hidden="true" />
-      <select
-        className="form-input field-control"
-        value={filterInstrument}
-        onChange={(e) => setFilterInstrument(e.target.value)}
-        title={t('All Instruments')}
-      >
-        <option value="all">{t('All Instruments')}</option>
-        <option value="georadar">{t('Georadar')}</option>
-        <option value="magnetic">{t('Magnetic')}</option>
-      </select>
-    </div>
+    <Select
+      className="field-control"
+      icon={<Layers size={14} />}
+      value={filterInstrument}
+      onChange={setFilterInstrument}
+      ariaLabel={t('All Instruments')}
+      options={[
+        { value: 'all', label: t('All Instruments') },
+        { value: 'georadar', label: t('Georadar') },
+        { value: 'magnetic', label: t('Magnetic') }
+      ]}
+    />
   );
 
   const statusSelect = (
-    <select
-      className="form-input field-control field-control--status"
+    <Select
+      className="field-control field-control--status"
+      size="sm"
       value={filterStatus}
-      onChange={(e) => setFilterStatus(e.target.value)}
-      title={t('Status filter')}
-    >
-      <option value="all">{t('All Targets')}</option>
-      <option value="investigated">{t('Investigated')}</option>
-      <option value="pending">{t('Pending')}</option>
-    </select>
+      onChange={setFilterStatus}
+      ariaLabel={t('Status filter')}
+      options={[
+        { value: 'all', label: t('All Targets') },
+        { value: 'investigated', label: t('Investigated') },
+        { value: 'pending', label: t('Pending') }
+      ]}
+    />
   );
 
   const exportCsvButton = (

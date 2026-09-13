@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { type LocalPoint, type TeamsTools } from '../db/indexedDb';
 import { Camera, Upload, Send, X, Move, Users } from 'lucide-react';
+import { Select } from './Select';
+
+// The findings a crew can record, in the order they are offered.
+const FUNDSTUECK_OPTIONS = ['ohne Fund', 'Eisenteil', 'Eisenstange / Eisenstab', 'Eisendraht', 'Eisenseil', 'Eisennägel', 'Steine', 'Sonstige'];
 import { makeT, type AppLang } from '../i18n';
 
 // High-precision coordinates converter from Lat/Lng to UTM Zone 32N (EPSG:32632)
@@ -498,22 +502,13 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           {/* Fundstück */}
           <div className="form-group">
             <label className="form-label" htmlFor="ff-fundstueck">Fundstück *</label>
-            <select
+            <Select
               id="ff-fundstueck"
-              className="form-input"
               value={fundstueck}
-              onChange={(e) => setFundstueck(e.target.value)}
-              required
-            >
-              <option value="ohne Fund">ohne Fund</option>
-              <option value="Eisenteil">Eisenteil</option>
-              <option value="Eisenstange / Eisenstab">Eisenstange / Eisenstab</option>
-              <option value="Eisendraht">Eisendraht</option>
-              <option value="Eisenseil">Eisenseil</option>
-              <option value="Eisennägel">Eisennägel</option>
-              <option value="Steine">Steine</option>
-              <option value="Sonstige">Sonstige</option>
-            </select>
+              onChange={setFundstueck}
+              ariaLabel="Fundstück"
+              options={FUNDSTUECK_OPTIONS.map(v => ({ value: v, label: v }))}
+            />
           </div>
 
           {/* Specify - only when Sonstige is chosen */}

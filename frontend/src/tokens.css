@@ -75,8 +75,20 @@
   --control-h-sm: 32px;
 
   /* --- Motion ----------------------------------------------------------- */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* One motion language: short, and decelerating into place. State changes (hover,
+     press, a colour) take the fast duration; things that appear - a menu, a dialog,
+     a view - take the base one and ease out, arriving rather than stopping. Nothing
+     bounces. All of it is switched off under prefers-reduced-motion. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --transition-fast: var(--duration-fast) var(--ease-in-out);
+  --transition-normal: var(--duration-base) var(--ease-out);
+
+  /* Rows inside a menu: a softer corner than a control, so the hover wash reads as a
+     row lifted out of the list rather than a box drawn around it. */
+  --radius-item: 8px;
 
   /* --- Colour: light (default) ------------------------------------------ */
   color-scheme: light;

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FileText, Table2, X, Loader2 } from 'lucide-react';
+import { Select } from './Select';
 import { makeT, type AppLang } from '../i18n';
 import { authFetch } from '../auth';
 
@@ -104,20 +105,17 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
 
         <label className="form-group">
           <span className="form-label">{t('Project ID')}</span>
-          <select
-            className="form-input report-field"
+          <Select
+            className="report-field"
             value={projectId}
-            // The control can only show so much; hovering gives the whole value back.
+            onChange={setProjectId}
+            ariaLabel={t('Project ID')}
             title={selectedLabel ? `${projectId} — ${selectedLabel}` : projectId || t('All Projects')}
-            onChange={(e) => setProjectId(e.target.value)}
-          >
-            <option value="">{t('All Projects')}</option>
-            {projects.map((p) => (
-              <option key={p.project_id} value={p.project_id}>
-                {p.project_name ? `${p.project_id} — ${p.project_name}` : p.project_id}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: '', label: t('All Projects') },
+              ...projects.map((p) => ({ value: p.project_id, label: p.project_id, description: p.project_name || undefined, group: t('Projects') }))
+            ]}
+          />
         </label>
 
         {/* minmax(0, 1fr) and a shrinkable input: a date input carries a wide intrinsic
