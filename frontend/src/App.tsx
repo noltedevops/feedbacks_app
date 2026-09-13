@@ -8,6 +8,8 @@ import { ReportDialog, type ProjectOption } from './components/ReportDialog';
 import { FilterBar } from './components/FilterBar';
 import { Select } from './components/Select';
 import { Overview } from './components/Overview';
+import { Landing } from './components/Landing';
+import { LangSwitch } from './components/LangSwitch';
 import { TourHost } from './tour/TourHost';
 import { TourLaunchers } from './tour/TourLaunchers';
 import type { TourId } from './tour/steps';
@@ -36,7 +38,6 @@ import {
   Lock,
   ShieldCheck,
   Users,
-  Menu,
   BarChart3
 } from 'lucide-react';
 import {
@@ -136,37 +137,6 @@ interface PermissionRequestRow {
 // How many target cards the field app's list keeps in the DOM before the user scrolls
 // for more. See visibleTargetPoints.
 const TARGET_PAGE_SIZE = 40;
-
-// Segmented language switch. `compact` is the narrow variant that fits the rail.
-function LangSwitch({ lang, onChange, compact = false }: {
-  lang: AppLang;
-  onChange: (lang: AppLang) => void;
-  compact?: boolean;
-}) {
-  return (
-    <div
-      className={compact ? 'lang-switch lang-switch-compact' : 'lang-switch'}
-      data-lang={lang}
-      role="group"
-      aria-label={lang === 'EN' ? 'Language' : 'Sprache'}
-      title={lang === 'EN' ? 'Switch language (English / Deutsch)' : 'Sprache wechseln (Deutsch / English)'}
-    >
-      <span className="lang-switch-thumb" aria-hidden="true"></span>
-      {(['EN', 'DE'] as AppLang[]).map((code) => (
-        <button
-          key={code}
-          type="button"
-          className={lang === code ? 'lang-switch-option active' : 'lang-switch-option'}
-          onClick={() => onChange(code)}
-          aria-pressed={lang === code}
-          title={code === 'EN' ? 'English' : 'Deutsch'}
-        >
-          {code}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 // The profile menu behind the avatar - one body for the desktop pop-up and the phone
 // sheet, which used to be two copies of the same markup with their own hardcoded
@@ -374,16 +344,8 @@ export default function App() {
   const [signupFullName, setSignupFullName] = useState('');
   const [showUserModal, setShowUserModal] = useState(false);
 
-  // Language & Carousel States
+  // Language
   const [lang, setLang] = useState<AppLang>((localStorage.getItem('nolte_lang') as AppLang) || 'EN');
-  const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
-  const [activeFieldImg, setActiveFieldImg] = useState(0);
-
-  // Landing header on phones: the brand, the two nav tabs, the language switch and
-  // both auth buttons cannot share one row at 375px, so everything but the brand
-  // moves into a drawer. The trigger and the drawer are hidden by a media query
-  // rather than by `isMobile`, so the desktop render is byte-identical to before.
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Remember the chosen language across sessions and keep <html lang> in sync
   useEffect(() => {
@@ -393,34 +355,6 @@ export default function App() {
 
   // Translator for the signed-in application shell
   const t = makeT(lang);
-
-  // Auto rotate field screenshots carousel
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveFieldImg(prev => (prev + 1) % 4);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Field operations showcase (images live in /public)
-  const fieldSurveys = lang === 'EN' ? [
-    { img: '/field1.png', title: 'Magnetometer Survey', desc: 'Hand-pushed multi-sensor gradiometer cart with RTK-GPS positioning' },
-    { img: '/field2.png', title: 'Georadar Survey (GPR)', desc: 'Tablet-controlled GPR cart profiling dense vegetation and embankments' },
-    { img: '/field3.png', title: 'Rail Corridor Clearance', desc: 'Track-guided sensor array for UXO detection in active rail infrastructure' },
-    { img: '/field4.png', title: 'Vehicle-Towed Array', desc: 'High-throughput towed magnetometer array for large open areas' }
-  ] : [
-    { img: '/field1.png', title: 'Magnetikmessung', desc: 'Handgeführter Multisensor-Gradiometerwagen mit RTK-GPS-Ortung' },
-    { img: '/field2.png', title: 'Georadar-Messung (GPR)', desc: 'Tablet-gesteuerter GPR-Wagen für dichte Vegetation und Böschungen' },
-    { img: '/field3.png', title: 'Räumung im Gleisbereich', desc: 'Gleisgeführtes Sensorarray zur Kampfmittelortung im Bahnbetrieb' },
-    { img: '/field4.png', title: 'Fahrzeuggezogenes Array', desc: 'Leistungsstarkes Schlepp-Magnetometerarray für große Freiflächen' }
-  ];
-
-  // Every platform entry point (header dropdown + footer links) funnels through login
-  const openPlatform = () => {
-    setShowPlatformDropdown(false);
-    setShowAuthModal(true);
-    setAuthView('login');
-  };
 
   // Map and Data States
   const [points, setPoints] = useState<LocalPoint[]>([]);
@@ -1510,377 +1444,18 @@ export default function App() {
       : requestedView;
 
   return (
-    <div className="app-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', backgroundColor: 'var(--landing-bg)' }}>
+    <div className="app-root">
       
-      {/* 1. Sentry-Inspired Landing Page View */}
       {!isLoggedIn ? (
-        <div className="landing-root" style={{
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: '100vh',
-          width: '100vw',
-          backgroundColor: 'var(--landing-bg)',
-          backgroundImage: 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 130, 32, 0.15), rgba(9, 13, 22, 1)), radial-gradient(circle at 80% 60%, rgba(56, 189, 248, 0.08), transparent 50%)',
-          color: 'var(--landing-text)',
-          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-          overflowX: 'hidden'
-        }}>
-          
-          {/* Top Header Navigation Bar */}
-          <header className={mobileNavOpen ? 'landing-header is-nav-open' : 'landing-header'} style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '18px 48px',
-            backdropFilter: 'blur(16px)',
-            position: 'sticky',
-            top: 0,
-            zIndex: 100
-          }}>
-            {/* Brand Logo & Wordmark — the top-most element, so it outweighs the nav */}
-            <div className="brand-mark">
-              <img src="/logo.png" alt="Nolte Logo" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
-              <span className="brand-name">Nolte Geoservices GmbH</span>
-            </div>
-
-            {/* Hamburger — hidden above 768px, so it costs the desktop header nothing */}
-            <button
-              type="button"
-              className="landing-burger"
-              aria-label={lang === 'EN' ? 'Menu' : 'Menü'}
-              aria-expanded={mobileNavOpen}
-              onClick={() => setMobileNavOpen(open => !open)}
-            >
-              {mobileNavOpen ? <X size={22} /> : <Menu size={22} />}
-            </button>
-
-            {/* Middle Nav Links: ONLY Platform (with dropdown) and Company */}
-            <nav className="landing-nav" style={{ display: 'flex', alignItems: 'center', gap: '36px', position: 'relative' }}>
-              
-              {/* Platform Tab with Dropdown */}
-              <div
-                style={{ position: 'relative' }}
-                onMouseEnter={() => setShowPlatformDropdown(true)}
-                onMouseLeave={() => setShowPlatformDropdown(false)}
-              >
-                <button
-                  type="button"
-                  className={showPlatformDropdown ? 'nav-tab is-open' : 'nav-tab'}
-                  onClick={() => setShowPlatformDropdown(open => !open)}
-                >
-                  {lang === 'EN' ? 'Platform' : 'Plattform'}
-                  <span className="nav-caret">▼</span>
-                </button>
-
-                {/* Dropdown Menu on Hover — labels only, no icons or descriptions */}
-                {showPlatformDropdown && (
-                  <div className="landing-nav-pop" style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: '-14px',
-                    paddingTop: '14px',
-                    zIndex: 1000
-                  }}>
-                    <div className="nav-menu">
-                      <button type="button" className="nav-menu-item" onClick={openPlatform}>
-                        {lang === 'EN' ? 'Dashboard' : 'Dashboard'}
-                      </button>
-                      <button type="button" className="nav-menu-item" onClick={openPlatform}>
-                        {lang === 'EN' ? 'Field App' : 'Feld-App'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Company Tab -> Links to Nolte Services GmbH */}
-              <a
-                className="nav-tab"
-                href="https://www.nolteservices.com"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {lang === 'EN' ? 'Company' : 'Unternehmen'}
-              </a>
-
-            </nav>
-
-            {/* Right Controls: Translator & Auth Buttons */}
-            <div className="landing-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-
-              {/* Language Switcher (English <-> Deutsch) */}
-              <LangSwitch lang={lang} onChange={setLang} />
-
-              {/* Same control, same state and same stored key as the rail inside the
-                  app, so the choice made here is the one the app opens with. */}
-              <button
-                className="landing-theme-toggle"
-                onClick={toggleTheme}
-                title={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
-                aria-label={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
-              >
-                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowAuthModal(true);
-                  setAuthView('login');
-                }}
-                style={{
-                  backgroundColor: 'var(--landing-chip)',
-                  color: 'var(--landing-text)',
-                  border: '1px solid var(--landing-hairline)',
-                  borderRadius: '6px',
-                  padding: '8px 18px',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s'
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--landing-chip-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--landing-chip)')}
-              >
-                {lang === 'EN' ? 'Sign in' : 'Anmelden'}
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowAuthModal(true);
-                  setAuthView('signup');
-                }}
-                style={{
-                  backgroundColor: '#f58220',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '8px 20px',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(245, 130, 32, 0.35)',
-                  transition: 'all 0.15s'
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#ea6a00')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#f58220')}
-              >
-                {lang === 'EN' ? 'Get Access' : 'Zugang anfordern'}
-              </button>
-            </div>
-          </header>
-
-          {/* Hero Section Container */}
-          <main className="landing-main" style={{
-            display: 'flex',
-            flexGrow: 1,
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '50px 48px',
-            maxWidth: '1380px',
-            margin: '0 auto',
-            width: '100%',
-            gap: '40px'
-          }}>
-
-            {/* Left Hero Text Content */}
-            <div className="landing-copy" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '580px', zIndex: 2 }}>
-
-              {/* Hero Main Headline */}
-              <h1 className="landing-title" style={{
-                fontSize: '3.5rem',
-                fontWeight: 800,
-                color: '#ffffff',
-                lineHeight: 1.08,
-                letterSpacing: '-0.03em',
-                margin: '0 0 20px 0'
-              }}>
-                {lang === 'EN' ? 'Investigated before' : 'Untersucht, bevor es'}<br />
-                <span style={{
-                  background: 'linear-gradient(135deg, #ffffff 0%, #f58220 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
-                }}>
-                  {lang === 'EN' ? "it's a problem" : 'zum Problem wird'}
-                </span>
-              </h1>
-
-              {/* Sub-headline Description */}
-              <p className="landing-sub" style={{
-                fontSize: '1.15rem',
-                color: '#94a3b8',
-                lineHeight: 1.6,
-                margin: '0 0 36px 0',
-                fontWeight: 400
-              }}>
-                {lang === 'EN' 
-                  ? 'Navigate every anomaly and UXO inspection with real-time, actionable target detection, automated GPR logging, and instant field-to-office sync.'
-                  : 'Führen Sie jede Anomalie- und Kampfmittelinspektion mit Echtzeit-Zieldetektion, automatisierter Radarderfassung und sofortiger Feld-Büro-Synchronisierung durch.'}
-              </p>
-
-              {/* Hero CTA Action Buttons */}
-              <div className="landing-cta" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <button
-                  onClick={() => {
-                    setShowAuthModal(true);
-                    setAuthView('signup');
-                  }}
-                  style={{
-                    backgroundColor: '#f58220',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '14px 32px',
-                    fontSize: '1rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    boxShadow: '0 8px 24px rgba(245, 130, 32, 0.4)',
-                    transition: 'all 0.15s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#ea6a00';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f58220';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                >
-                  {lang === 'EN' ? 'Get Early Access' : 'Jetzt Zugang anfordern'} <ArrowRight size={18} />
-                </button>
-
-                <button
-                  onClick={() => {
-                    setShowAuthModal(true);
-                    setAuthView('login');
-                  }}
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                    color: '#ffffff',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
-                    borderRadius: '8px',
-                    padding: '14px 28px',
-                    fontSize: '1rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)')}
-                >
-                  {lang === 'EN' ? 'Sign In' : 'Anmelden'}
-                </button>
-              </div>
-            </div>
-
-            {/* Right Side Visual Showcase: Field Operations Carousel */}
-            <div className="landing-showcase" style={{
-              flexShrink: 0,
-              width: '580px',
-              height: '420px',
-              position: 'relative',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-
-              {/*
-                No border and no solid backdrop: the photo is feathered by a mask
-                and sits inside the drifting spectrum bloom, so it reads as part of
-                the page rather than something trapped in a rectangle.
-              */}
-              <div className="hero-stage">
-                <div className="hero-frame">
-                  {/* key forces a remount per slide so the reveal replays top -> bottom */}
-                  <img
-                    key={activeFieldImg}
-                    className="hero-photo"
-                    src={fieldSurveys[activeFieldImg].img}
-                    alt={fieldSurveys[activeFieldImg].title}
-                  />
-
-                  {/* Continuous black-to-white ramp laid over the photo */}
-                  <div className="hero-veil"></div>
-
-                  {/* Light bar travelling top -> bottom, keeps the frame alive between slides */}
-                  <div className="hero-scan"></div>
-
-                  {/* Legibility wash for the caption */}
-                  <div className="hero-wash"></div>
-                </div>
-
-                {/* Caption sits outside the masked frame so its text stays crisp */}
-                <div className="hero-caption" key={`cap-${activeFieldImg}`}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f58220', flexShrink: 0 }}></span>
-                      <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#ffffff' }}>
-                        {fieldSurveys[activeFieldImg].title}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
-                      {fieldSurveys[activeFieldImg].desc}
-                    </span>
-                  </div>
-
-                  <span style={{
-                    fontSize: '0.75rem',
-                    fontFamily: 'monospace',
-                    color: '#c3cddd',
-                    backgroundColor: 'rgba(148, 173, 214, 0.16)',
-                    padding: '4px 10px',
-                    borderRadius: '5px',
-                    fontWeight: 700,
-                    flexShrink: 0
-                  }}>
-                    0{activeFieldImg + 1} / 0{fieldSurveys.length}
-                  </span>
-                </div>
-              </div>
-
-              {/* Carousel Navigation Indicators */}
-              <div className="landing-dots" style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                marginTop: '26px'
-              }}>
-                {fieldSurveys.map((_, idx) => (
-                  <button
-                    key={idx}
-                    className={activeFieldImg === idx ? 'hero-dot is-active' : 'hero-dot'}
-                    onClick={() => setActiveFieldImg(idx)}
-                    style={{ width: activeFieldImg === idx ? '34px' : '8px' }}
-                    title={`View screenshot ${idx + 1}`}
-                  />
-                ))}
-              </div>
-
-            </div>
-          </main>
-
-          {/* Footer: company mark, then the same two platform entry points as the header */}
-          <footer className="site-footer">
-            <div className="footer-inner">
-              <div className="brand-mark brand-mark--sm">
-                <img src="/logo.png" alt="Nolte Logo" style={{ height: '18px', width: 'auto', objectFit: 'contain' }} />
-                <span className="brand-name">Nolte Geoservices GmbH</span>
-              </div>
-
-              <div className="footer-links">
-                <button type="button" className="footer-link" onClick={openPlatform}>
-                  {lang === 'EN' ? 'Field App' : 'Feld-App'}
-                </button>
-                <span className="footer-sep"></span>
-                <button type="button" className="footer-link" onClick={openPlatform}>
-                  {lang === 'EN' ? 'Dashboard' : 'Dashboard'}
-                </button>
-              </div>
-            </div>
-          </footer>
+        <>
+          <Landing
+            lang={lang}
+            onLangChange={setLang}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            onSignIn={() => { setAuthView('login'); setShowAuthModal(true); }}
+            onRequestAccess={() => { setAuthView('signup'); setShowAuthModal(true); }}
+          />
 
           {/* Glassmorphic Login/Signup Modal Overlay */}
           {showAuthModal && (
@@ -2090,7 +1665,7 @@ export default function App() {
             </div>
           )}
 
-        </div>
+        </>
       ) : (
         
         // 2. Logged In Screens Layout

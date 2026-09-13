@@ -40,6 +40,15 @@ body {
   width: 100vw;
 }
 
+/* The one wrapper around the landing page and the signed-in app. */
+.app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--app-bg);
+}
+
 /* Headings default to the heading step of the scale; a surface picks another step
    by class, never by an ad-hoc size. Tracking stays at the face's own - Montserrat
    is already wide, and the brand sets its headlines without tightening. */

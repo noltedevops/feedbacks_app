@@ -212,6 +212,35 @@ const de: Record<string, string> = {
   'Choose CSV File': 'CSV-Datei wählen',
   'Parse and Load Points': 'Punkte einlesen und laden',
 
+  // --- Landing page ---
+  'Menu': 'Menü',
+  'Platform': 'Plattform',
+  'Company': 'Unternehmen',
+  'Sign in': 'Anmelden',
+  'Get access': 'Zugang anfordern',
+  'Get early access': 'Jetzt Zugang anfordern',
+  'Investigated before': 'Untersucht, bevor es',
+  "it's a problem": 'zum Problem wird',
+  'Navigate every anomaly and UXO inspection with real-time, actionable target detection, automated GPR logging, and instant field-to-office sync.':
+    'Führen Sie jede Anomalie- und Kampfmittelinspektion mit Echtzeit-Zieldetektion, automatisierter Radarderfassung und sofortiger Feld-Büro-Synchronisierung durch.',
+  'carousel': 'Karussell',
+  'Field operations': 'Feldeinsätze',
+  'Choose a photo': 'Foto wählen',
+  'Pause slideshow': 'Diashow anhalten',
+  'Play slideshow': 'Diashow abspielen',
+  'Magnetometer Survey': 'Magnetikmessung',
+  'Hand-pushed multi-sensor gradiometer cart with RTK-GPS positioning':
+    'Handgeführter Multisensor-Gradiometerwagen mit RTK-GPS-Ortung',
+  'Georadar Survey (GPR)': 'Georadar-Messung (GPR)',
+  'Tablet-controlled GPR cart profiling dense vegetation and embankments':
+    'Tablet-gesteuerter GPR-Wagen für dichte Vegetation und Böschungen',
+  'Rail Corridor Clearance': 'Räumung im Gleisbereich',
+  'Track-guided sensor array for UXO detection in active rail infrastructure':
+    'Gleisgeführtes Sensorarray zur Kampfmittelortung im Bahnbetrieb',
+  'Vehicle-Towed Array': 'Fahrzeuggezogenes Array',
+  'High-throughput towed magnetometer array for large open areas':
+    'Leistungsstarkes Schlepp-Magnetometerarray für große Freiflächen',
+
   // --- Auth modal ---
   'Username / Operator ID': 'Benutzername / Betreiber-ID',
   'Security Password': 'Passwort',

@@ -83,6 +83,9 @@
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --duration-fast: 150ms;
   --duration-base: 200ms;
+  /* Only for a large area changing in place - the landing's photos cross-fading. At
+     the base duration a full-bleed image swap reads as a cut. */
+  --duration-slow: 400ms;
   --transition-fast: var(--duration-fast) var(--ease-in-out);
   --transition-normal: var(--duration-base) var(--ease-out);
 
