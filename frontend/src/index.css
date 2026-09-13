@@ -323,26 +323,132 @@ input[type="time"].form-input::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
 
-/* Compact form fields: those given an explicit height (the report dialog's 32px rows)
-   cannot also carry .form-input's 10px vertical padding - that leaves a 10px content box
-   for 12px text, which clipped the project name and both dates top and bottom. The height
-   sets the size; the padding only needs to hold the text off the sides. */
-.form-input--compact {
-  padding-top: 0;
-  padding-bottom: 0;
+/* ============================================================================
+   REPORT DIALOG (Generate Report / Export CSV)
+   ========================================================================== */
+.report-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background: var(--scrim);
 }
 
-/* Long project ids end in an ellipsis rather than overflowing the control; the full value
-   stays available through the select's title attribute. */
-select.form-input--compact {
+.report-dialog {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-radius: var(--radius-panel);
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-float);
+  color: var(--surface-text);
+}
+
+.report-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.report-title {
+  font-size: var(--text-heading);
+  line-height: var(--lh-heading);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+.report-close {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--surface-text-muted);
+  cursor: pointer;
+}
+
+.report-close:hover {
+  background: var(--surface-sunken);
+  color: var(--surface-text-strong);
+}
+
+.report-close:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.report-field {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--control-h);
+}
+
+/* Long project ids end in an ellipsis rather than overflowing the control; the full
+   value stays available through the select's title attribute. */
+select.report-field {
   text-overflow: ellipsis;
 }
 
-/* The open dropdown is painted by the platform, which otherwise picks its own size; match
-   it to the closed control so the list is not noticeably larger than the field. */
-select.form-input--compact option {
-  font-size: 0.78rem;
+.report-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
 }
+
+.report-dates .form-group {
+  min-width: 0;
+}
+
+.report-hint {
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  color: var(--surface-text-muted);
+}
+
+.report-error {
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  color: var(--danger-ink);
+}
+
+.report-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.report-actions > * {
+  flex: 1;
+}
+
+@media (max-width: 420px) {
+  .report-overlay {
+    padding: var(--space-3);
+  }
+
+  .report-dialog {
+    padding: var(--space-4);
+  }
+
+  .report-dates,
+  .report-actions {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+}
+
 
 /* Base Body Layout */
 .app-container {
@@ -1135,6 +1241,67 @@ select.form-input--compact option {
 
 .issued-password .permission-btn {
   align-self: flex-start;
+}
+
+/* ============================================================================
+   TOAST AND SPINNER
+   ========================================================================== */
+.toast {
+  --toast-rgb: var(--status-empty-rgb);
+  position: fixed;
+  bottom: var(--space-5);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: calc(100vw - 2 * var(--space-4));
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-border);
+  border-left: 3px solid rgb(var(--toast-rgb));
+  box-shadow: var(--shadow-float);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-medium);
+  color: var(--surface-text-strong);
+  animation: toast-in 0.2s ease-out;
+}
+
+.toast svg {
+  flex-shrink: 0;
+  color: rgb(var(--toast-rgb));
+}
+
+.toast[data-type='success'] { --toast-rgb: var(--status-found-rgb); }
+.toast[data-type='error'] { --toast-rgb: var(--danger-rgb); }
+
+@keyframes toast-in {
+  from { transform: translate(-50%, 16px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.animate-spin {
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+  .animate-spin { animation-duration: 3s; }
+}
+
+@media (max-width: 768px) {
+  /* Above the bottom bar, not behind it. */
+  .toast {
+    bottom: calc(var(--mobile-nav-total) + var(--space-3));
+  }
 }
 
 .access-toggles {

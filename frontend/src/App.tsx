@@ -344,13 +344,11 @@ export default function App() {
   // chiefly moving the dashboard map out of its background layer and into the flow.
   const isMobile = useIsMobile();
 
-  // The tokens key off body.dark-theme. body.light-theme is still set for the
-  // per-surface overrides written against it, and goes when the last of those does.
-  // A layout effect so the class is on before the first paint: light is the default
-  // now, and a dark user would otherwise see one frame of it on every load.
+  // The tokens key off body.dark-theme; light is :root and needs no class. A layout
+  // effect so the class is on before the first paint: light is the default, and a
+  // dark user would otherwise see one frame of it on every load.
   useLayoutEffect(() => {
     document.body.classList.toggle('dark-theme', theme === 'dark');
-    document.body.classList.toggle('light-theme', theme === 'light');
   }, [theme]);
 
   // Three controls now flip the theme - the rail, the mobile sheet and the landing
@@ -2809,50 +2807,17 @@ export default function App() {
         </div>
       )}
 
+      {/* Toast. A raised panel with ink text, the type carried by the icon and a rule in
+          its colour - the old solid green and red fills put white text at 2.5:1 and
+          3.8:1. Positioned and animated in index.css. */}
       {toast && (
-        <div style={{
-          position: 'fixed',
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '10px 18px',
-          borderRadius: 'var(--radius-sm)',
-          backgroundColor: toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#ef4444' : '#1e293b',
-          color: '#fff',
-          boxShadow: 'var(--shadow-lg)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          fontSize: '0.8rem',
-          fontWeight: 600,
-          animation: 'slide-up-toast 0.2s ease'
-        }}>
-          {toast.type === 'success' && <CheckCircle2 size={14} />}
-          {toast.type === 'error' && <AlertTriangle size={14} />}
-          {toast.type === 'info' && <RefreshCw size={14} className="animate-spin" />}
+        <div className="toast" data-type={toast.type} role="status">
+          {toast.type === 'success' && <CheckCircle2 size={16} aria-hidden="true" />}
+          {toast.type === 'error' && <AlertTriangle size={16} aria-hidden="true" />}
+          {toast.type === 'info' && <RefreshCw size={16} className="animate-spin" aria-hidden="true" />}
           <span>{toast.message}</span>
         </div>
       )}
-
-      <style>{`
-        @keyframes slide-up-toast {
-          from { transform: translate(-50%, 20px); opacity: 0; }
-          to { transform: translate(-50%, 0); opacity: 1; }
-        }
-        .animate-spin {
-          animation: spin-anim 1.5s linear infinite;
-        }
-        @keyframes spin-anim {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes slide-in-drawer {
-          from { transform: translateX(100%); }
-          to { transform: translateX(0); }
-        }
-      `}</style>
 
       {reportDialog && (
         <ReportDialog

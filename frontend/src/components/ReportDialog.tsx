@@ -81,43 +81,31 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
     }
   };
 
-  const label: React.CSSProperties = { fontSize: '0.68rem', color: 'var(--surface-text-muted)', fontWeight: 700, display: 'block', marginBottom: '4px' };
-  // Height and font only; the vertical padding is dropped by .form-input--compact, which
-  // .form-input would otherwise apply on top of this height and clip the text.
-  const field: React.CSSProperties = { fontSize: '0.75rem', height: '32px', width: '100%', boxSizing: 'border-box' };
-
   const selectedLabel = projectId
     ? projects.find((p) => p.project_id === projectId)?.project_name
     : '';
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 99999,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
-      }}
-    >
+    <div className="report-overlay" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="glass-panel"
+        className="report-dialog"
         data-tour="report-dialog"
-        style={{ width: '100%', maxWidth: '420px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="report-dialog-title"
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--surface-text-strong)', fontWeight: 700 }}>
-            {title || t('Generate Report')}
-          </h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--surface-text-muted)', cursor: 'pointer', display: 'flex' }}>
-            <X size={18} />
+        <div className="report-head">
+          <h3 id="report-dialog-title" className="report-title">{title || t('Generate Report')}</h3>
+          <button type="button" className="report-close" onClick={onClose} aria-label={t('Close')}>
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
-        <div>
-          <label style={label}>{t('Project ID')}</label>
+        <label className="form-group">
+          <span className="form-label">{t('Project ID')}</span>
           <select
-            className="form-input form-input--compact"
-            style={field}
+            className="form-input report-field"
             value={projectId}
             // The control can only show so much; hovering gives the whole value back.
             title={selectedLabel ? `${projectId} — ${selectedLabel}` : projectId || t('All Projects')}
@@ -130,38 +118,38 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
               </option>
             ))}
           </select>
+        </label>
+
+        {/* minmax(0, 1fr) and a shrinkable input: a date input carries a wide intrinsic
+            minimum, and in a plain 1fr track that is what pushed "To" past the dialog's
+            edge at 390px. Stacks on the narrowest screens. */}
+        <div className="report-dates">
+          <label className="form-group">
+            <span className="form-label">{t('From')}</span>
+            <input type="date" className="form-input report-field" value={start} max={end || undefined} onChange={(e) => setStart(e.target.value)} />
+          </label>
+          <label className="form-group">
+            <span className="form-label">{t('To')}</span>
+            <input type="date" className="form-input report-field" value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} />
+          </label>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-          <div>
-            <label style={label}>{t('From')}</label>
-            <input type="date" className="form-input form-input--compact" style={field} value={start} max={end || undefined} onChange={(e) => setStart(e.target.value)} />
-          </div>
-          <div>
-            <label style={label}>{t('To')}</label>
-            <input type="date" className="form-input form-input--compact" style={field} value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} />
-          </div>
-        </div>
-
-        <span style={{ fontSize: '0.65rem', color: 'var(--surface-text-muted)' }}>
-          {t('Leave dates empty to include the whole period.')}
-        </span>
+        <span className="report-hint">{t('Leave dates empty to include the whole period.')}</span>
 
         {rangeInvalid && (
-          <span style={{ fontSize: '0.68rem', color: 'var(--danger-ink)' }}>{t('The start date must be before the end date.')}</span>
+          <span className="report-error" role="alert">{t('The start date must be before the end date.')}</span>
         )}
-        {error && <span style={{ fontSize: '0.68rem', color: 'var(--danger-ink)' }}>{error}</span>}
+        {error && <span className="report-error" role="alert">{error}</span>}
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="report-actions">
           {allowPdf && (
             <button
               type="button"
               className="btn-primary"
               disabled={busy !== null || rangeInvalid}
               onClick={() => download('pdf')}
-              style={{ flex: 1, padding: '9px', fontSize: '0.75rem', justifyContent: 'center', gap: '6px' }}
             >
-              {busy === 'pdf' ? <Loader2 size={14} className="spin" /> : <FileText size={14} />}
+              {busy === 'pdf' ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <FileText size={16} aria-hidden="true" />}
               {t('Download PDF')}
             </button>
           )}
@@ -170,9 +158,8 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
             className="btn-secondary"
             disabled={busy !== null || rangeInvalid}
             onClick={() => download('csv')}
-            style={{ flex: 1, padding: '9px', fontSize: '0.75rem', justifyContent: 'center', gap: '6px' }}
           >
-            {busy === 'csv' ? <Loader2 size={14} className="spin" /> : <Table2 size={14} />}
+            {busy === 'csv' ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Table2 size={16} aria-hidden="true" />}
             {t('Download CSV')}
           </button>
         </div>

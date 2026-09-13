@@ -1,9 +1,7 @@
 /* ============================================================================
    GUIDED TOUR — spotlight and callout over the live app.
 
-   Colour comes from the theme tokens in index.css, the same as everywhere else.
-   The only values of its own are the scrim and the shadows, which are shades of
-   black and not part of either palette.
+   Every value comes from tokens.css, the same as everywhere else.
 
    Stacking: above everything the app puts on screen - the rail (10000), its pop-ups
    (10011), the report and form dialogs (99999) and the photo lightbox (100000) - so a
@@ -11,13 +9,10 @@
    ========================================================================== */
 
 .tour-root {
-  --tour-scrim: rgba(2, 6, 23, 0.58);
+  --tour-scrim: var(--scrim);
   --tour-glide: 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-body.light-theme .tour-root {
-  --tour-scrim: rgba(15, 23, 42, 0.42);
-}
 
 /* Catches clicks on the steps that only point at something. "Try it" steps leave it
    out, which is what hands the page back to the user. Transparent: the dimming is
@@ -36,11 +31,11 @@ body.light-theme .tour-root {
   top: 0;
   left: 0;
   z-index: 100101;
-  border-radius: 12px;
+  border-radius: var(--radius-panel);
   pointer-events: none;
   box-shadow:
     0 0 0 2px var(--accent),
-    0 0 0 6px rgba(250, 95, 28, 0.18),
+    0 0 0 6px rgb(var(--accent-rgb) / 0.25),
     0 0 0 200vmax var(--tour-scrim);
   animation: tour-fade 0.2s ease-out;
 }
@@ -53,14 +48,14 @@ body.light-theme .tour-root {
   left: 0;
   z-index: 100102;
   width: 320px;
-  max-width: calc(100vw - 24px);
+  max-width: calc(100vw - 2 * var(--space-3));
   box-sizing: border-box;
-  padding: 16px 18px 14px;
-  border-radius: 16px;
+  padding: var(--space-4);
+  border-radius: var(--radius-panel);
   background: var(--surface-raised);
   border: 1px solid var(--surface-border);
   color: var(--surface-text-strong);
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-float);
   outline: none;
   transition: opacity 0.18s ease-out;
 }
@@ -85,15 +80,15 @@ body.light-theme .tour-root {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin: -4px -8px 6px 0;
+  gap: var(--space-2);
+  margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-2)) var(--space-2) 0;
 }
 
 .tour-pop-kicker {
-  font-family: var(--font-heading);
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
   text-transform: uppercase;
   color: var(--accent-ink);
 }
@@ -106,7 +101,7 @@ body.light-theme .tour-root {
   height: 32px;
   flex-shrink: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: none;
   color: var(--surface-text-muted);
   cursor: pointer;
@@ -122,19 +117,17 @@ body.light-theme .tour-root {
 }
 
 .tour-pop-title {
-  margin: 0 0 6px;
-  font-family: var(--font-heading);
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-heading);
+  line-height: var(--lh-heading);
+  font-weight: var(--weight-semibold);
   color: var(--surface-text-strong);
 }
 
 .tour-pop-body {
   margin: 0;
-  font-size: 0.86rem;
-  line-height: 1.55;
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
   color: var(--surface-text-muted);
 }
 
@@ -142,13 +135,13 @@ body.light-theme .tour-root {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 16px;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
 }
 
 .tour-dots {
   display: flex;
-  gap: 5px;
+  gap: var(--space-1);
   min-width: 0;
 }
 
@@ -172,19 +165,19 @@ body.light-theme .tour-root {
 
 .tour-pop-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   flex-shrink: 0;
 }
 
 .tour-btn {
-  padding: 0.45rem 0.9rem;
-  font-size: 0.8rem;
+  min-height: var(--control-h-sm);
+  padding: 0 var(--space-3);
   white-space: nowrap;
 }
 
 .tour-close:focus-visible,
 .tour-btn:focus-visible {
-  outline: 2px solid var(--accent-ink);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -192,29 +185,29 @@ body.light-theme .tour-root {
 
 .tour-pop--sheet {
   top: auto;
-  left: 8px;
-  right: 8px;
-  bottom: calc(var(--mobile-nav-total, 70px) + 8px);
+  left: var(--space-2);
+  right: var(--space-2);
+  bottom: calc(var(--mobile-nav-total, 70px) + var(--space-2));
   width: auto;
   max-width: none;
-  padding: 16px 16px 14px;
+  padding: var(--space-4);
 }
 
 /* Docked at the top instead, when that hides less of the element - see dockSheet(). */
 .tour-pop--sheet.tour-pop--top {
-  top: 8px;
+  top: var(--space-2);
   bottom: auto;
 }
 
 .tour-pop--sheet .tour-btn {
   min-height: 44px;
-  padding: 0 16px;
+  padding: 0 var(--space-4);
 }
 
 .tour-pop--sheet .tour-close {
   width: 44px;
   height: 44px;
-  margin: -8px -8px -8px 0;
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0;
 }
 
 /* --- Launchers in the profile menu ------------------------------------ */
