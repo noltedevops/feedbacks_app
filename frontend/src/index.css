@@ -2376,6 +2376,85 @@ select.report-field {
 
 
 
+/* Distance and bearing to the target from where the crew is standing. Sits directly
+ * under the header, above the detail rows: on a field device it is the first thing
+ * wanted from a target and the only part that is about getting there.
+ *
+ * Rendered only when there is a position to compute from, so no rule here has an
+ * empty or error state to cover. */
+.tp-here {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  border-left: 3px solid var(--accent-ink);
+}
+
+.tp-rose {
+  width: 44px;
+  height: 44px;
+  flex: none;
+}
+
+.tp-rose-ring {
+  fill: none;
+  stroke: var(--surface-border);
+  stroke-width: 1.5;
+}
+
+.tp-rose-tick {
+  stroke: var(--surface-text-muted);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.tp-rose-n {
+  fill: var(--surface-text-muted);
+  font-family: var(--font-body);
+  font-size: 8px;
+  font-weight: var(--weight-bold);
+}
+
+/* --accent-ink, not --accent. The needle is a graphic, so it answers to the 3:1 for
+ * non-text, and the raw accent is a fill that does not clear that on the light popup
+ * surface; the ink variant does. The bar down the left of the block follows it so
+ * the two match. */
+.tp-rose-needle {
+  fill: var(--accent-ink);
+}
+
+.tp-rose-hub {
+  fill: var(--surface-text-muted);
+}
+
+.tp-here-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tp-here-dist {
+  font-family: var(--font-heading);
+  font-size: var(--text-body-lg);
+  line-height: var(--lh-body-lg);
+  font-weight: var(--weight-bold);
+  color: var(--surface-text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.tp-here-bearing {
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--surface-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .tp-section {
   display: flex;
   flex-direction: column;
@@ -2446,19 +2525,21 @@ select.report-field {
   color: var(--surface-text);
 }
 
+/* The two halves of the UTM coordinate on one stacked line. They were separate X and
+ * Y rows; as a single Coordinate field they sit side by side, and wrap to two lines
+ * rather than overflow when the card is at its phone width. */
+.tp-coord {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+
 /* Coordinates read as numbers on one line, aligned on their digits. */
 .tp-num {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   color: var(--surface-text-strong);
   white-space: nowrap;
-}
-
-.tp-logged {
-  font-size: var(--text-caption);
-  line-height: var(--lh-caption);
-  color: var(--surface-text-subtle);
-  margin-top: var(--space-1);
 }
 
 .tp-photos {
@@ -2594,6 +2675,11 @@ select.report-field {
     grid-template-columns: minmax(0, 92px) minmax(0, 1fr);
     gap: 8px;
   }
+  /* The card loses up to 72px of width here, and the rose is the one fixed-size thing
+     in it - shrinking it keeps the distance on one line instead of wrapping. */
+  .tp-here { gap: var(--space-2); padding: var(--space-2); }
+  .tp-rose { width: 38px; height: 38px; }
+  .tp-here-dist { font-size: var(--text-body); line-height: var(--lh-body); }
   .tp-img { height: 124px; }
   .tp-nav { width: 32px; height: 32px; }
   .tp-lightbox { padding: 12px; }

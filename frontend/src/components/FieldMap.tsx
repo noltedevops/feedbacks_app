@@ -7,6 +7,8 @@ import { Layers, FolderPlus, Home, ChevronLeft, ChevronRight, Download, X, Check
 import { makeT, type AppLang, type Translator } from '../i18n';
 import { useTheme } from '../useTheme';
 import { useTokenColors } from '../useTokenColors';
+import { haversineMetres, forwardAzimuth, formatDistance } from '../geo';
+import { useUserPosition } from '../useUserPosition';
 
 interface FieldMapProps {
   lang: AppLang;
@@ -55,6 +57,35 @@ const STATUS_CHIP: Record<string, string> = {
   false_alarm: 'alarm'
 };
 
+/* Static bearing arrow on a compass rose.
+ *
+ * Deliberately not a live device compass. Reading one means deviceorientation plus a
+ * magnetometer calibration the crew has to perform, and the absolute heading it
+ * reports is unreliable across devices and browsers - iOS exposes it under a
+ * different, permission-gated event, Android varies by handset, and a phone near
+ * excavated ferrous metal is exactly where a magnetometer is least trustworthy.
+ *
+ * So north is fixed to the screen, matching the north-up map underneath, and the
+ * needle is a bearing drawn against it. That is a number computed from two positions:
+ * it does not drift, does not need calibrating, and is the same on every device.
+ *
+ * The degrees are printed beside the rose as well. The arrow is the quick read; the
+ * number is what survives being looked at on a small screen in daylight, and it means
+ * the direction is not carried by the graphic alone. */
+const CompassRose: React.FC<{ bearing: number; label: string }> = ({ bearing, label }) => (
+  <svg className="tp-rose" viewBox="0 0 48 48" role="img" aria-label={label}>
+    <circle className="tp-rose-ring" cx="24" cy="24" r="16" />
+    {/* E, S and W as plain ticks; north is the letter above, so the needle can never
+        be mistaken for the north mark whatever the bearing. */}
+    <path className="tp-rose-tick" d="M40 24 h-3 M24 40 v-3 M8 24 h3" />
+    <text className="tp-rose-n" x="24" y="7.5" textAnchor="middle">N</text>
+    <g transform={`rotate(${bearing} 24 24)`}>
+      <path className="tp-rose-needle" d="M24 11 L27.5 25.5 L24 22.8 L20.5 25.5 Z" />
+    </g>
+    <circle className="tp-rose-hub" cx="24" cy="24" r="1.6" />
+  </svg>
+);
+
 /* Popup shown when a target marker is clicked.
  *
  * Photos are base64 strings already held in IndexedDB, so both the carousel and
@@ -80,6 +111,23 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t 
   const status = getResolvedStatus(point);
   const chipStatus = STATUS_CHIP[status] ?? 'empty';
   const feedback = point.feedback;
+
+  // Where the crew is, if the device will say. Null covers every failure - denied, no
+  // hardware, timed out, insecure context - and the section below is simply not
+  // rendered, rather than showing an error on every target opened.
+  //
+  // The target's own position is read straight off the point: the server writes
+  // latitude/longitude alongside the UTM easting/northing, so no conversion happens
+  // here and none is added.
+  const userPosition = useUserPosition();
+  const relative = useMemo(() => {
+    if (!userPosition) return null;
+    const target = { latitude: point.latitude, longitude: point.longitude };
+    return {
+      distance: formatDistance(haversineMetres(userPosition, target)),
+      bearing: forwardAzimuth(userPosition, target),
+    };
+  }, [userPosition, point.latitude, point.longitude]);
 
   const step = (delta: number) => {
     if (photos.length === 0) return;
@@ -116,40 +164,51 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t 
         </span>
       </header>
 
-      <section className="tp-section">
-        <div className="tp-section-title">{t('UTM coords')}</div>
-        <div className="tp-row">
-          <span className="tp-row-label">X</span>
-          <span className="tp-row-value tp-num">{point.easting ?? '--'}</span>
-        </div>
-        <div className="tp-row">
-          <span className="tp-row-label">Y</span>
-          <span className="tp-row-value tp-num">{point.northing ?? '--'}</span>
-        </div>
-      </section>
+      {relative && (
+        <section className="tp-here">
+          <CompassRose
+            bearing={relative.bearing}
+            label={`${t('Bearing')} ${Math.round(relative.bearing)}°`}
+          />
+          <div className="tp-here-text">
+            <span className="tp-here-dist">{relative.distance} {t('away')}</span>
+            <span className="tp-here-bearing">
+              {t('Bearing')} {Math.round(relative.bearing)}°
+            </span>
+          </div>
+        </section>
+      )}
 
+      {/* No section title: the header directly above already says which target these
+          belong to, and with the list this short another rule across the card is
+          chrome rather than structure. */}
       <section className="tp-section">
-        <div className="tp-section-title">{t('Survey Layer')}</div>
+        <Row
+          label={t('Coordinate')}
+          value={
+            <span className="tp-coord">
+              <span className="tp-num">E {point.easting ?? '--'}</span>
+              <span className="tp-num">N {point.northing ?? '--'}</span>
+            </span>
+          }
+          stack
+        />
         <Row label={t('Project ID')} value={point.project_id || '--'} />
-        <Row label={t('Target ID')} value={point.target_id || t('N/A')} />
-        <Row label={t('Survey Layer')} value={point.layer || t('N/A')} />
         <Row label={t('Evaluated Depth')} value={point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')} />
       </section>
 
+      {/* The remaining three only exist once a target has been opened, so they keep
+          their own block - the green rule is what says these came from the field log
+          rather than from the survey. */}
       {feedback?.visited && (
         <section className="tp-section tp-feedback">
           <div className="tp-section-title tp-feedback-title">{t('Field Log Feedback')}</div>
-          <Row label={t('Sohle Status')} value={feedback.sohle_status || t('N/A')} />
-          <Row label="Fundstück" value={feedback.fundstueck || t('N/A')} />
-          {feedback.m_cube !== null && feedback.m_cube !== undefined && (
-            <Row label={t('Volumen')} value={`${feedback.m_cube} m³`} />
-          )}
           <Row label={t('Actual Depth')} value={feedback.actual_depth ? `${feedback.actual_depth} m` : t('N/A')} />
+          <Row
+            label={t('Volumen')}
+            value={feedback.m_cube !== null && feedback.m_cube !== undefined ? `${feedback.m_cube} m³` : t('N/A')}
+          />
           <Row label={t('Investigator')} value={feedback.investigator || t('N/A')} stack />
-          {feedback.notes && <Row label={t('Notes')} value={feedback.notes} stack />}
-          {feedback.logged_at && (
-            <div className="tp-logged">{t('Logged')}: {new Date(feedback.logged_at).toLocaleString()}</div>
-          )}
         </section>
       )}
 
