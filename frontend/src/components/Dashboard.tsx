@@ -92,14 +92,19 @@ interface DashboardProps {
   onSeedRequest: () => Promise<void>;
   addDataOpen: boolean;
   setAddDataOpen: (open: boolean) => void;
+  // The dashboard's own filter group, independent of the field app's. App holds one
+  // group per view; these are wired to the dashboard's. Narrowing here narrows this
+  // screen and nothing else - the project included.
   filterStatus: string;
   setFilterStatus: (status: string) => void;
   filterInstrument: string;
   setFilterInstrument: (instrument: string) => void;
   filterDepth: string;
   setFilterDepth: (depth: string) => void;
-  // Reuses the app-wide project scoping rather than adding a parallel mechanism, so the
-  // dashboard and the field app agree on which project is in view.
+  // The project was once the exception, shared so both views agreed on the site in
+  // view. It no longer is: the office and the crew look at different sites at the same
+  // time, so this is the dashboard's own project and the field app's heading and list
+  // do not follow it.
   filterProjectId: string;
   setFilterProjectId: (projectId: string) => void;
   projectOptions: { project_id: string; project_name?: string }[];
