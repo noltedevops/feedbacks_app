@@ -163,6 +163,8 @@ const de: Record<string, string> = {
   'Export CSV': 'CSV exportieren',
   'Download PDF': 'PDF herunterladen',
   'Download CSV': 'CSV herunterladen',
+  'Quick select': 'Schnellauswahl',
+  'Today': 'Heute',
   'From': 'Von',
   'To': 'Bis',
   'Leave dates empty to include the whole period.': 'Datumsfelder leer lassen, um den gesamten Zeitraum einzuschließen.',

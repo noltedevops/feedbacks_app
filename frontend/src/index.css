@@ -1861,6 +1861,57 @@ select.report-field {
   white-space: nowrap;
 }
 
+/* Date quick-select: the preset row above From/To in the report dialog, shared by the
+ * dashboard's report button and the field app's CSV export.
+ *
+ * A row rather than a single button because presets are a list that will grow, and it
+ * wraps rather than scrolls so every one of them stays reachable at phone width.
+ *
+ * Colour comes from the surface tokens, so the chips are correct in both themes on
+ * their own rather than depending on a blanket override. */
+.date-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.date-preset {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-control);
+  background-color: var(--surface-sunken);
+  color: var(--surface-text);
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast),
+              border-color var(--transition-fast);
+}
+
+.date-preset:hover {
+  background-color: rgba(var(--overlay-hover-rgb) / 0.08);
+}
+
+.date-preset:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Marked current when the range already equals the preset. Three signals rather than
+ * one - accent text, an accent wash and an accent border - so it does not rest on
+ * telling two background shades apart. --accent-ink rather than --accent because this
+ * is text: the raw accent is a fill and does not carry text on a light panel.
+ *
+ * The wash is lighter than .basemap-option's 0.14: that one sits on dark map chrome,
+ * this sits on a panel that is near-white in light theme. */
+.date-preset[data-active="true"] {
+  color: var(--accent-ink);
+  background-color: rgb(var(--accent-rgb) / 0.08);
+  border-color: var(--accent-ink);
+}
+
 /* Status chip: the pill on a target row saying what was found, or that the target is
  * still open. Colour is the information here, so it comes from the status tokens. One
  * size everywhere - the caption step in spaced capitals. */
