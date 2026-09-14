@@ -4,6 +4,7 @@ import { makeT, type AppLang } from '../i18n';
 import { FilterBar } from './FilterBar';
 import { Select } from './Select';
 import { useTokenColors } from '../useTokenColors';
+import { categoriesForProject, categoryLabel, matchesCategory } from '../useFilters';
 import {
   CheckCircle2,
   Database,
@@ -107,6 +108,10 @@ interface DashboardProps {
   // do not follow it.
   filterProjectId: string;
   setFilterProjectId: (projectId: string) => void;
+  // anomalies.category, the dashboard's own like everything above. The list offered
+  // is narrowed to the categories present under filterProjectId.
+  filterCategory: string;
+  setFilterCategory: (category: string) => void;
   projectOptions: { project_id: string; project_name?: string }[];
   onGenerateReport: () => void;
   // Narrow screens reflow the floating panels into one scrolling column. The map stops
@@ -134,6 +139,8 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   setFilterDepth,
   filterProjectId,
   setFilterProjectId,
+  filterCategory,
+  setFilterCategory,
   projectOptions,
   onGenerateReport,
   isMobile = false,
@@ -158,8 +165,9 @@ const DashboardImpl: React.FC<DashboardProps> = ({
       : true;
 
     return matchesProject && matchesInstrument && matchesStatus &&
+      matchesCategory(p, filterCategory) &&
       matchesDepthBucket(p, filterDepth, filterStatus);
-  }), [points, filterProjectId, filterInstrument, filterStatus, filterDepth]);
+  }), [points, filterProjectId, filterInstrument, filterStatus, filterDepth, filterCategory]);
 
   // EXCAVATION-BASED SET: the dug subset of the above. Sohle, findings, actual
   // measurements and the evaluated-vs-excavated accuracy KPIs may only ever read from
@@ -453,6 +461,27 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     />
   );
 
+  // Survey category, narrowed to the categories present under the dashboard's project.
+  // A project change resets it in useFilters, so it never holds a value this list
+  // does not offer.
+  const dashCategories = useMemo(
+    () => categoriesForProject(points, filterProjectId),
+    [points, filterProjectId]
+  );
+
+  const categorySelect = (
+    <Select
+      className="dash-control dash-control--category"
+      value={filterCategory}
+      onChange={setFilterCategory}
+      ariaLabel={t('Category')}
+      options={[
+        { value: 'all', label: t('All Categories') },
+        ...dashCategories.map(c => ({ value: c, label: categoryLabel(c, t) }))
+      ]}
+    />
+  );
+
   // Depth bucket. Reads tief or errechnete Tiefe depending on the status next to it,
   // and narrows every card, chart and map marker.
   const depthSelect = (
@@ -494,8 +523,9 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     const status = filterStatus === 'investigated' ? t('Investigated')
       : filterStatus === 'pending' ? t('Pending')
       : t('All Targets');
-    return [project, instrument, depth, status].join(' · ');
-  }, [filterProjectId, filterInstrument, filterDepth, filterStatus, t]);
+    const category = filterCategory === 'all' ? t('All Categories') : categoryLabel(filterCategory, t);
+    return [project, instrument, category, depth, status].join(' · ');
+  }, [filterProjectId, filterInstrument, filterCategory, filterDepth, filterStatus, t]);
 
   const reportButton = (
     <button
@@ -778,6 +808,10 @@ const DashboardImpl: React.FC<DashboardProps> = ({
               {instrumentSelect}
             </label>
             <label className="dash-field">
+              <span className="dash-field-label">{t('CATEGORY:')}</span>
+              {categorySelect}
+            </label>
+            <label className="dash-field">
               <span className="dash-field-label">{t('Depth filter')}</span>
               {depthSelect}
             </label>
@@ -824,6 +858,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
               header onto a second row and squeezed the charts below it. */}
           {projectSelect}
           {instrumentSelect}
+          {categorySelect}
         </div>
       </div>
 

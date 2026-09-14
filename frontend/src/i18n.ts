@@ -393,8 +393,8 @@ const de: Record<string, string> = {
     'Die Feld-App arbeitet auch ohne Netz weiter. Eingaben warten auf dem Gerät, gezählt von einem Abzeichen an Sync – tippen Sie darauf, sobald Sie wieder online sind, um sie ans Büro zu senden.',
 
   'Filter once, everything follows': 'Einmal filtern, alles folgt',
-  'Narrow by project, instrument, depth and status. Every number, chart, the target log and the map follow the selection.':
-    'Nach Projekt, Instrument, Tiefe und Status eingrenzen. Jede Zahl, jedes Diagramm, das Zielprotokoll und die Karte folgen der Auswahl.',
+  'Narrow by project, instrument, category, depth and status. Every number, chart, the target log and the map follow the selection.':
+    'Nach Projekt, Instrument, Kategorie, Tiefe und Status eingrenzen. Jede Zahl, jedes Diagramm, das Zielprotokoll und die Karte folgen der Auswahl.',
   'The headline numbers': 'Die Kennzahlen',
   'Total, investigated and pending targets, and how many survey projects the selection spans.':
     'Ziele gesamt, untersucht und offen – und wie viele Messprojekte die Auswahl umfasst.',
@@ -412,7 +412,13 @@ const de: Record<string, string> = {
     'Öffnen Sie „Bericht erstellen“. Auf dem Handy liegt es in der Filterleiste.',
   'Export the selection': 'Die Auswahl exportieren',
   'Choose a project and, if you like, a date range. Download PDF gives the landscape A4 site report, Download CSV the raw rows.':
-    'Projekt und, wenn gewünscht, einen Zeitraum wählen. „PDF herunterladen“ liefert den Objektbericht im A4-Querformat, „CSV herunterladen“ die Rohdaten.'
+    'Projekt und, wenn gewünscht, einen Zeitraum wählen. „PDF herunterladen“ liefert den Objektbericht im A4-Querformat, „CSV herunterladen“ die Rohdaten.',
+
+  // Category filter (anomalies.category)
+  'Category': 'Kategorie',
+  'CATEGORY:': 'KATEGORIE:',
+  'All Categories': 'Alle Kategorien',
+  'ingest default': 'Import-Standard'
 };
 
 export type Translator = (text: string) => string;

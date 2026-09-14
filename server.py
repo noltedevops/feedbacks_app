@@ -720,6 +720,10 @@ def get_points(
             "created_at": None,
             "instrument": p.instrument,
             "layer": p.layer,
+            # Survey classification from the picks (Kat-2, Kat-3 ...), or the Kat-1
+            # every CSV/import path writes as a default. Not the Fundstück: that is
+            # what was found on excavation and lives on the feedback record.
+            "category": p.category,
             "feedback": feedback_data
         })
     return result

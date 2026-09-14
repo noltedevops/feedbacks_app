@@ -75,7 +75,7 @@ const dashboard: TourStep[] = [
   {
     anchors: ['dash.filters'],
     title: 'Filter once, everything follows',
-    body: 'Narrow by project, instrument, depth and status. Every number, chart, the target log and the map follow the selection.',
+    body: 'Narrow by project, instrument, category, depth and status. Every number, chart, the target log and the map follow the selection.',
   },
   {
     anchors: ['dash.stats'],

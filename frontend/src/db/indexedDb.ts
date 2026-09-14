@@ -34,6 +34,10 @@ export interface LocalPoint {
   
   local_status?: string; // 'pending' or 'investigated'
   layer?: string;
+  // anomalies.category - the survey's classification of the target (Kat-1, Kat-2 ...),
+  // known before anyone digs. Optional because points cached before the field existed
+  // lack it until the next fetch replaces them. Not indexed, so no schema bump.
+  category?: string | null;
   feedback?: {
     id: string;
     visited: boolean;

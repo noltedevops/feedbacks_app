@@ -14,7 +14,7 @@ import { LangSwitch } from './components/LangSwitch';
 import { TourHost } from './tour/TourHost';
 import { TourLaunchers } from './tour/TourLaunchers';
 import type { TourId } from './tour/steps';
-import { useFilters, selectPoints } from './useFilters';
+import { useFilters, selectPoints, categoriesForProject, categoryLabel, INGEST_DEFAULT_CATEGORY } from './useFilters';
 import { makeT, type AppLang } from './i18n';
 import { useIsMobile } from './useIsMobile';
 import { 
@@ -39,7 +39,8 @@ import {
   Lock,
   ShieldCheck,
   Users,
-  BarChart3
+  BarChart3,
+  Tag
 } from 'lucide-react';
 import {
   authFetch, getAccess, setSession, clearSession, NO_ACCESS,
@@ -563,7 +564,8 @@ export default function App() {
             local_status: status,
             feedback: p.feedback,
             instrument: p.instrument,
-            layer: p.layer
+            layer: p.layer,
+            category: p.category ?? null
           });
         }
       });
@@ -639,7 +641,8 @@ export default function App() {
             local_status: status,
             feedback: p.feedback,
             instrument: p.instrument,
-            layer: p.layer
+            layer: p.layer,
+            category: p.category ?? null
           });
         }
       });
@@ -813,7 +816,10 @@ export default function App() {
               created_at: new Date().toISOString(),
               local_status: 'unvisited',
               feedback: null,
-              instrument: p.instrument || 'georadar'
+              instrument: p.instrument || 'georadar',
+              // What the server's import endpoint writes too, so an offline import
+              // does not show up uncategorised until the next sync corrects it.
+              category: INGEST_DEFAULT_CATEGORY
             });
           }
         });
@@ -1248,6 +1254,7 @@ export default function App() {
     activeFilters.vmNr,
     activeFilters.status,
     activeFilters.instrument,
+    activeFilters.category,
   ].join('|');
   const lastFilterScope = useRef({ view, key: activeFilterKey });
   useEffect(() => {
@@ -1384,8 +1391,11 @@ export default function App() {
     const status = fieldFilters.status === 'investigated' ? t('Investigated')
       : fieldFilters.status === 'pending' ? t('Pending')
       : t('All Targets');
-    return [project, vm, instrument, status].join(' · ');
-  }, [fieldFilters.projectId, fieldFilters.vmNr, fieldFilters.instrument, fieldFilters.status, t]);
+    const category = fieldFilters.category === 'all'
+      ? t('All Categories')
+      : categoryLabel(fieldFilters.category, t);
+    return [project, vm, instrument, category, status].join(' · ');
+  }, [fieldFilters.projectId, fieldFilters.vmNr, fieldFilters.instrument, fieldFilters.category, fieldFilters.status, t]);
 
   // Field app controls defined once and placed differently per breakpoint: inline on
   // desktop exactly as before, folded into the filter bar on mobile. Behaviour and
@@ -1432,6 +1442,28 @@ export default function App() {
         { value: 'all', label: t('All Instruments') },
         { value: 'georadar', label: t('Georadar') },
         { value: 'magnetic', label: t('Magnetic') }
+      ]}
+    />
+  );
+
+  // Survey category (anomalies.category), narrowed to the categories present under the
+  // Field App's own project. Picking a different project resets it inside useFilters,
+  // so the value held is always one this list offers.
+  const fieldCategories = useMemo(
+    () => categoriesForProject(points, fieldFilters.projectId),
+    [points, fieldFilters.projectId]
+  );
+
+  const categorySelect = (
+    <Select
+      className="field-control field-control--category"
+      icon={<Tag size={14} />}
+      value={fieldFilters.category}
+      onChange={fieldFilters.setCategory}
+      ariaLabel={t('Category')}
+      options={[
+        { value: 'all', label: t('All Categories') },
+        ...fieldCategories.map(c => ({ value: c, label: categoryLabel(c, t) }))
       ]}
     />
   );
@@ -1776,6 +1808,7 @@ export default function App() {
                               </label>
                               {vmNrSelect}
                               {instrumentSelect}
+                              {categorySelect}
                               {statusSelect}
                               {exportCsvButton}
                             </FilterBar>
@@ -1783,6 +1816,7 @@ export default function App() {
                             <div className="collector-filter-grid">
                               {vmNrSelect}
                               {instrumentSelect}
+                              {categorySelect}
                             </div>
                           )}
                         </div>
@@ -1939,6 +1973,8 @@ export default function App() {
                   setFilterDepth={setFilterDepth}
                   filterProjectId={dashFilters.projectId}
                   setFilterProjectId={dashFilters.setProjectId}
+                  filterCategory={dashFilters.category}
+                  setFilterCategory={dashFilters.setCategory}
                   projectOptions={projectOptions}
                   onGenerateReport={handleOpenDashboardReport}
                   isMobile={isMobile}

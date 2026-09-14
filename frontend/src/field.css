@@ -113,6 +113,12 @@
   min-height: var(--control-h);
 }
 
+/* The third control in the two-column filter grid takes a row of its own rather than
+   leaving a hole beside it; its values ("Kat-1 (ingest default)") want the width. */
+.collector-filter-grid .field-control--category {
+  grid-column: 1 / -1;
+}
+
 /* The list's status filter sits in the list header, beside its title. */
 .field-control--status {
   width: auto;

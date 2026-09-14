@@ -452,6 +452,11 @@
 
   .dash-header--mobile {
     flex-direction: column;
+    /* The desktop header wraps; a column that wraps sizes each line to its widest
+       content, so the folded filter bar's nowrap summary set the whole header's width
+       and pushed it past the screen. Without wrapping the line is the panel's width
+       and the summary ellipsises as it does in the Field App. */
+    flex-wrap: nowrap;
     align-items: stretch;
     box-shadow: var(--shadow-panel);
   }
