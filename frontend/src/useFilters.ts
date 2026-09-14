@@ -10,16 +10,20 @@ import { type LocalPoint } from './db/indexedDb';
  * map, and a search string left in the field app cut every dashboard total down
  * with no control on that screen to show it or undo it.
  *
- * The project is deliberately NOT in here. It is app-wide scoping - which site the
- * user is working on - rather than a per-view filter, and both views are meant to
- * agree on it. It stays a single value in App and is passed to selectPoints()
- * alongside whichever group is being applied.
+ * The project is in here too, since the split. It was first kept out as app-wide
+ * scoping the two views were meant to agree on, but in use the crew and the office
+ * look at different sites at the same time, and a project picked on one screen
+ * changing what the other shows was the same surprise as every other shared filter.
+ * Each view now owns its project like it owns its status.
  *
- * The depth bucket is not in here either, for the opposite reason: it is a dashboard
+ * The depth bucket is not in here, for the opposite reason: it is a dashboard
  * control with no field equivalent, and it was already scoped correctly. It composes
  * on top of this in App.
  */
 export interface FilterGroup {
+  /** A single project id, or 'all'. */
+  projectId: string;
+  setProjectId: (value: string) => void;
   /** Free text over VM-Nr. and find description. */
   searchQuery: string;
   setSearchQuery: (value: string) => void;
@@ -44,6 +48,7 @@ export interface FilterGroup {
  * it later needs no new plumbing.
  */
 export function useFilters(): FilterGroup {
+  const [projectId, setProjectId] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [vmNr, setVmNr] = useState('all');
   const [status, setStatus] = useState('all');
@@ -55,25 +60,22 @@ export function useFilters(): FilterGroup {
   // every unrelated render. useState setters are already stable, so the values are
   // the only real dependencies.
   return useMemo(() => ({
+    projectId, setProjectId,
     searchQuery, setSearchQuery,
     vmNr, setVmNr,
     status, setStatus,
     instrument, setInstrument,
-  }), [searchQuery, vmNr, status, instrument]);
+  }), [projectId, searchQuery, vmNr, status, instrument]);
 }
 
 /**
- * Apply one group, plus the shared project scope, to the full target set.
+ * Apply one group to the full target set.
  *
  * Shared by both views so they can never drift on what a filter value means; what
  * differs between them is only which group they hand in.
  */
-export function selectPoints(
-  points: LocalPoint[],
-  filters: FilterGroup,
-  projectId: string
-): LocalPoint[] {
-  const { searchQuery, vmNr, status, instrument } = filters;
+export function selectPoints(points: LocalPoint[], filters: FilterGroup): LocalPoint[] {
+  const { projectId, searchQuery, vmNr, status, instrument } = filters;
 
   return points.filter(p => {
     const matchesSearch = p.vm_nr.toString().includes(searchQuery) ||
