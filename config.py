@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     # docker-compose is what actually consumes POSTGRES_PASSWORD. It is declared
     # here only so the two values can be checked against each other below.
     postgres_password: str = ""
+    # Credentials for Claude. Leave unset and the Anthropic SDK resolves them
+    # itself from ANTHROPIC_API_KEY or an `ant auth login` profile, which is the
+    # normal case; set it only to force a specific key.
+    anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
 
 settings = Settings()
 
