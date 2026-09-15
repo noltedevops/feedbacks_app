@@ -1,15 +1,17 @@
 /* ============================================================================
    LANDING — the public page, before sign-in.
 
-   The rest of the app's system, applied to a front door: the page ground, a white
-   header with a hairline, a regular-weight headline set off by the 3px logo-yellow
-   rule with its one gold phrase, the gold button for the one action and an outlined
-   one beside it, and the field photographs framed as a panel. It follows the theme
-   like every other surface - the page used to be navy in both, with the toggle in
-   its header changing nothing but its own icon.
+   Laid out after mongodb.com's front page, measured with computed styles on
+   2026-09-15 (scratch/landing-mongodb): a full-width header with the brand 32px
+   from the edge, an experience toggle above a centred hero - bold capitals at 0.95
+   leading, a medium one-line subhead, two 48px buttons 24px apart - and the chosen
+   experience's product below it. Their values are kept where they sit on our 4px
+   grid and snapped to it where they do not (the toggle's 7/20 padding is 8/24, its
+   10px corner the 8px item radius); their 10-11px phone text is held at our 12px
+   floor. Colour, face and shape are NOLTE's.
 
    Every value comes from tokens.css. Motion is the shared set: menus arrive with
-   menu-in, the phone sheet with surface-in, the photos cross-fade.
+   menu-in, the phone sheet with surface-in, a switched experience with fade-in.
    ========================================================================== */
 
 /* The landing is its own scroller: body is fixed to the viewport for the app shell,
@@ -38,15 +40,16 @@
   border-bottom: 1px solid var(--surface-border);
 }
 
+/* Full width, as the reference's: the brand sits 32px from the window's edge
+   instead of at the edge of a centred column. */
 .landing-header-inner {
   display: flex;
   align-items: center;
   gap: var(--space-5);
   width: 100%;
-  max-width: 1200px;
-  min-height: 64px;
+  min-height: 72px;
   margin: 0 auto;
-  padding: var(--space-3) var(--gutter);
+  padding: var(--space-3) var(--space-6);
 }
 
 .brand-mark {
@@ -87,8 +90,9 @@
   gap: var(--space-4);
 }
 
-/* A nav tab: muted ink, the strong ink and a yellow underline on hover or while its
-   menu is open - the rail's active rule, horizontal. */
+/* A nav tab: 16px regular, as the reference's nav. Muted ink, the strong ink and a
+   yellow underline on hover or while its menu is open - the rail's active rule,
+   horizontal. */
 .nav-tab {
   position: relative;
   display: inline-flex;
@@ -99,9 +103,9 @@
   border: none;
   background: none;
   font-family: inherit;
-  font-size: var(--text-body);
-  line-height: var(--lh-body);
-  font-weight: var(--weight-semibold);
+  font-size: var(--text-body-lg);
+  line-height: var(--lh-body-lg);
+  font-weight: var(--weight-regular);
   color: var(--surface-text-muted);
   text-decoration: none;
   cursor: pointer;
@@ -236,8 +240,21 @@
   outline-offset: 2px;
 }
 
-.landing-auth {
+/* The reference's button type - 16px medium, barely tracked - on every landing
+   button. Two classes, so it wins over .btn-primary / .btn-secondary wherever the
+   stylesheets land in the bundle. */
+.landing-root .landing-auth,
+.landing-root .landing-cta-btn {
+  font-size: var(--text-cta);
+  line-height: var(--lh-cta);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-cta);
   white-space: nowrap;
+}
+
+.landing-root .landing-auth {
+  min-height: var(--cta-h);
+  padding: 0 var(--space-5);
 }
 
 /* Below a desktop only - see the <=1024 block. */
@@ -256,34 +273,120 @@
   cursor: pointer;
 }
 
-/* --- Hero ----------------------------------------------------------------- */
+/* --- Main ----------------------------------------------------------------- */
 
 .landing-main {
   flex: 1 0 auto;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--space-7);
+  width: 100%;
+  padding: var(--space-6) var(--gutter) var(--space-8);
+}
+
+.landing-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* --- Experience toggle ---------------------------------------------------- */
+
+/* The pill: its label, then the two tabs, on one hairline-framed surface. */
+.xp-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  padding: 2px 2px 2px var(--space-5);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-item);
+  background: var(--surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.xp-toggle-label {
+  font-size: var(--text-body);
+  line-height: var(--lh-body-lg);
+  font-weight: var(--weight-regular);
+  color: var(--surface-text-muted);
+  white-space: nowrap;
+}
+
+.xp-tabs {
+  position: relative;
+  display: flex;
+}
+
+/* The selected tab's fill, slid rather than repainted. Strong ink with the surface
+   as its text - the contrast of the page's own headline, in both themes. */
+.xp-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: var(--radius-item);
+  background: var(--surface-text-strong);
+  transition: transform var(--transition-normal), width var(--transition-normal);
+}
+
+.xp-tab {
+  position: relative;
+  padding: var(--space-2) var(--space-5);
+  border: none;
+  border-radius: var(--radius-item);
+  background: none;
+  font-family: inherit;
+  font-size: var(--text-body);
+  line-height: var(--lh-body-lg);
+  font-weight: var(--weight-medium);
+  color: var(--surface-text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.xp-tab:hover {
+  color: var(--surface-text-strong);
+}
+
+.xp-tab[aria-selected='true'] {
+  color: var(--surface);
+}
+
+/* Until the indicator has measured its tab, the tab paints its own fill. */
+.xp-tabs:not([data-ready]) .xp-tab[aria-selected='true'] {
+  background: var(--surface-text-strong);
+}
+
+.xp-tab:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* --- Hero ----------------------------------------------------------------- */
+
+.landing-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
   max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--space-8) var(--gutter);
+  text-align: center;
+  animation: fade-in var(--duration-base) var(--ease-out);
 }
 
-/* The brand's intro motif, as on the Overview: the text set off by the yellow rule. */
-.landing-copy {
-  min-width: 0;
-  padding-left: var(--space-5);
-  border-left: 3px solid var(--brand-yellow);
-}
-
+/* The reference's gap from the toggle to the headline is 108px; 64 + 48 on our grid. */
 .landing-title {
-  margin: 0 0 var(--space-5);
-  font-size: var(--text-display);
-  line-height: var(--lh-display);
-  font-weight: var(--weight-regular);
-  letter-spacing: var(--tracking-display);
+  margin: calc(var(--space-8) + var(--space-7)) 0 0;
+  max-width: 100%;
+  font-size: var(--text-hero);
+  line-height: var(--lh-hero);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
   color: var(--surface-text-strong);
+  overflow-wrap: break-word;
 }
 
 /* The one gold phrase on the page, in the ink that holds AA on either ground. */
@@ -293,38 +396,45 @@
 }
 
 .landing-sub {
-  max-width: 52ch;
-  margin: 0 0 var(--space-6);
-  font-size: var(--text-body-lg);
-  line-height: var(--lh-reading);
-  color: var(--surface-text-muted);
+  max-width: 50rem;
+  margin: var(--space-5) 0 var(--space-6);
+  font-size: var(--text-hero-sub);
+  line-height: var(--lh-hero-sub);
+  font-weight: var(--weight-medium);
+  color: var(--surface-text);
 }
 
 .landing-cta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  justify-content: center;
+  gap: var(--space-5);
 }
 
-.landing-cta-btn {
-  min-height: 44px;
+/* The reference's two buttons are one width, 215px, whichever label is longer. */
+.landing-root .landing-cta-btn {
+  min-height: var(--cta-h);
+  min-width: 13.4375rem;
   padding: 0 var(--space-5);
 }
 
-/* --- Showcase ------------------------------------------------------------- */
+/* --- The experience's product --------------------------------------------- */
 
-.landing-showcase {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  min-width: 0;
+.xp-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-7);
+  width: 100%;
+  max-width: 1200px;
+  margin-top: var(--space-8);
+  text-align: left;
+  animation: fade-in var(--duration-base) var(--ease-out);
 }
 
-/* A photograph framed as a panel. All four are stacked so the next is already
-   loaded; the active one fades up over the last. */
-.hero-frame {
-  position: relative;
-  height: 360px;
+/* A screenshot of the app, framed as a panel. */
+.xp-shot {
+  margin: 0;
   overflow: hidden;
   border-radius: var(--radius-panel);
   border: 1px solid var(--surface-border);
@@ -332,137 +442,62 @@
   box-shadow: var(--shadow-float);
 }
 
-/* 106% tall and top-anchored, so the frame's lower edge trims the bottom 6%: two of
-   the photographs carry a white band along that edge (11px of field1's 213). */
-.hero-photo {
-  position: absolute;
-  top: 0;
-  left: 0;
+.xp-shot img {
+  display: block;
   width: 100%;
-  height: 106%;
-  object-fit: cover;
-  opacity: 0;
-  transition: opacity var(--duration-slow) var(--ease-in-out);
+  height: auto;
 }
 
-.hero-photo[data-active] {
-  opacity: 1;
-}
-
-/* Under the photo rather than over it: the text needs no wash to be read, and the
-   photo is not covered. Tall enough for a two-line description, so the card does
-   not change height as the slides turn. */
-.hero-caption {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-  min-height: calc(var(--lh-body) + 2 * var(--lh-label) + 2 * var(--space-3) + 2px);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-panel);
-  background: var(--surface);
-  border: 1px solid var(--surface-border);
-  animation: fade-in var(--duration-base) var(--ease-out);
-}
-
-.hero-caption-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.xp-copy {
   min-width: 0;
 }
 
-.hero-caption-title {
+.xp-kicker {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+
+.xp-heading {
+  margin: 0 0 var(--space-5);
+  font-size: var(--text-title);
+  line-height: var(--lh-title);
+  font-weight: var(--weight-bold);
+  color: var(--surface-text-strong);
+}
+
+.xp-points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Each point set off by the brand's 3px yellow rule, as the Overview's intro is. */
+.xp-point {
+  padding-left: var(--space-4);
+  border-left: 3px solid var(--brand-yellow);
+}
+
+.xp-point-title {
+  margin: 0;
+  font-size: var(--text-body-lg);
+  line-height: var(--lh-body-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+.xp-point-desc {
+  margin: var(--space-1) 0 0;
   font-size: var(--text-body);
   line-height: var(--lh-body);
-  font-weight: var(--weight-semibold);
-  color: var(--surface-text-strong);
-}
-
-.hero-caption-desc {
-  font-size: var(--text-label);
-  line-height: var(--lh-label);
   color: var(--surface-text-muted);
-}
-
-.hero-count {
-  flex: none;
-  font-size: var(--text-caption);
-  line-height: var(--lh-body);
-  font-weight: var(--weight-semibold);
-  color: var(--surface-text-subtle);
-}
-
-.hero-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-}
-
-.hero-dots {
-  display: flex;
-  align-items: center;
-}
-
-/* The mark is 8px; the button around it is the 24px a target needs. The current
-   photo's mark is ink and widens - a selection is a state, not an action, so it is
-   not gold. */
-.hero-dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 var(--space-1);
-  border: none;
-  border-radius: var(--radius-pill);
-  background: none;
-  cursor: pointer;
-}
-
-.hero-dot-mark {
-  display: block;
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-border-strong);
-  transition: width var(--transition-normal), background-color var(--transition-fast);
-}
-
-.hero-dot:hover .hero-dot-mark {
-  background: var(--surface-text-muted);
-}
-
-.hero-dot[aria-current] .hero-dot-mark {
-  width: 24px;
-  background: var(--surface-text-strong);
-}
-
-.hero-dot:focus-visible,
-.hero-pause:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 1px;
-}
-
-.hero-pause {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid var(--surface-border-strong);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  color: var(--surface-text-muted);
-  cursor: pointer;
-  transition: color var(--transition-fast), background-color var(--transition-fast);
-}
-
-.hero-pause:hover {
-  background: var(--surface-sunken);
-  color: var(--surface-text-strong);
 }
 
 /* --- Footer --------------------------------------------------------------- */
@@ -473,15 +508,14 @@
   border-top: 1px solid var(--surface-border);
 }
 
+/* Full width with the header's side padding, so the two brand marks line up. */
 .footer-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--space-3) var(--space-5);
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--space-5) var(--gutter);
+  padding: var(--space-5) var(--space-6);
 }
 
 .brand-mark--sm {
@@ -535,9 +569,19 @@
   background: var(--surface-border-strong);
 }
 
+/* --- Large screens (>1600) ------------------------------------------------ */
+/* The product gets the width: a wider section, the screenshot taking two thirds. */
+@media (min-width: 1601px) {
+  .xp-section {
+    max-width: 1560px;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: var(--space-8);
+  }
+}
+
 /* --- Tablet and phone (<=1024): the menu sheet ----------------------------- */
 /* The brand, two nav tabs, the language switch, the theme toggle and both buttons
-   need about 950px on one row in German; a tablet has 769. Below a desktop,
+   need about 1000px on one row in German; a tablet has 769. Below a desktop,
    everything but the brand folds into a sheet the menu button opens - the same nav
    and actions as on a desktop, stacked on their own row under the brand. One copy
    of the markup, so the two cannot drift apart. */
@@ -546,8 +590,12 @@
     flex-wrap: wrap;
     gap: var(--space-2) var(--space-4);
     min-height: 56px;
-    padding-top: var(--space-2);
-    padding-bottom: var(--space-2);
+    padding: var(--space-2) var(--gutter);
+  }
+
+  .footer-inner {
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
   }
 
   .brand-mark {
@@ -594,8 +642,6 @@
     justify-content: space-between;
     width: 100%;
     min-height: 44px;
-    font-size: var(--text-body-lg);
-    line-height: var(--lh-body-lg);
   }
 
   .landing-nav .nav-tab::after {
@@ -626,17 +672,15 @@
     height: 44px;
   }
 
-  .landing-auth {
-    min-height: 44px;
+  /* One column: the screenshot, then what it shows. */
+  .xp-section {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6);
+    max-width: 760px;
   }
 
-  /* One column: the headline gets the full measure instead of a third of it. */
-  .landing-main {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    gap: var(--space-6);
-    padding-top: var(--space-7);
-    padding-bottom: var(--space-7);
+  .landing-title {
+    margin-top: var(--space-8);
   }
 }
 
@@ -645,14 +689,6 @@
 @media (min-width: 769px) and (max-width: 1024px) {
   .landing-prefs {
     margin-right: auto;
-  }
-
-  .landing-auth {
-    padding: 0 var(--space-5);
-  }
-
-  .landing-copy {
-    max-width: 640px;
   }
 }
 
@@ -681,29 +717,45 @@
   }
 
   .landing-main {
-    padding-top: var(--space-6);
+    padding-top: var(--space-5);
   }
 
-  .landing-copy {
-    padding-left: var(--space-4);
+  /* The reference shrinks the toggle to 10px here; 12px is our floor. */
+  .xp-toggle {
+    gap: var(--space-1);
+    padding-left: var(--space-3);
   }
 
+  .xp-toggle-label,
+  .xp-tab {
+    font-size: var(--text-caption);
+  }
+
+  .xp-tab {
+    padding: var(--space-1) var(--space-3);
+  }
+
+  .landing-title {
+    margin-top: var(--space-6);
+  }
+
+  .landing-sub {
+    margin-top: var(--space-4);
+  }
+
+  /* Stacked and full width, as the reference's. */
   .landing-cta {
     flex-direction: column;
+    align-self: stretch;
   }
 
-  .landing-cta-btn {
+  .landing-root .landing-cta-btn {
     width: 100%;
+    min-width: 0;
   }
 
-  .hero-frame {
-    height: 220px;
-  }
-
-  /* Three lines of description at phone width. */
-  .hero-caption {
-    min-height: calc(var(--lh-body) + 3 * var(--lh-label) + 2 * var(--space-3) + 2px);
-    padding: var(--space-3);
+  .xp-section {
+    margin-top: var(--space-7);
   }
 
   .footer-inner {
@@ -716,14 +768,14 @@
   .landing-root,
   .nav-menu,
   .is-nav-open .landing-sheet,
-  .hero-caption {
+  .landing-hero,
+  .xp-section {
     animation: none;
   }
 
   .nav-tab::after,
   .nav-chevron,
-  .hero-photo,
-  .hero-dot-mark {
+  .xp-indicator {
     transition: none;
   }
 }

@@ -224,27 +224,50 @@ const de: Record<string, string> = {
   'Sign in': 'Anmelden',
   'Get access': 'Zugang anfordern',
   'Get early access': 'Jetzt Zugang anfordern',
+  'Select experience:': 'Perspektive wählen:',
+  'Select experience': 'Perspektive wählen',
+  'Collector': 'Erfasser',
+  'Decision Maker': 'Entscheider',
   'Investigated before': 'Untersucht, bevor es',
   "it's a problem": 'zum Problem wird',
-  'Navigate every anomaly and UXO inspection with real-time, actionable target detection, automated GPR logging, and instant field-to-office sync.':
-    'Führen Sie jede Anomalie- und Kampfmittelinspektion mit Echtzeit-Zieldetektion, automatisierter Radarderfassung und sofortiger Feld-Büro-Synchronisierung durch.',
-  'carousel': 'Karussell',
-  'Field operations': 'Feldeinsätze',
-  'Choose a photo': 'Foto wählen',
-  'Pause slideshow': 'Diashow anhalten',
-  'Play slideshow': 'Diashow abspielen',
-  'Magnetometer Survey': 'Magnetikmessung',
-  'Hand-pushed multi-sensor gradiometer cart with RTK-GPS positioning':
-    'Handgeführter Multisensor-Gradiometerwagen mit RTK-GPS-Ortung',
-  'Georadar Survey (GPR)': 'Georadar-Messung (GPR)',
-  'Tablet-controlled GPR cart profiling dense vegetation and embankments':
-    'Tablet-gesteuerter GPR-Wagen für dichte Vegetation und Böschungen',
-  'Rail Corridor Clearance': 'Räumung im Gleisbereich',
-  'Track-guided sensor array for UXO detection in active rail infrastructure':
-    'Gleisgeführtes Sensorarray zur Kampfmittelortung im Bahnbetrieb',
-  'Vehicle-Towed Array': 'Fahrzeuggezogenes Array',
-  'High-throughput towed magnetometer array for large open areas':
-    'Leistungsstarkes Schlepp-Magnetometerarray für große Freiflächen',
+  'Find the next target, open its point and log the excavation - online or offline.':
+    'Nächstes Ziel finden, Punkt öffnen, Aushub erfassen - online wie offline.',
+  'Open the Field App': 'Feld-App öffnen',
+  'Field data collection': 'Felddatenerfassung',
+  'Built for the crew at the target.': 'Für das Team am Ziel gemacht.',
+  'The Field App: the target list beside the survey map': 'Die Feld-App: Zielliste neben der Messkarte',
+  'Browse and filter targets': 'Ziele durchsuchen und filtern',
+  'Narrow a survey by project, category, instrument and status, or search by VM number.':
+    'Ein Messgebiet nach Projekt, Kategorie, Messgerät und Status eingrenzen oder nach VM-Nr. suchen.',
+  'Open a point': 'Punkt öffnen',
+  'Each target on the map shows its evaluated depth and instrument, with the distance and bearing from where you stand.':
+    'Jedes Ziel auf der Karte zeigt bewertete Tiefe und Messgerät, dazu Entfernung und Richtung von Ihrem Standort.',
+  'Log the excavation': 'Aushub erfassen',
+  'Record the find, the depth actually dug, the size of the opening, the Sohle status and photos.':
+    'Fund, tatsächliche Tiefe, Größe der Öffnung, Sohle-Status und Fotos festhalten.',
+  'Works offline': 'Funktioniert offline',
+  'Targets and logs stay on the device and sync when the connection returns.':
+    'Ziele und Einträge bleiben auf dem Gerät und werden synchronisiert, sobald wieder Verbindung besteht.',
+  'Every site.': 'Jedes Messgebiet.',
+  'One clear picture.': 'Ein klares Bild.',
+  'Follow clearance progress, compare sensor estimates with what was dug, and export reports.':
+    'Räumfortschritt verfolgen, Sensorschätzung und Aushub vergleichen, Berichte exportieren.',
+  'Open the Dashboard': 'Dashboard öffnen',
+  'Operations dashboard': 'Einsatz-Dashboard',
+  'Built for the people who sign off.': 'Für alle, die freigeben.',
+  'The Dashboard: clearance charts around the survey map': 'Das Dashboard: Räumungsdiagramme rund um die Messkarte',
+  'Clearance analytics': 'Räumungsanalyse',
+  'Findings by type, Sohle status by finding and target dimensions, charted as the logs arrive.':
+    'Funde nach Art, Sohle-Status nach Fund und Zielabmessungen - als Diagramm, sobald Einträge eingehen.',
+  'Progress at a glance': 'Fortschritt auf einen Blick',
+  'Targets investigated against pending, per project and category, with the excavated volume.':
+    'Untersuchte gegenüber offenen Zielen, je Projekt und Kategorie, mit ausgehobenem Volumen.',
+  'Sensor accuracy': 'Sensorgenauigkeit',
+  'Evaluated depth against excavated depth, with mean error and estimation bias.':
+    'Bewertete gegenüber ausgehobener Tiefe, mit mittlerem Fehler und Schätzabweichung.',
+  'Reports': 'Berichte',
+  'Export the feedback log as PDF or CSV for any date range.':
+    'Das Erfassungsprotokoll als PDF oder CSV für einen beliebigen Zeitraum exportieren.',
 
   // --- Sign-in dialog ---
   'NOLTE Geoservices platform': 'NOLTE Geoservices Plattform',

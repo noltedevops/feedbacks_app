@@ -40,6 +40,19 @@
   --text-button: 0.8125rem;  --lh-button: 1rem;        /* 13/16 */
   --text-stat: 1.5rem;       --lh-stat: 1.75rem;       /* 24/28  headline numbers */
 
+  /* The landing hero, after mongodb.com's measured hierarchy (2026-09-15): bold
+     capitals at 0.95 leading, a medium one-line subhead, 16px medium buttons 48px
+     tall. Their headline face is condensed and Montserrat has no condensed cut, so
+     the size is not their 96px - it is set so each phrase holds one line, as theirs
+     does: the longest phrase (German, "UNTERSUCHT, BEVOR ES") is 13.03em wide, so
+     72px holds it in the 976px a 1024 window leaves. Steps down on tablets and
+     phones and the subhead up above 1600px, below. */
+  --text-hero: 4.5rem;       --lh-hero: 0.95;          /* 72, unitless leading */
+  --text-hero-sub: 1rem;     --lh-hero-sub: 1.5rem;    /* 16/24 */
+  --text-cta: 1rem;          --lh-cta: 1rem;           /* 16/16 */
+  --tracking-cta: 0.01em;
+  --cta-h: 48px;
+
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
@@ -232,11 +245,27 @@ body.dark-theme {
   --shadow-panel: none;
 }
 
-/* The display size steps down on a phone; nothing else in the scale does. */
+/* The display and hero sizes step down on a phone; nothing else in the scale does. */
 @media (max-width: 768px) {
   :root {
     --text-display: 1.875rem;
     --lh-display: 2.375rem;
+    --text-hero: 2.25rem;
     --gutter: var(--space-4);
+  }
+}
+
+/* Tablets: 52px keeps that 13.03em phrase (678px) on one line in a 769 window's 721. */
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root {
+    --text-hero: 3.25rem;
+  }
+}
+
+/* Large screens: the hero subhead opens up, as the reference's does at 1920. */
+@media (min-width: 1601px) {
+  :root {
+    --text-hero-sub: 1.25rem;
+    --lh-hero-sub: 2rem;
   }
 }
