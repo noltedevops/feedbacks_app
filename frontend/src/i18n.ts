@@ -127,6 +127,7 @@ const de: Record<string, string> = {
   'Excavated Targets Database': 'Datenbank ausgehobener Ziele',
   'Sensor Accuracy': 'Sensorgenauigkeit',
   'Evaluated vs Excavated Depth': 'Bewertete vs. ausgehobene Tiefe',
+  'Share of targets per 0.2 m depth band': 'Anteil der Ziele je 0,2-m-Tiefenband',
   'Evaluated (Sensor)': 'Bewertet (Sensor)',
   'Excavated (Actual)': 'Ausgehoben (tatsächlich)',
   'MEAN ERROR': 'MITTLERER FEHLER',

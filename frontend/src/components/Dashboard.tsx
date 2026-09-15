@@ -20,11 +20,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   AreaChart,
   Area
 } from 'recharts';
+import { CategoryTick, ChartLegend } from './chartParts';
+import { useCategoryAxis } from '../chartAxis';
+import { useHeaderRow } from '../useHeaderRow';
 
 // Depth buckets for the dashboard depth filter. Edges are inclusive-low /
 // exclusive-high - [0,0.5), [0.5,1.0), [1.0,1.5), [1.5,inf) - so a target at exactly
@@ -236,39 +238,37 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   }, [excavatedPoints]);
 
   // 3. Evaluated vs Excavated Depth Distribution comparison data
+  // 0.2 m bands, then one band for everything deeper than 2 m. Depths past the last
+  // edge used to fall off the chart - and depth is where a sensor's estimate is most in
+  // question, so the deepest targets are the last that should go missing.
   const depthCompData = useMemo(() => {
-    const depthIntervals = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0];
-    const data = depthIntervals.map(limit => ({
-      limit: `${limit}m`,
-      'Evaluated (Sensor)': 0,
-      'Excavated (Actual)': 0
-    }));
+    const edges = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0];
+    const data = [
+      ...edges.map((edge, i) => ({
+        limit: edge.toFixed(1),
+        band: `${i === 0 ? '0' : edges[i - 1].toFixed(1)}–${edge.toFixed(1)} m`,
+        'Evaluated (Sensor)': 0,
+        'Excavated (Actual)': 0
+      })),
+      { limit: '> 2', band: '> 2.0 m', 'Evaluated (Sensor)': 0, 'Excavated (Actual)': 0 }
+    ];
+    // Upper edges are inclusive: 0.4 m is in 0.2–0.4, not 0.4–0.6.
+    const bandOf = (depth: number) => {
+      const i = edges.findIndex(edge => depth <= edge);
+      return i === -1 ? edges.length : i;
+    };
 
     // Evaluated (Sensor) is errechnete Tiefe, which the survey records for every target dug
     // or not, so it reads the full evaluation set and keeps rendering under Status = Pending.
     dashboardPoints.forEach(p => {
       const evalD = p.evaluated_depth || 0;
-      if (evalD > 0) {
-        for (let i = 0; i < depthIntervals.length; i++) {
-          if (evalD <= depthIntervals[i]) {
-            data[i]['Evaluated (Sensor)']++;
-            break;
-          }
-        }
-      }
+      if (evalD > 0) data[bandOf(evalD)]['Evaluated (Sensor)']++;
     });
 
     // Excavated (Actual) only exists once a crew has opened the target.
     excavatedPoints.forEach(p => {
       const execD = p.feedback!.actual_depth || 0;
-      if (execD > 0) {
-        for (let i = 0; i < depthIntervals.length; i++) {
-          if (execD <= depthIntervals[i]) {
-            data[i]['Excavated (Actual)']++;
-            break;
-          }
-        }
-      }
+      if (execD > 0) data[bandOf(execD)]['Excavated (Actual)']++;
     });
 
     return data;
@@ -398,14 +398,6 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     labelStyle: { color: c['--surface-text-muted'], fontWeight: 600 },
     cursor: { fill: c['--surface-sunken'] }
   };
-  const legendProps = {
-    verticalAlign: 'top' as const,
-    align: 'left' as const,
-    height: 28,
-    iconType: 'circle' as const,
-    iconSize: 8,
-    wrapperStyle: { fontSize: AXIS }
-  };
 
   // Findings and the Sohle split share one category order - most frequent first - so
   // the two panels read against each other row by row.
@@ -414,6 +406,17 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     const order = findingsDesc.map(d => d.name);
     return [...sohleSplitChartData].sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name));
   }, [findingsDesc, sohleSplitChartData]);
+
+  // Category axes sized to their own longest name - see chartParts.
+  const findingNames = useMemo(() => findingsDesc.map(d => d.name), [findingsDesc]);
+  const sohleNames = useMemo(() => sohleDesc.map(d => d.name), [sohleDesc]);
+  const profilingNames = useMemo(() => metricsChartData.map(d => d.name), [metricsChartData]);
+  const [findingsRef, findingsAxis] = useCategoryAxis(findingNames);
+  const [sohleRef, sohleAxis] = useCategoryAxis(sohleNames);
+  const [profilingRef, profilingAxis] = useCategoryAxis(profilingNames);
+
+  // One header row across the full width wherever it fits - see useHeaderRow.
+  const [headerRow, floatRef, titleRef, controlsRef, reportRef] = useHeaderRow(!isMobile);
 
   // Sensor accuracy as a share of each set. Evaluated depth exists for every target
   // and excavated depth only for the dug ones - ~1700 against ~70 - so on a shared
@@ -425,6 +428,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     const excTotal = depthCompData.reduce((s, d) => s + d['Excavated (Actual)'], 0) || 1;
     return depthCompData.map(d => ({
       limit: d.limit,
+      band: d.band,
       evaluated: Math.round((d['Evaluated (Sensor)'] / evalTotal) * 1000) / 10,
       excavated: Math.round((d['Excavated (Actual)'] / excTotal) * 1000) / 10,
       evaluatedCount: d['Evaluated (Sensor)'],
@@ -529,6 +533,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
 
   const reportButton = (
     <button
+      ref={reportRef}
       type="button"
       className="btn-primary dash-report"
       data-tour="dash.report"
@@ -542,7 +547,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   const headerTitle = (
     <div className="dash-title-block">
       <span className="dash-kicker">{t('Operations Overview')}</span>
-      <h2 className="dash-title">{t('Clearance Analytics Dashboard')}</h2>
+      <h2 className="dash-title" ref={titleRef}>{t('Clearance Analytics Dashboard')}</h2>
     </div>
   );
 
@@ -580,7 +585,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     <section className="glass-panel dash-panel" data-tour="dash.findings">
       {panelHead(t('Findings Status'), t('Findings by type'))}
       {hasExcavationData ? (
-        <div className="dash-chart">
+        <div className="dash-chart" ref={findingsRef}>
           <ResponsiveContainer width="100%" height="100%">
             {/* Horizontal: the finding names are long ("Eisenstange / Eisenstab") and
                 need a row each, not a slanted tick under a column. One series, so no
@@ -588,9 +593,9 @@ const DashboardImpl: React.FC<DashboardProps> = ({
             <BarChart data={findingsDesc} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }} barCategoryGap={4}>
               <CartesianGrid horizontal={false} />
               <XAxis type="number" allowDecimals={false} {...axisProps} />
-              <YAxis type="category" dataKey="name" width={isMobile ? 112 : 124} interval={0} {...axisProps} />
+              <YAxis type="category" dataKey="name" width={findingsAxis.width} interval={0} tick={<CategoryTick maxWidth={findingsAxis.width} font={findingsAxis.font} />} {...axisProps} />
               <Tooltip {...tooltipProps} />
-              <Bar dataKey="count" name={t('Frequency')} fill={c['--chart-1']} radius={[0, 4, 4, 0]} maxBarSize={16} isAnimationActive={!isMobile} />
+              <Bar dataKey="count" name={t('Frequency')} fill={c['--chart-1']} radius={[0, 4, 4, 0]} maxBarSize={24} isAnimationActive={!isMobile} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -604,21 +609,26 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     <section className="glass-panel dash-panel">
       {panelHead(t('Excavation Integrity'), t('Sohle Status Split by Finding'))}
       {hasExcavationData ? (
-        <div className="dash-chart">
-          <ResponsiveContainer width="100%" height="100%">
-            {/* A state, so the status pair rather than series colours; the 2px surface
-                stroke is the gap between the stacked segments. */}
-            <BarChart data={sohleDesc} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }} barCategoryGap={4}>
-              <CartesianGrid horizontal={false} />
-              <XAxis type="number" allowDecimals={false} {...axisProps} />
-              <YAxis type="category" dataKey="name" width={isMobile ? 112 : 124} interval={0} {...axisProps} />
-              <Tooltip {...tooltipProps} />
-              <Legend {...legendProps} />
-              <Bar dataKey="Frei" name={t('Frei (Clear)')} stackId="sohle" fill={c['--status-found-rgb']} stroke={c['--surface']} strokeWidth={2} maxBarSize={16} isAnimationActive={!isMobile} />
-              <Bar dataKey="Nicht Frei" name={t('Nicht Frei')} stackId="sohle" fill={c['--status-pending-rgb']} stroke={c['--surface']} strokeWidth={2} radius={[0, 4, 4, 0]} maxBarSize={16} isAnimationActive={!isMobile} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <>
+          <ChartLegend items={[
+            { label: t('Frei (Clear)'), color: c['--status-found-rgb'] },
+            { label: t('Nicht Frei'), color: c['--status-pending-rgb'] }
+          ]} />
+          <div className="dash-chart" ref={sohleRef}>
+            <ResponsiveContainer width="100%" height="100%">
+              {/* A state, so the status pair rather than series colours; the 2px surface
+                  stroke is the gap between the stacked segments. */}
+              <BarChart data={sohleDesc} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }} barCategoryGap={4}>
+                <CartesianGrid horizontal={false} />
+                <XAxis type="number" allowDecimals={false} {...axisProps} />
+                <YAxis type="category" dataKey="name" width={sohleAxis.width} interval={0} tick={<CategoryTick maxWidth={sohleAxis.width} font={sohleAxis.font} />} {...axisProps} />
+                <Tooltip {...tooltipProps} />
+                <Bar dataKey="Frei" name={t('Frei (Clear)')} stackId="sohle" fill={c['--status-found-rgb']} stroke={c['--surface']} strokeWidth={2} maxBarSize={24} isAnimationActive={!isMobile} />
+                <Bar dataKey="Nicht Frei" name={t('Nicht Frei')} stackId="sohle" fill={c['--status-pending-rgb']} stroke={c['--surface']} strokeWidth={2} radius={[0, 4, 4, 0]} maxBarSize={24} isAnimationActive={!isMobile} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </>
       ) : (
         <ExcavationOnly note={excavationOnlyNote} />
       )}
@@ -692,26 +702,34 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   const accuracyPanel = (
     <section className="glass-panel dash-panel" data-tour="dash.accuracy">
       {panelHead(t('Sensor Accuracy'), t('Evaluated vs Excavated Depth'))}
+      {/* What the percent axis is: each series' own share, so the ~70 dug targets read
+          against the ~1700 surveyed ones on one scale. Counts stay in the tooltip. */}
+      <p className="dash-panel-note">{t('Share of targets per 0.2 m depth band')}</p>
 
       {/* The curve always renders: Evaluated (Sensor) comes from errechnete Tiefe and is
           valid for pending targets too. Only the Excavated series and the KPIs below
           need an excavation to exist. Two series: legend, plus direct identity from
           the 2px lines' own colour beside their names. */}
+      <ChartLegend items={[
+        { label: t('Evaluated (Sensor)'), color: c['--chart-1'] },
+        ...(hasExcavationData ? [{ label: t('Excavated (Actual)'), color: c['--chart-2'] }] : [])
+      ]} />
       <div className="dash-chart">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={depthShareData} margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+          <AreaChart data={depthShareData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid vertical={false} />
-            <XAxis dataKey="limit" {...axisProps} interval="preserveStartEnd" />
+            {/* Ticks are each band's upper edge; the axis title carries the unit. */}
+            <XAxis dataKey="limit" {...axisProps} interval="preserveStartEnd" height={32} label={{ value: t('Depth (m)'), position: 'insideBottom', offset: 0, fontSize: AXIS }} />
             <YAxis {...axisProps} width={44} unit="%" />
             <Tooltip
               {...tooltipProps}
+              labelFormatter={(label, payload) => (payload?.[0]?.payload as { band?: string } | undefined)?.band ?? label}
               formatter={(value, name, item) => {
                 const row = item?.payload as { evaluatedCount?: number; excavatedCount?: number } | undefined;
                 const count = name === t('Excavated (Actual)') ? row?.excavatedCount : row?.evaluatedCount;
                 return [`${value ?? 0}% (${count ?? 0})`, name];
               }}
             />
-            <Legend {...legendProps} />
             <Area type="monotone" dataKey="evaluated" name={t('Evaluated (Sensor)')} stroke={c['--chart-1']} fill={c['--chart-1']} fillOpacity={0.1} strokeWidth={2} isAnimationActive={!isMobile} />
             {hasExcavationData && (
               <Area type="monotone" dataKey="excavated" name={t('Excavated (Actual)')} stroke={c['--chart-2']} fill={c['--chart-2']} fillOpacity={0.1} strokeWidth={2} isAnimationActive={!isMobile} />
@@ -765,20 +783,28 @@ const DashboardImpl: React.FC<DashboardProps> = ({
       {panelHead(t('Target Profiling'), t('Mean target dimensions by finding'))}
 
       {hasExcavationData ? (
-        <div className="dash-chart">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={metricsChartData} margin={{ top: 0, right: 8, left: 0, bottom: 0 }} barGap={2} barCategoryGap="20%">
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="name" {...axisProps} interval="preserveStartEnd" />
-              <YAxis {...axisProps} width={48} unit=" m" />
-              {profilingTooltip}
-              <Legend {...legendProps} />
-              <Bar dataKey="Length (m)" name={t('Length (m)')} fill={c['--chart-1']} radius={[4, 4, 0, 0]} maxBarSize={12} isAnimationActive={!isMobile} />
-              <Bar dataKey="Width (m)" name={t('Width (m)')} fill={c['--chart-2']} radius={[4, 4, 0, 0]} maxBarSize={12} isAnimationActive={!isMobile} />
-              <Bar dataKey="Depth (m)" name={t('Depth (m)')} fill={c['--chart-3']} radius={[4, 4, 0, 0]} maxBarSize={12} isAnimationActive={!isMobile} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <>
+          <ChartLegend items={[
+            { label: t('Length (m)'), color: c['--chart-1'] },
+            { label: t('Width (m)'), color: c['--chart-2'] },
+            { label: t('Depth (m)'), color: c['--chart-3'] }
+          ]} />
+          <div className="dash-chart dash-chart--tall" ref={profilingRef}>
+            <ResponsiveContainer width="100%" height="100%">
+              {/* Horizontal, like the two findings charts: as columns, the axis could show
+                  three of the eight finding names and silently dropped the rest. */}
+              <BarChart data={metricsChartData} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }} barGap={1} barCategoryGap={6}>
+                <CartesianGrid horizontal={false} />
+                <XAxis type="number" {...axisProps} unit=" m" />
+                <YAxis type="category" dataKey="name" width={profilingAxis.width} interval={0} tick={<CategoryTick maxWidth={profilingAxis.width} font={profilingAxis.font} />} {...axisProps} />
+                {profilingTooltip}
+                <Bar dataKey="Length (m)" name={t('Length (m)')} fill={c['--chart-1']} radius={[0, 4, 4, 0]} maxBarSize={10} isAnimationActive={!isMobile} />
+                <Bar dataKey="Width (m)" name={t('Width (m)')} fill={c['--chart-2']} radius={[0, 4, 4, 0]} maxBarSize={10} isAnimationActive={!isMobile} />
+                <Bar dataKey="Depth (m)" name={t('Depth (m)')} fill={c['--chart-3']} radius={[0, 4, 4, 0]} maxBarSize={10} isAnimationActive={!isMobile} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </>
       ) : (
         <ExcavationOnly note={excavationOnlyNote} />
       )}
@@ -844,13 +870,13 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   // DESKTOP: floating panels over the full-bleed map.
   // ==========================================================================
   return (
-    <div className="dash-float">
+    <div ref={floatRef} className={headerRow ? 'dash-float dash-float--header-row' : 'dash-float'}>
 
       <div className="glass-panel dash-header dashboard-header-bar">
         {headerTitle}
         {reportButton}
 
-        <div className="dash-header-controls" data-tour="dash.filters">
+        <div className="dash-header-controls" data-tour="dash.filters" ref={controlsRef}>
           {/* Project scope. Narrows every card, chart, the log and the map markers, and
               composes with instrument + status + depth. */}
           {/* The controls carry their own names (aria-label, and a value that reads as

@@ -12,6 +12,17 @@
 /* --- Shell: map layer, panel layer -------------------------------------- */
 
 .dashboard-main {
+  /* The side columns' width, which the grid and the map's own chrome both need: a
+     share of the width between a minimum and a maximum; the tiers below change the
+     three values. One source for both, so the map's controls can never again sit under
+     a column that grew - a hard-coded 360px did, once the large-screen columns
+     reached 440px. */
+  --dash-side-min: 264px;
+  --dash-side-share: 0.28;
+  --dash-side-max: 360px;
+  /* The same width, for chrome positioned in the full-width map: its 100% is the grid's
+     plus the grid's outer padding, hence the subtraction. Resolved where it is used. */
+  --dash-side-now: clamp(var(--dash-side-min), calc((100% - 2 * var(--panel-gap)) * var(--dash-side-share)), var(--dash-side-max));
   position: relative;
   display: flex;
   flex-grow: 1;
@@ -38,10 +49,18 @@
 /* A grid rather than absolute boxes: the header's height is whatever its content
    needs, and the columns follow it instead of guessing a fixed offset. The middle
    cell is empty - that is where the map shows. */
+/* The side columns take 28% of the width each, between 264px and 360px, so they scale
+   with the window instead of holding 360px at every size; the map has the rest. 360px
+   from about 1400px up - narrower, legends and labels wrap and the column outgrows the
+   window. Above 1600px they may reach 440px - see that tier below, and --dash-side-*
+   on .dashboard-main. */
 .dash-float {
   height: 100%;
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr) 360px;
+  grid-template-columns:
+    clamp(var(--dash-side-min), calc(100% * var(--dash-side-share)), var(--dash-side-max))
+    minmax(0, 1fr)
+    clamp(var(--dash-side-min), calc(100% * var(--dash-side-share)), var(--dash-side-max));
   grid-template-rows: auto minmax(0, 1fr);
   gap: var(--panel-gap);
   padding: var(--panel-gap);
@@ -52,19 +71,64 @@
   pointer-events: auto;
 }
 
-/* Title and the page's one primary action on the first row, filters on the second -
-   the same shape at every width, so nothing reflows as the window narrows. */
-.dashboard-header-bar {
+/* Title and the page's one primary action on the first row, filters on the second.
+   Two classes: .dash-header below sets display: flex at the same specificity and, being
+   later, used to win - these grid rules never applied, and on a wide window the flex
+   row left the report button floating between the title and the filters. */
+.dash-header.dashboard-header-bar {
   grid-column: 1 / 3;
   grid-row: 1;
   align-self: start;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title report"
+    "controls controls";
   align-items: center;
 }
 
+.dashboard-header-bar .dash-title-block {
+  grid-area: title;
+}
+
+.dashboard-header-bar .dash-report {
+  grid-area: report;
+}
+
 .dashboard-header-bar .dash-header-controls {
+  grid-area: controls;
+}
+
+/* One slim row across the full width - title, filters, report - wherever it fits.
+   Whether it fits depends on the language and on the project in the filter, so the
+   Dashboard measures it (useHeaderRow) and sets this class; without it the header
+   stacks as above, over the left column and the map only. */
+.dash-float--header-row .dash-header.dashboard-header-bar {
   grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: "title controls report";
+  column-gap: var(--space-5);
+}
+
+.dash-float--header-row .dashboard-col-right {
+  grid-row: 2;
+}
+
+/* The title keeps to one line: the layout above is chosen from its one-line width. */
+.dashboard-header-bar .dash-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The map's own toolbar - zoom, home, basemap, legend - in the stretch of map between
+   the columns, at every width: offset by the column's own width, and never wider than
+   the gap between the two. Phones stack the map in the page instead (field.css). */
+@media (min-width: 769px) {
+  .map-toolbar--dashboard {
+    left: calc(var(--dash-side-now) + 3 * var(--panel-gap));
+    max-width: calc(100% - 2 * (var(--dash-side-now) + 3 * var(--panel-gap)));
+  }
 }
 
 /* The side columns scroll over the map rather than squeezing their panels to fit the
@@ -84,6 +148,13 @@
 
 .dash-col > * {
   flex: none;
+}
+
+/* The panels share whatever height the column has: on a tall screen the charts grow
+   into it rather than leave it empty below them; on a short one each keeps its
+   readable minimum and the column scrolls, as before. */
+.dash-col > .dash-panel {
+  flex: 1 0 auto;
 }
 
 .dashboard-col-left {
@@ -176,7 +247,8 @@
 }
 
 .dash-log-filters .dash-control {
-  min-width: 128px;
+  width: 100%;
+  min-width: 0;
 }
 
 /* --- Stat tiles ----------------------------------------------------------- */
@@ -279,11 +351,54 @@
   color: var(--surface-text-strong);
 }
 
-/* A fixed plot height: tall enough for eight finding rows at the 12px floor. */
+/* A minimum plot height - eight finding rows at the 12px floor and the axis under
+   them - that grows with the panel when the column has room. The legend used to sit
+   inside the old fixed 208px; it now sits above the plot, so this is the same plot. */
 .dash-chart {
-  flex: none;
-  height: 208px;
+  flex: 1 0 176px;
+  min-height: 176px;
   width: 100%;
+}
+
+/* Profiling draws three bars per finding, so it needs more height for the same rows. */
+.dash-chart--tall {
+  flex-basis: 184px;
+  min-height: 184px;
+}
+
+/* A line under a panel title saying what the chart measures. */
+.dash-panel-note {
+  margin: 0;
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  color: var(--surface-text-muted);
+}
+
+/* Series names above the plot, in HTML, so they wrap with the panel instead of
+   running into the axis. */
+.dash-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  color: var(--surface-text-muted);
+}
+
+.dash-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.dash-legend-swatch {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
 }
 
 .dash-empty {
@@ -302,10 +417,12 @@
   color: var(--surface-text-muted);
 }
 
-/* The accuracy measures under the curve. */
+/* The accuracy measures under the curve, one per row: side by side, a third of a
+   360px panel each, "SCHÄTZABWEICHUNG" and "Ausgeglichen (0.01m)" were cut to an
+   ellipsis at every width. A row gives the label the width and the value its own end. */
 .dash-kpis {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   flex-shrink: 0;
   margin: 0;
   border-radius: var(--radius-control);
@@ -314,15 +431,21 @@
 }
 
 .dash-kpis > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 var(--space-3);
   min-width: 0;
-  padding: var(--space-2);
-  text-align: center;
+  padding: var(--space-1) var(--space-3);
 }
 
 .dash-kpis > div + div {
-  border-left: 1px solid var(--surface-border);
+  border-top: 1px solid var(--surface-border);
 }
 
+/* The label keeps its default min-width - its longest word - so it never shrinks under
+   "SCHÄTZABWEICHUNG"; the value gives way instead, wrapping between its words. */
 .dash-kpis dt {
   font-size: var(--text-caption);
   line-height: var(--lh-caption);
@@ -330,20 +453,18 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--surface-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
+/* Where label and value do not fit one line, the value takes the next one, still
+   right-aligned: "Ausgeglichen (0.01m)" beside "SCHÄTZABWEICHUNG" in a 264px panel. */
 .dash-kpis dd {
-  margin: 0;
+  min-width: 0;
+  margin: 0 0 0 auto;
   font-size: var(--text-body);
   line-height: var(--lh-body);
   font-weight: var(--weight-semibold);
   color: var(--surface-text-strong);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-align: right;
 }
 
 .dash-kpis--empty {
@@ -358,23 +479,35 @@
 
 /* --- Target log ----------------------------------------------------------- */
 
-/* The log scrolls inside a fixed height; the column around it scrolls too. */
+/* The log scrolls inside its panel; at least 264px, and more when the column has it.
+   264 is what lets the right column fit a 1920x1080 window without scrolling. */
 .dash-log {
-  height: 320px;
+  min-height: 264px;
 }
 
+.dash-col > .dash-log {
+  flex-basis: 264px;
+}
+
+/* Title above the filters rather than beside them: side by side in a 264px panel the
+   title was clipped at the panel's edge and so was the second dropdown. */
 .dash-log-head {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--space-2);
   flex-shrink: 0;
 }
 
 .dash-log-filters {
-  display: flex;
-  gap: var(--space-1);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+/* Two figures on a narrow card wrap onto a second line rather than cut to "0.3…". */
+.dash-log-scroll .target-card-depth {
+  flex-wrap: wrap;
 }
 
 .dash-log-scroll {
@@ -392,12 +525,44 @@
   margin-left: var(--space-1);
 }
 
+/* --- Narrow desktops (1025-1360) ------------------------------------------ */
+/* A quarter of the width is under 320px here, so the stat tiles drop their icons as
+   the tablet's do: at 292px "Investigated" no longer fit beside one. */
+@media (min-width: 1025px) and (max-width: 1360px) {
+  .dash-stat {
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  .dash-stat-icon {
+    display: none;
+  }
+}
+
+/* --- Large screens (>1600) ------------------------------------------------ */
+/* The width goes to the panels first - up to 440px a side, where the charts' labels
+   stop being the constraint - and the rest to the map. (The header's single row is
+   measured, not tied to this tier: see .dash-float--header-row.) */
+@media (min-width: 1601px) {
+  .dashboard-main {
+    --dash-side-min: 360px;
+    --dash-side-share: 0.25;
+    --dash-side-max: 440px;
+  }
+}
+
 /* --- Tablet (769-1024) ---------------------------------------------------- */
 /* Two 360px columns plus gutters leave almost no map at 769px. At 264px they give
    back 192px at the low end and 480px at 1024px, so the map remains a map. */
 @media (min-width: 769px) and (max-width: 1024px) {
-  .dash-float {
-    grid-template-columns: 264px minmax(0, 1fr) 264px;
+  .dashboard-main {
+    --dash-side-min: 264px;
+    --dash-side-max: 264px;
+  }
+
+  /* One dropdown per row: two in a 264px panel cut both labels. */
+  .dash-log-filters {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .dash-title {
@@ -481,7 +646,14 @@
     height: 240px;
   }
 
+  .dash-chart--tall {
+    height: 300px;
+  }
+
+  /* One column that scrolls as a page: the log keeps a set height of its own. */
   .dash-log {
+    height: 320px;
+    min-height: 0;
     max-height: 70vh;
   }
 
