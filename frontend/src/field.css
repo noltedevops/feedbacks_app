@@ -339,17 +339,30 @@
   gap: var(--space-1);
 }
 
+/* A label and its count share a line while they fit. When they do not - German's
+   "UNTERSUCHUNGSFORTSCHRITT" beside "61 / 1583" in a 272px card - the count takes the
+   next line, still right-aligned, instead of running past the card's edge. */
 .quick-summary-row-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: 0 var(--space-2);
   font-size: var(--text-caption);
   line-height: var(--lh-caption);
   font-weight: var(--weight-semibold);
   color: var(--surface-text-muted);
 }
 
+/* A single word wider than the card breaks at a hyphenation point rather than
+   overflowing; App keeps <html lang> in step with the language for that. */
+.quick-summary-row-head > span:first-child {
+  min-width: 0;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
 .quick-summary-row-head .num {
+  margin-left: auto;
   color: var(--surface-text-strong);
   white-space: nowrap;
 }
@@ -391,11 +404,8 @@
   transition: left var(--transition-normal);
 }
 
-/* On the dashboard the left column floats over the map, so the stack clears it: the
-   column's 360px plus the grid's outer padding, its gap, and the usual inset. */
-.map-toolbar--dashboard {
-  left: calc(360px + 3 * var(--panel-gap));
-}
+/* On the dashboard the left column floats over the map and the stack clears it, by
+   the column's current width - see .map-toolbar--dashboard in dashboard.css. */
 
 .map-toolbar-anchor {
   position: relative;
@@ -1112,13 +1122,10 @@
     width: 300px;
   }
 
+  /* 240, not less: German's "UNTERSUCHUNGSFORTSCHRITT" is 202px, and needs the whole
+     of the 208px this leaves inside the padding. */
   .quick-summary-panel {
-    width: 232px;
-  }
-
-  /* The dashboard's columns narrow to 264px here, so the stack clears less. */
-  .map-toolbar--dashboard {
-    left: calc(264px + 3 * var(--panel-gap));
+    width: 240px;
   }
 }
 
