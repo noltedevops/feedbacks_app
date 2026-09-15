@@ -1864,7 +1864,7 @@ export default function App() {
                                   <span className="target-card-depth">
                                     <span className="target-card-depth-label">{t('EVALUATED DEPTH')}</span>
                                     <span className="target-card-depth-value num">
-                                      {point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')}
+                                      {point.evaluated_depth != null ? `${point.evaluated_depth} m` : t('N/A')}
                                     </span>
                                   </span>
                                 </button>

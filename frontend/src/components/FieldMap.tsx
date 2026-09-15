@@ -194,7 +194,7 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t 
           stack
         />
         <Row label={t('Project ID')} value={point.project_id || '--'} />
-        <Row label={t('Evaluated Depth')} value={point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')} />
+        <Row label={t('Evaluated Depth')} value={point.evaluated_depth != null ? `${point.evaluated_depth} m` : t('N/A')} />
       </section>
 
       {/* The remaining three only exist once a target has been opened, so they keep

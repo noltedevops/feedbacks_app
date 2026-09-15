@@ -260,15 +260,18 @@ const DashboardImpl: React.FC<DashboardProps> = ({
 
     // Evaluated (Sensor) is errechnete Tiefe, which the survey records for every target dug
     // or not, so it reads the full evaluation set and keeps rendering under Status = Pending.
+    // A missing depth has no band: it is missing, not 0, and is never read as one. The
+    // survey's literal 0 m depths are kept out of the bands too, by decision - five
+    // targets on 11-24-2736, none dug.
+    const banded = (depth: number | null | undefined): depth is number => depth != null && depth > 0;
     dashboardPoints.forEach(p => {
-      const evalD = p.evaluated_depth || 0;
-      if (evalD > 0) data[bandOf(evalD)]['Evaluated (Sensor)']++;
+      if (banded(p.evaluated_depth)) data[bandOf(p.evaluated_depth)]['Evaluated (Sensor)']++;
     });
 
     // Excavated (Actual) only exists once a crew has opened the target.
     excavatedPoints.forEach(p => {
-      const execD = p.feedback!.actual_depth || 0;
-      if (execD > 0) data[bandOf(execD)]['Excavated (Actual)']++;
+      const actual = p.feedback!.actual_depth;
+      if (banded(actual)) data[bandOf(actual)]['Excavated (Actual)']++;
     });
 
     return data;
@@ -310,31 +313,36 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     };
   }, [excavatedPoints, t]);
 
-  // 5. Depth/Metrics per Fundstück Stacked Serial Chart data
+  // 5. Mean dimensions per finding. Every series is a measurement taken in the opening,
+  // so this is the dug subset only. A measurement that was not taken is left out of its
+  // mean - it used to count as 0 and pull the mean down - and a mean with nothing behind
+  // it is null (shown as N/A), not 0.
   const metricsChartData = useMemo(() => {
-    const metricsMap: { [key: string]: { count: number; depthSum: number; lengthSum: number; widthSum: number; volSum: number } } = {};
-    // Every series here is an actual site measurement taken in the opening, so this is the
-    // dug subset only. There is no evaluation-based series in this chart to keep.
+    type Tally = { sum: number; n: number };
+    const tally = (): Tally => ({ sum: 0, n: 0 });
+    const add = (slot: Tally, value: number | null | undefined) => {
+      if (value != null) { slot.sum += value; slot.n++; }
+    };
+    const mean = (slot: Tally) => (slot.n ? Number((slot.sum / slot.n).toFixed(2)) : null);
+
+    const byFinding: { [key: string]: { depth: Tally; length: Tally; width: Tally; volume: Tally } } = {};
     excavatedPoints.forEach(p => {
       const fund = p.feedback!.fundstueck || 'ohne Fund';
-      if (!metricsMap[fund]) {
-        metricsMap[fund] = { count: 0, depthSum: 0, lengthSum: 0, widthSum: 0, volSum: 0 };
-      }
-      metricsMap[fund].count++;
-      metricsMap[fund].depthSum += p.feedback!.actual_depth || 0;
-      metricsMap[fund].lengthSum += p.feedback!.laenge || 0;
-      metricsMap[fund].widthSum += p.feedback!.breite || 0;
-      metricsMap[fund].volSum += p.feedback!.m_cube || 0;
+      const m = (byFinding[fund] ??= { depth: tally(), length: tally(), width: tally(), volume: tally() });
+      add(m.depth, p.feedback!.actual_depth);
+      add(m.length, p.feedback!.laenge);
+      add(m.width, p.feedback!.breite);
+      add(m.volume, p.feedback!.m_cube);
     });
 
-    return Object.keys(metricsMap).map(key => {
-      const val = metricsMap[key];
+    return Object.keys(byFinding).map(name => {
+      const m = byFinding[name];
       return {
-        name: key,
-        'Depth (m)': Number((val.depthSum / val.count).toFixed(2)),
-        'Length (m)': Number((val.lengthSum / val.count).toFixed(2)),
-        'Width (m)': Number((val.widthSum / val.count).toFixed(2)),
-        'Volume (m³)': Number((val.volSum / val.count).toFixed(2))
+        name,
+        'Depth (m)': mean(m.depth),
+        'Length (m)': mean(m.length),
+        'Width (m)': mean(m.width),
+        'Volume (m³)': mean(m.volume)
       };
     });
   }, [excavatedPoints]);
@@ -680,8 +688,10 @@ const DashboardImpl: React.FC<DashboardProps> = ({
                 {point.instrument?.toUpperCase()} · {point.layer?.replace('Stoerkoerper ', '') || t('Target')}
               </span>
               <span className="target-card-depth">
-                <span className="target-card-depth-label">{t('EVAL')}: <span className="target-card-depth-value num">{point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')}</span></span>
-                {isInvestigated && point.feedback?.actual_depth && (
+                {/* A depth is shown when it was recorded - a genuine 0 m included - and N/A
+                    only when it was not. */}
+                <span className="target-card-depth-label">{t('EVAL')}: <span className="target-card-depth-value num">{point.evaluated_depth != null ? `${point.evaluated_depth} m` : t('N/A')}</span></span>
+                {isInvestigated && point.feedback?.actual_depth != null && (
                   <span className="target-card-depth-label">{t('EXCAV')}: <span className="target-card-depth-value num">{point.feedback.actual_depth} m</span></span>
                 )}
               </span>
@@ -770,10 +780,12 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   const profilingTooltip = (
     <Tooltip
       {...tooltipProps}
-      formatter={(value, name) => [`${value ?? 0} m`, name]}
+      formatter={(value, name) => [value == null ? t('N/A') : `${value} m`, name]}
       labelFormatter={(label) => {
         const row = metricsChartData.find(r => r.name === label);
-        return row ? `${String(label)} · ${t('Volume (m³)')}: ${row['Volume (m³)']}` : label;
+        if (!row) return label;
+        const volume = row['Volume (m³)'];
+        return `${String(label)} · ${t('Volume (m³)')}: ${volume == null ? t('N/A') : volume}`;
       }}
     />
   );
