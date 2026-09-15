@@ -362,7 +362,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
             </div>
             <div className="ff-facts-wide">
               <dt>{t('Bewertete Tiefe (m)')}</dt>
-              <dd className="num">{point.evaluated_depth ? `${point.evaluated_depth} m` : t('N/A')}</dd>
+              <dd className="num">{point.evaluated_depth != null ? `${point.evaluated_depth} m` : t('N/A')}</dd>
             </div>
             <div className="ff-facts-wide">
               <dt>{t('Coordinate (X; Y)')}</dt>

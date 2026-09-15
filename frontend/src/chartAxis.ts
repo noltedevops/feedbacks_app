@@ -44,7 +44,7 @@ export function fitText(text: string, max: number, font: string): string {
  * to its CategoryTick. Re-measured when the container resizes and when the webfont
  * lands, since both change what fits.
  */
-export function useCategoryAxis(labels: readonly string[]) {
+export function useCategoryAxis(labels: readonly string[], tickPx: number = TICK_PX) {
   const [el, setEl] = useState<HTMLDivElement | null>(null);
   const [axis, setAxis] = useState({ width: 0, font: '' });
 
@@ -52,7 +52,7 @@ export function useCategoryAxis(labels: readonly string[]) {
     if (!el) return;
     const measure = () => {
       const cs = getComputedStyle(el);
-      const font = `${cs.fontStyle} 400 ${TICK_PX}px ${cs.fontFamily}`;
+      const font = `${cs.fontStyle} 400 ${tickPx}px ${cs.fontFamily}`;
       const longest = labels.reduce((max, label) => Math.max(max, textWidth(label, font)), 0);
       const cap = Math.floor(el.clientWidth * MAX_SHARE) || Infinity;
       const width = Math.min(Math.ceil(longest) + TICK_GAP, cap);
@@ -67,7 +67,7 @@ export function useCategoryAxis(labels: readonly string[]) {
       observer.disconnect();
       document.fonts.removeEventListener('loadingdone', measure);
     };
-  }, [el, labels]);
+  }, [el, labels, tickPx]);
 
   return [setEl, { width: axis.width || undefined, font: axis.font }] as const;
 }
