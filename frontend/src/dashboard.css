@@ -525,6 +525,182 @@
   margin-left: var(--space-1);
 }
 
+/* --- Expand a panel into a large overlay (PanelExpand) -------------------- */
+
+/* A panel's title with its expand button in the top corner. */
+.dash-panel-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.dash-panel-top .dash-panel-head {
+  flex: 1;
+}
+
+.panel-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+  margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-2)) 0 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--surface-text-muted);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.panel-expand-btn:hover {
+  background: var(--surface-sunken);
+  color: var(--surface-text-strong);
+}
+
+.panel-expand-btn:focus-visible,
+.panel-expand-close:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Touch: the 44px a finger needs. */
+@media (pointer: coarse) {
+  .panel-expand-btn {
+    width: 44px;
+    height: 44px;
+    margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-3)) 0 0;
+  }
+}
+
+/* The overlay is the app's dialog - .permission-overlay's scrim, .permission-dialog's
+   raised surface, their fade-in and surface-in - made large: most of the viewport, a
+   column whose body the chart fills. */
+.permission-dialog.panel-expand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 1280px;
+  height: min(88vh, 960px);
+  max-height: none;
+  overflow: hidden;
+}
+
+.panel-expand-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.panel-expand-title {
+  margin: 0;
+  font-size: var(--text-heading);
+  line-height: var(--lh-heading);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+.panel-expand-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--control-h);
+  height: var(--control-h);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--surface-text-muted);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.panel-expand-close:hover {
+  background: var(--surface-sunken);
+  color: var(--surface-text-strong);
+}
+
+/* The body takes the height the head leaves; the chart takes what the body leaves - a
+   real size for Recharts to measure and draw at. */
+.panel-expand-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.dash-chart.dash-chart--expanded {
+  flex: 1 1 0;
+  min-height: 240px;
+}
+
+/* Read from further back: the legend and the note at the body step. */
+.panel-expand .dash-legend,
+.panel-expand .dash-panel-note {
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+}
+
+/* The log's two filters, and its cards as a grid scrolling inside the body. */
+.panel-expand .dash-log-filters {
+  grid-template-columns: repeat(2, minmax(0, 240px));
+}
+
+.dash-log-scroll.dash-log-scroll--grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  align-content: start;
+  gap: var(--space-2);
+  overflow-y: auto;
+}
+
+.dash-log-scroll--grid .list-more {
+  grid-column: 1 / -1;
+}
+
+/* The three accuracy measures side by side - the overlay has the width for them. */
+@media (min-width: 769px) {
+  .panel-expand .dash-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .panel-expand .dash-kpis > div + div {
+    border-top: none;
+    border-left: 1px solid var(--surface-border);
+  }
+}
+
+/* A phone: the whole screen, edge to edge. */
+@media (max-width: 768px) {
+  .panel-expand-overlay {
+    padding: 0;
+  }
+
+  .permission-dialog.panel-expand {
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    padding: var(--space-4);
+    border: none;
+    border-radius: 0;
+  }
+
+  .panel-expand .dash-log-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* --- Narrow desktops (1025-1360) ------------------------------------------ */
 /* A quarter of the width is under 320px here, so the stat tiles drop their icons as
    the tablet's do: at 292px "Investigated" no longer fit beside one. */

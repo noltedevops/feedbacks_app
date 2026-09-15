@@ -11,17 +11,18 @@ import { fitText, TICK_GAP, TICK_PX } from '../chartAxis';
  * axis-tick CSS targets, and without the class it painted default black - unreadable
  * on the dark theme's panels.
  */
-export function CategoryTick({ x, y, payload, maxWidth, font }: {
+export function CategoryTick({ x, y, payload, maxWidth, font, fontSize = TICK_PX }: {
   x?: number;
   y?: number;
   payload?: { value?: unknown };
   maxWidth?: number;
   font?: string;
+  fontSize?: number;
 }) {
   const full = String(payload?.value ?? '');
   const shown = font && maxWidth ? fitText(full, maxWidth - TICK_GAP, font) : full;
   return (
-    <text className="recharts-text recharts-cartesian-axis-tick-value" x={x} y={y} dy="0.355em" textAnchor="end" fontSize={TICK_PX}>
+    <text className="recharts-text recharts-cartesian-axis-tick-value" x={x} y={y} dy="0.355em" textAnchor="end" fontSize={fontSize}>
       {shown !== full && <title>{full}</title>}
       {shown}
     </text>

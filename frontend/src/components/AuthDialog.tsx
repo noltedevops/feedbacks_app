@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, type FormEvent, type ReactNode } from 'react';
+import { useLayoutEffect, type FormEvent, type ReactNode } from 'react';
 import { ArrowRight, Info, X } from 'lucide-react';
 import { makeT, type AppLang } from '../i18n';
+import { useModal } from '../useModal';
 
 export type AuthView = 'login' | 'signup' | 'forgot';
 
@@ -36,51 +37,28 @@ interface AuthDialogProps {
   onForgot: (e: FormEvent) => void;
 }
 
-const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
-
 export function AuthDialog(props: AuthDialogProps) {
   const { lang, view, onViewChange, onClose } = props;
   const t = makeT(lang);
-  const dialogRef = useRef<HTMLDivElement>(null);
 
-  // Focus goes back to the control that opened the dialog when it closes. Read at
-  // the first render: by the time an effect runs, focus is already in the first field.
-  const openerRef = useRef(document.activeElement as HTMLElement | null);
-  useEffect(() => {
-    const opener = openerRef.current;
-    return () => { if (opener?.isConnected) opener.focus(); };
-  }, []);
+  // Focus returning to the opener, Escape, Tab held inside and the scrim closing: the
+  // app's one modal behaviour, shared with the Dashboard's expanded panels.
+  const [dialogRef, onBackdropMouseDown] = useModal<HTMLDivElement>(onClose);
 
   // The first field of whichever view is showing takes focus - on opening, and on
   // moving between sign-in, sign-up and reset.
   useLayoutEffect(() => {
     dialogRef.current?.querySelector<HTMLInputElement>('input')?.focus();
-  }, [view]);
-
-  // Escape closes; Tab and Shift+Tab stay inside the dialog.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose(); return; }
-      if (e.key !== 'Tab' || !dialogRef.current) return;
-      const items = [...dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [view, dialogRef]);
 
   const title = view === 'login' ? t('Sign in') : view === 'signup' ? t('Create account') : t('Reset password');
 
   return (
     <div
       className="permission-overlay auth-overlay"
-      // A press that starts and ends on the scrim closes; one that starts in a field
-      // and is released outside (selecting text) does not.
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      // A press that starts on the scrim closes; one that starts in a field and is
+      // released outside (selecting text) does not.
+      onMouseDown={onBackdropMouseDown}
     >
       <div
         ref={dialogRef}
