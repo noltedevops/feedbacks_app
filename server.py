@@ -19,6 +19,7 @@ import uuid
 from database import init_db, get_db, utm32n_to_latlon
 import models
 import report
+import assistant
 from config import settings
 
 init_db()
@@ -1209,6 +1210,10 @@ def seed_mock_data(
     
     db.commit()
     return {"status": "success", "seeded_points": len(db_anomalies), "seeded_feedback": 4}
+
+# The landing page's assistant. Registered before the static mount below, which
+# answers every path that reaches it.
+app.include_router(assistant.router)
 
 if os.path.exists("./static"):
     app.mount("/", StaticFiles(directory="./static", html=True), name="static")

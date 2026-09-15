@@ -112,6 +112,23 @@ and seeds the default accounts **only if the users table is empty**.
 If `static/` exists it is mounted at `/`, so http://localhost:8000 serves the built
 frontend and the API from one origin. That is how the field app is meant to run.
 
+### Landing-page assistant (optional)
+
+The landing page's "Ask the AI assistant" (`assistant.py`, `POST /api/assistant`) calls
+Mistral's EU-hosted API. Its key is read from `MISTRAL_API_KEY` in the **process
+environment only** — not from `.env`, which nothing loads into `os.environ` (see gotcha
+2) — so set it in the shell that starts the server:
+
+```powershell
+$env:MISTRAL_API_KEY = "..."
+.venv\Scripts\python server.py
+```
+
+Without a key, or whenever Mistral cannot answer, the page shows its predefined answers
+instead; nothing errors. The Mistral organisation runs on pay-as-you-go with training
+switched off (Admin → Privacy → "Anonymous improvement data"). Limits are constants in
+`assistant.py`: 10 questions per visitor per 10 minutes, 300 a day in total.
+
 ### Frontend
 
 The build output in `static/` is committed, so you only need this when changing the UI.
@@ -251,6 +268,7 @@ server.py               FastAPI app: auth, points, sync, reports, stats, static 
 models.py               SQLAlchemy models: Project, Anomaly, Feedback, User, PermissionRequest
 database.py             Engine, retry/fallback, init_db, PostGIS trigger, UTM32N <-> WGS84
 config.py               pydantic-settings; warns on password mismatch
+assistant.py            Landing-page assistant: POST /api/assistant, Mistral, limits
 report.py               CSV + PDF report generation (reportlab)
 ingest_anomalies.py     Survey CSV -> PostGIS ingestion (destructive rebuild)
 manage_access.py        CLI: list / grant / revoke / set-password

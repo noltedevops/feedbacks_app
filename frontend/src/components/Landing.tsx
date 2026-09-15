@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent
 import { ArrowRight, ChevronDown, Menu, Moon, Sun, X } from 'lucide-react';
 import { makeT, type AppLang, type Translator } from '../i18n';
 import { LangSwitch } from './LangSwitch';
+import { AskAssistant } from './AskAssistant';
 
 /**
  * The public landing page - the one surface a visitor sees before signing in.
@@ -177,6 +178,9 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
               </button>
             </div>
           </div>
+
+          {/* Outside the keyed hero: a question asked survives a switch of experience. */}
+          <AskAssistant t={t} lang={lang} />
 
           <section className="xp-section" key={`xp-${experience}`} aria-labelledby={headingId}>
             <figure className="xp-shot">

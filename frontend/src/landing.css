@@ -418,6 +418,176 @@
   padding: 0 var(--space-5);
 }
 
+/* --- Ask AI assistant ----------------------------------------------------- */
+/* The reference's box: 450 wide, 70 tall, an 8px corner, a round send button, a
+   small note under it - 32px below the buttons (their 30, on our grid). */
+.ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 450px;
+  margin-top: var(--space-6);
+}
+
+.ask-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 70px;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+  border: 1px solid var(--surface-border-strong);
+  border-radius: var(--radius-item);
+  background: var(--surface);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.ask-box:focus-within {
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 1px var(--focus-ring);
+}
+
+.ask-icon {
+  flex: none;
+  color: var(--accent-ink);
+}
+
+/* 16px, as the reference's - and the size below which iOS zooms into a field. */
+.ask-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--text-body-lg);
+  line-height: var(--lh-body-lg);
+  font-weight: var(--weight-medium);
+  color: var(--surface-text-strong);
+  outline: none;
+}
+
+.ask-input::placeholder {
+  color: var(--surface-text-subtle);
+}
+
+.ask-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--surface-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--surface-text-strong);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.ask-send:not(:disabled):hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.ask-send:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ask-send:focus-visible,
+.ask-chip:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.ask-note {
+  margin: 0;
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  color: var(--surface-text-subtle);
+  text-align: center;
+}
+
+.ask-starters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.ask-chip {
+  min-height: var(--control-h-sm);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-family: inherit;
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  font-weight: var(--weight-medium);
+  color: var(--surface-text);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.ask-chip:hover,
+.ask-chip[aria-pressed='true'] {
+  border-color: var(--surface-border-strong);
+  color: var(--surface-text-strong);
+}
+
+.ask-status {
+  margin: 0;
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  color: var(--surface-text-muted);
+  text-align: center;
+}
+
+.ask-card {
+  padding: var(--space-4);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  text-align: left;
+  animation: fade-in var(--duration-base) var(--ease-out);
+}
+
+/* The fallback carries the brand's yellow rule: a notice, not an error. */
+.ask-card--fallback {
+  border-left: 3px solid var(--brand-yellow);
+}
+
+.ask-q {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+  overflow-wrap: anywhere;
+}
+
+/* The model's text, rendered as text: line breaks kept, nothing interpreted. */
+.ask-a {
+  margin: 0;
+  font-size: var(--text-body);
+  line-height: var(--lh-reading);
+  color: var(--surface-text);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.ask-source {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  color: var(--surface-text-subtle);
+}
+
 /* --- The experience's product --------------------------------------------- */
 
 .xp-section {
@@ -769,7 +939,8 @@
   .nav-menu,
   .is-nav-open .landing-sheet,
   .landing-hero,
-  .xp-section {
+  .xp-section,
+  .ask-card {
     animation: none;
   }
 

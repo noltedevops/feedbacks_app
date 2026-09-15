@@ -1,0 +1,166 @@
+import { useId, useRef, useState, type FormEvent } from 'react';
+import { ArrowUp, Sparkles } from 'lucide-react';
+import type { AppLang, Translator } from '../i18n';
+
+/**
+ * The landing page's "Ask AI assistant", placed and sized after mongodb.com's.
+ *
+ * Free-form questions go to /api/assistant (Mistral, EU-hosted). The starter
+ * questions under the box are answered here instead - instantly, at no cost, and
+ * word for word as written - and they are what the page falls back to whenever the
+ * assistant cannot answer: no key configured, a limit reached, the server or the
+ * network down, a timeout, a reply in any shape but the expected one. The visitor
+ * never sees an error, only a note pointing at those questions.
+ */
+
+// English strings are the i18n keys.
+const STARTERS: [question: string, answer: string][] = [
+  [
+    'What does this platform do?',
+    'It connects UXO survey results with the crews who dig. The office loads the anomaly targets from a magnetometer or georadar survey, the Field App takes them to the crew on a tablet or phone, and every excavation result comes back to the office for the Dashboard and reports.',
+  ],
+  [
+    'Does the Field App work without a connection?',
+    'Yes. Targets are kept on the device and excavation logs are queued there, then synchronised with the office as soon as the connection returns. The app can be installed on the device like a native app.',
+  ],
+  [
+    'What does the Dashboard show?',
+    'Clearance progress (targets investigated against pending, excavated volume), findings by type, Sohle status by finding, sensor accuracy - evaluated against excavated depth - and target dimensions, filtered by project, instrument and category. Results export as PDF or CSV.',
+  ],
+  [
+    'How do I get access?',
+    'Choose Get access at the top of this page to request an account. New accounts start with the Field App; access to the Dashboard is granted by an administrator.',
+  ],
+];
+
+const MAX_CHARS = 500;       // the server's cap, so a long question is never sent to be refused
+const TIMEOUT_MS = 30_000;   // the server gives Mistral 20s; this covers that and the trip
+
+type AskState =
+  | { kind: 'idle' }
+  | { kind: 'loading'; question: string }
+  | { kind: 'answer'; question: string; answer: string }
+  | { kind: 'starter'; index: number }
+  | { kind: 'fallback'; question: string; limited: boolean };
+
+export function AskAssistant({ t, lang }: { t: Translator; lang: AppLang }) {
+  const [question, setQuestion] = useState('');
+  const [state, setState] = useState<AskState>({ kind: 'idle' });
+  const noteId = useId();
+  // Each question gets a number; a reply to anything but the latest is dropped.
+  const latest = useRef(0);
+
+  const ask = async (e: FormEvent) => {
+    e.preventDefault();
+    const q = question.trim();
+    if (!q || state.kind === 'loading') return;
+    const id = ++latest.current;
+    setState({ kind: 'loading', question: q });
+
+    let next: AskState = { kind: 'fallback', question: q, limited: false };
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch('/api/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q, lang }),
+        signal: controller.signal,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.status === 'ok' && typeof data.answer === 'string' && data.answer.trim()) {
+          next = { kind: 'answer', question: q, answer: data.answer.trim() };
+        } else if (data?.status === 'limited') {
+          next = { kind: 'fallback', question: q, limited: true };
+        }
+      }
+    } catch {
+      // Offline, timed out, or not JSON: the fallback set above stands.
+    } finally {
+      window.clearTimeout(timer);
+    }
+    if (id === latest.current) setState(next);
+  };
+
+  const pickStarter = (index: number) => {
+    latest.current++;
+    setState({ kind: 'starter', index });
+  };
+
+  return (
+    <div className="ask">
+      <form className="ask-box" onSubmit={ask}>
+        <Sparkles size={20} className="ask-icon" aria-hidden="true" />
+        <input
+          className="ask-input"
+          type="text"
+          value={question}
+          onChange={e => setQuestion(e.target.value)}
+          maxLength={MAX_CHARS}
+          placeholder={t('Ask the AI assistant')}
+          aria-label={t('Ask the AI assistant')}
+          aria-describedby={noteId}
+          autoComplete="off"
+          enterKeyHint="send"
+        />
+        <button
+          type="submit"
+          className="ask-send"
+          disabled={!question.trim() || state.kind === 'loading'}
+          aria-label={t('Send question')}
+          title={t('Send question')}
+        >
+          <ArrowUp size={18} aria-hidden="true" />
+        </button>
+      </form>
+
+      <p className="ask-note" id={noteId}>
+        {t("Answers are generated by AI on Mistral's EU servers and can be wrong. Please do not enter personal data.")}
+      </p>
+
+      <div className="ask-starters" role="group" aria-label={t('Common questions')}>
+        {STARTERS.map(([q], i) => (
+          <button
+            key={q}
+            type="button"
+            className="ask-chip"
+            aria-pressed={state.kind === 'starter' && state.index === i}
+            onClick={() => pickStarter(i)}
+          >
+            {t(q)}
+          </button>
+        ))}
+      </div>
+
+      <div className="ask-result" aria-live="polite">
+        {state.kind === 'loading' && <p className="ask-status">{t('Thinking…')}</p>}
+
+        {state.kind === 'starter' && (
+          <div className="ask-card">
+            <p className="ask-q">{t(STARTERS[state.index][0])}</p>
+            <p className="ask-a">{t(STARTERS[state.index][1])}</p>
+          </div>
+        )}
+
+        {state.kind === 'answer' && (
+          <div className="ask-card">
+            <p className="ask-q">{state.question}</p>
+            <p className="ask-a">{state.answer}</p>
+            <p className="ask-source">{t('AI-generated answer - please check it.')}</p>
+          </div>
+        )}
+
+        {state.kind === 'fallback' && (
+          <div className="ask-card ask-card--fallback">
+            <p className="ask-q">{state.question}</p>
+            <p className="ask-a">
+              {state.limited ? t('The assistant has reached its limit for now.') : t("The assistant can't answer right now.")}{' '}
+              {t('Choose one of the common questions above, or try again later.')}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
