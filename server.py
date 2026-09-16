@@ -113,6 +113,16 @@ class SyncPayload(BaseModel):
     feedback: List[FeedbackCreate]
     point_updates: Optional[List[PointUpdate]] = None
 
+MIN_PASSWORD_LENGTH = 8
+
+
+def password_acceptable(password: str) -> bool:
+    """The one password rule, for register and change-password alike: at least
+    MIN_PASSWORD_LENGTH characters, and not whitespace alone - eight spaces pass a
+    bare length check."""
+    return len(password) >= MIN_PASSWORD_LENGTH and bool(password.strip())
+
+
 class UserRegister(BaseModel):
     full_name: str
     username: str
@@ -396,14 +406,27 @@ def seed_default_users(db: Session):
 # Authentication API Endpoints
 @app.post("/api/auth/register")
 def register_user(payload: UserRegister, db: Session = Depends(get_db)):
-    existing = db.query(models.User).filter(models.User.username == payload.username).first()
+    # Checked here, not only in the form: the dialog's `required` is the browser's
+    # courtesy, and anything can POST to this endpoint. An empty password used to be
+    # stored as-is, and the client substituted the literal "password" for it.
+    full_name = payload.full_name.strip()
+    username = payload.username.strip()
+    if not full_name or not username:
+        raise HTTPException(status_code=400, detail="Full name and username are required.")
+    if not password_acceptable(payload.password):
+        raise HTTPException(
+            status_code=400,
+            detail=f"The password needs at least {MIN_PASSWORD_LENGTH} characters.",
+        )
+
+    existing = db.query(models.User).filter(models.User.username == username).first()
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
-    
+
     new_user = models.User(
         id=str(uuid.uuid4()),
-        full_name=payload.full_name,
-        username=payload.username,
+        full_name=full_name,
+        username=username,
         email=payload.email,
         password_hash=hash_password(payload.password),
         role="collector" # Role assigned on database level
@@ -429,9 +452,6 @@ def login_user(payload: UserLogin, db: Session = Depends(get_db)):
     return user_payload(user, issue_token(user))
 
 
-MIN_PASSWORD_LENGTH = 8
-
-
 @app.post("/api/auth/change-password")
 def change_own_password(
     payload: PasswordChange,
@@ -442,7 +462,7 @@ def change_own_password(
     holding a temporary password has no surfaces yet, and this is their way out."""
     if not verify_password(payload.current_password, user.password_hash):
         raise HTTPException(status_code=401, detail="Aktuelles Passwort ist falsch.")
-    if len(payload.new_password) < MIN_PASSWORD_LENGTH:
+    if not password_acceptable(payload.new_password):
         raise HTTPException(
             status_code=400,
             detail=f"Das neue Passwort braucht mindestens {MIN_PASSWORD_LENGTH} Zeichen.",

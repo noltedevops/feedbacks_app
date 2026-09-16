@@ -44,7 +44,7 @@ import {
 } from 'lucide-react';
 import {
   authFetch, getAccess, setSession, clearSession, NO_ACCESS,
-  rememberOnlineLogin, offlineAccessFor,
+  rememberOnlineLogin, offlineAccessFor, isAcceptablePassword,
   type Access, type Surface,
 } from './auth';
 
@@ -421,16 +421,12 @@ export default function App() {
   useEffect(() => {
     const sessionUser = localStorage.getItem('nolte_user');
     const sessionRole = localStorage.getItem('nolte_role');
-    let sessionFullName = localStorage.getItem('nolte_user_fullname');
     if (sessionUser && sessionRole) {
-      if (!sessionFullName || sessionFullName === sessionUser || !sessionFullName.includes(' ')) {
-        if (sessionUser.toLowerCase().includes('musoso') || sessionUser.toLowerCase().includes('musonera')) {
-          sessionFullName = 'Eric Musonera';
-        } else {
-          sessionFullName = 'Eric Musonera'; // Default first and last name
-        }
-        localStorage.setItem('nolte_user_fullname', sessionFullName);
-      }
+      // The stored name is used as-is. This used to replace any name without a
+      // space - or a missing one - with a hard-coded name and wrote that back, which
+      // renamed other users, and the investigator on their records with them.
+      // A missing name shows the username until /api/auth/me supplies the real one.
+      const sessionFullName = localStorage.getItem('nolte_user_fullname') || sessionUser;
       setCurrentUser(sessionUser);
       setUserRole(sessionRole as AppRole);
       setCurrentUserFullName(sessionFullName);
@@ -458,6 +454,12 @@ export default function App() {
         setAccess(fresh);
         setSession(null, fresh);
         setMustChangePassword(!!data.must_change_password);
+        // The server's name wins, which also repairs devices that stored the
+        // old hard-coded fallback.
+        if (typeof data.full_name === 'string' && data.full_name.trim()) {
+          localStorage.setItem('nolte_user_fullname', data.full_name);
+          setCurrentUserFullName(data.full_name);
+        }
       })
       .catch(() => { /* offline: keep the cached flags */ });
   }, [isLoggedIn]);
@@ -853,7 +855,7 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         const role = (data.role || 'collector') as AppRole;
-        const fullname = data.full_name || 'Eric Musonera';
+        const fullname = data.full_name || data.username;
         
         const granted: Access = {
           can_field: !!data.can_field,
@@ -928,6 +930,11 @@ export default function App() {
     const usernameClean = signupUsername.trim();
     const fullNameClean = signupFullName.trim();
     if (!usernameClean || !fullNameClean) return;
+    // The server enforces the same rule; this only saves a round trip.
+    if (!isAcceptablePassword(passwordInput)) {
+      showToast('error', t('The password needs at least 8 characters.'));
+      return;
+    }
 
     try {
       const res = await fetch(`${API_BASE}/api/auth/register`, {
@@ -937,7 +944,7 @@ export default function App() {
           full_name: fullNameClean,
           username: usernameClean,
           email: signupEmail.trim(),
-          password: passwordInput || 'password'
+          password: passwordInput
         })
       });
       if (res.ok) {
@@ -968,7 +975,7 @@ export default function App() {
       // Same reasoning as handleLogin: a rejected registration (usually a taken
       // username) must not hand out a local session for that name.
       const detail = await res.json().catch(() => null);
-      showToast('error', detail?.detail || t('Registration failed.'));
+      showToast('error', typeof detail?.detail === 'string' ? t(detail.detail) : t('Registration failed.'));
       return;
     } catch (err) {
       console.warn('Backend register unreachable; refusing to fake an account', err);
@@ -1113,7 +1120,7 @@ export default function App() {
 
   const submitPasswordChange = async () => {
     setPwError('');
-    if (pwNext.length < 8) {
+    if (!isAcceptablePassword(pwNext)) {
       setPwError(t('The new password needs at least 8 characters.'));
       return;
     }

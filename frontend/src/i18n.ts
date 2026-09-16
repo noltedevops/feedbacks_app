@@ -349,6 +349,8 @@ const de: Record<string, string> = {
   'Could not save the decision.': 'Entscheidung konnte nicht gespeichert werden.',
   'Invalid username or password.': 'Benutzername oder Passwort ist falsch.',
   'Registration failed.': 'Registrierung fehlgeschlagen.',
+  'The password needs at least 8 characters.': 'Das Passwort braucht mindestens 8 Zeichen.',
+  'Full name and username are required.': 'Vollständiger Name und Benutzername sind erforderlich.',
   'Offline: signed in locally. Data will sync when back online.':
     'Offline: lokal angemeldet. Daten werden synchronisiert, sobald wieder online.',
   'OFFLINE MODE: your password was not checked. Field app only; data syncs when back online.':
