@@ -113,6 +113,9 @@ class SyncPayload(BaseModel):
     feedback: List[FeedbackCreate]
     point_updates: Optional[List[PointUpdate]] = None
 
+MIN_PASSWORD_LENGTH = 8  # register and change-password
+
+
 class UserRegister(BaseModel):
     full_name: str
     username: str
@@ -396,14 +399,27 @@ def seed_default_users(db: Session):
 # Authentication API Endpoints
 @app.post("/api/auth/register")
 def register_user(payload: UserRegister, db: Session = Depends(get_db)):
-    existing = db.query(models.User).filter(models.User.username == payload.username).first()
+    # Checked here, not only in the form: the dialog's `required` is the browser's
+    # courtesy, and anything can POST to this endpoint. An empty password used to be
+    # stored as-is, and the client substituted the literal "password" for it.
+    full_name = payload.full_name.strip()
+    username = payload.username.strip()
+    if not full_name or not username:
+        raise HTTPException(status_code=400, detail="Full name and username are required.")
+    if len(payload.password) < MIN_PASSWORD_LENGTH or not payload.password.strip():
+        raise HTTPException(
+            status_code=400,
+            detail=f"The password needs at least {MIN_PASSWORD_LENGTH} characters.",
+        )
+
+    existing = db.query(models.User).filter(models.User.username == username).first()
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
-    
+
     new_user = models.User(
         id=str(uuid.uuid4()),
-        full_name=payload.full_name,
-        username=payload.username,
+        full_name=full_name,
+        username=username,
         email=payload.email,
         password_hash=hash_password(payload.password),
         role="collector" # Role assigned on database level
@@ -427,9 +443,6 @@ def login_user(payload: UserLogin, db: Session = Depends(get_db)):
         db.commit()
 
     return user_payload(user, issue_token(user))
-
-
-MIN_PASSWORD_LENGTH = 8
 
 
 @app.post("/api/auth/change-password")

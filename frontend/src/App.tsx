@@ -928,6 +928,12 @@ export default function App() {
     const usernameClean = signupUsername.trim();
     const fullNameClean = signupFullName.trim();
     if (!usernameClean || !fullNameClean) return;
+    // The server enforces the same rule; this only saves a round trip. Whitespace
+    // counts toward the length but a password of nothing else is refused.
+    if (passwordInput.length < 8 || !passwordInput.trim()) {
+      showToast('error', t('The password needs at least 8 characters.'));
+      return;
+    }
 
     try {
       const res = await fetch(`${API_BASE}/api/auth/register`, {
@@ -937,7 +943,7 @@ export default function App() {
           full_name: fullNameClean,
           username: usernameClean,
           email: signupEmail.trim(),
-          password: passwordInput || 'password'
+          password: passwordInput
         })
       });
       if (res.ok) {
@@ -968,7 +974,7 @@ export default function App() {
       // Same reasoning as handleLogin: a rejected registration (usually a taken
       // username) must not hand out a local session for that name.
       const detail = await res.json().catch(() => null);
-      showToast('error', detail?.detail || t('Registration failed.'));
+      showToast('error', typeof detail?.detail === 'string' ? t(detail.detail) : t('Registration failed.'));
       return;
     } catch (err) {
       console.warn('Backend register unreachable; refusing to fake an account', err);

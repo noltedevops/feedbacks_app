@@ -162,6 +162,7 @@ export function AuthDialog(props: AuthDialogProps) {
                 autoComplete="new-password"
                 value={props.password}
                 onChange={(e) => props.onPasswordChange(e.target.value)}
+                minLength={8}
                 required
               />
             </Field>
