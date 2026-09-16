@@ -44,7 +44,7 @@ import {
 } from 'lucide-react';
 import {
   authFetch, getAccess, setSession, clearSession, NO_ACCESS,
-  rememberOnlineLogin, offlineAccessFor,
+  rememberOnlineLogin, offlineAccessFor, isAcceptablePassword,
   type Access, type Surface,
 } from './auth';
 
@@ -930,9 +930,8 @@ export default function App() {
     const usernameClean = signupUsername.trim();
     const fullNameClean = signupFullName.trim();
     if (!usernameClean || !fullNameClean) return;
-    // The server enforces the same rule; this only saves a round trip. Whitespace
-    // counts toward the length but a password of nothing else is refused.
-    if (passwordInput.length < 8 || !passwordInput.trim()) {
+    // The server enforces the same rule; this only saves a round trip.
+    if (!isAcceptablePassword(passwordInput)) {
       showToast('error', t('The password needs at least 8 characters.'));
       return;
     }
@@ -1121,7 +1120,7 @@ export default function App() {
 
   const submitPasswordChange = async () => {
     setPwError('');
-    if (pwNext.length < 8) {
+    if (!isAcceptablePassword(pwNext)) {
       setPwError(t('The new password needs at least 8 characters.'));
       return;
     }

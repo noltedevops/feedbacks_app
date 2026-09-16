@@ -27,6 +27,14 @@ export function setSession(token: string | null, access: Access) {
   localStorage.setItem(ACCESS_KEY, JSON.stringify(access));
 }
 
+/**
+ * Mirrors password_acceptable() in server.py, which is what actually decides:
+ * at least 8 characters, and not whitespace alone.
+ */
+export function isAcceptablePassword(password: string): boolean {
+  return password.length >= 8 && password.trim() !== '';
+}
+
 export function clearSession() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(ACCESS_KEY);

@@ -113,7 +113,14 @@ class SyncPayload(BaseModel):
     feedback: List[FeedbackCreate]
     point_updates: Optional[List[PointUpdate]] = None
 
-MIN_PASSWORD_LENGTH = 8  # register and change-password
+MIN_PASSWORD_LENGTH = 8
+
+
+def password_acceptable(password: str) -> bool:
+    """The one password rule, for register and change-password alike: at least
+    MIN_PASSWORD_LENGTH characters, and not whitespace alone - eight spaces pass a
+    bare length check."""
+    return len(password) >= MIN_PASSWORD_LENGTH and bool(password.strip())
 
 
 class UserRegister(BaseModel):
@@ -406,7 +413,7 @@ def register_user(payload: UserRegister, db: Session = Depends(get_db)):
     username = payload.username.strip()
     if not full_name or not username:
         raise HTTPException(status_code=400, detail="Full name and username are required.")
-    if len(payload.password) < MIN_PASSWORD_LENGTH or not payload.password.strip():
+    if not password_acceptable(payload.password):
         raise HTTPException(
             status_code=400,
             detail=f"The password needs at least {MIN_PASSWORD_LENGTH} characters.",
@@ -455,7 +462,7 @@ def change_own_password(
     holding a temporary password has no surfaces yet, and this is their way out."""
     if not verify_password(payload.current_password, user.password_hash):
         raise HTTPException(status_code=401, detail="Aktuelles Passwort ist falsch.")
-    if len(payload.new_password) < MIN_PASSWORD_LENGTH:
+    if not password_acceptable(payload.new_password):
         raise HTTPException(
             status_code=400,
             detail=f"Das neue Passwort braucht mindestens {MIN_PASSWORD_LENGTH} Zeichen.",
