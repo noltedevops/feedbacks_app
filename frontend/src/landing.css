@@ -499,7 +499,8 @@
 }
 
 .ask-send:focus-visible,
-.ask-chip:focus-visible {
+.ask-chip:focus-visible,
+.assist-close:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
@@ -534,8 +535,7 @@
   transition: border-color var(--transition-fast), color var(--transition-fast);
 }
 
-.ask-chip:hover,
-.ask-chip[aria-pressed='true'] {
+.ask-chip:hover {
   border-color: var(--surface-border-strong);
   color: var(--surface-text-strong);
 }
@@ -546,29 +546,6 @@
   line-height: var(--lh-label);
   color: var(--surface-text-muted);
   text-align: center;
-}
-
-.ask-card {
-  padding: var(--space-4);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-panel);
-  background: var(--surface);
-  text-align: left;
-  animation: fade-in var(--duration-base) var(--ease-out);
-}
-
-/* The fallback carries the brand's yellow rule: a notice, not an error. */
-.ask-card--fallback {
-  border-left: 3px solid var(--brand-yellow);
-}
-
-.ask-q {
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-body);
-  line-height: var(--lh-body);
-  font-weight: var(--weight-semibold);
-  color: var(--surface-text-strong);
-  overflow-wrap: anywhere;
 }
 
 /* The model's text, rendered as text: line breaks kept, nothing interpreted. */
@@ -586,6 +563,235 @@
   font-size: var(--text-caption);
   line-height: var(--lh-caption);
   color: var(--surface-text-subtle);
+}
+
+/* On the page the box opens the dialog: a button that keeps the field's look. */
+.ask-trigger {
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: text;
+}
+
+.ask-trigger:hover {
+  border-color: var(--surface-text-muted);
+}
+
+.ask-trigger:focus-visible {
+  outline: none;
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 1px var(--focus-ring);
+}
+
+.ask-trigger-text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-body-lg);
+  line-height: var(--lh-body-lg);
+  font-weight: var(--weight-medium);
+  color: var(--surface-text-subtle);
+}
+
+/* The send button's look, as a mark: the trigger itself is the control. */
+.ask-trigger .ask-send {
+  pointer-events: none;
+}
+
+/* --- The conversation dialog ---------------------------------------------- */
+/* The reference's: 960 wide at most, centred, growing with the conversation up to
+   72% of the viewport; a centred title over a rule, the close button at its end;
+   the exchanges 32px in from the edges; the field and its note at the bottom. The
+   surface, scrim and motion are the app's dialog (.permission-dialog). */
+.permission-dialog.assist-dialog {
+  display: flex;
+  flex-direction: column;
+  max-width: 960px;
+  max-height: 72vh;
+  max-height: max(72dvh, min(480px, calc(100dvh - 2 * var(--space-4))));
+  padding: 0;
+  overflow: hidden;
+}
+
+.assist-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-height: 52px;
+  padding: var(--space-2) calc(var(--control-h) + var(--space-5));
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.assist-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+.assist-close {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h);
+  height: var(--control-h);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--surface-text-muted);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.assist-close:hover {
+  background: var(--surface-sunken);
+  color: var(--surface-text-strong);
+}
+
+.assist-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-5) var(--space-6);
+}
+
+.assist-exchange {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.assist-msg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-align: left;
+}
+
+/* A notice, not an error: the brand's yellow rule, as the inline card had. */
+.assist-msg--fallback {
+  padding-left: var(--space-3);
+  border-left: 3px solid var(--brand-yellow);
+}
+
+.assist-dialog .assist-who {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+/* Two classes: .permission-dialog p would otherwise restyle every paragraph in here. */
+.assist-dialog .ask-a {
+  margin: 0;
+  font-size: var(--text-body);
+  line-height: var(--lh-body-lg);
+  color: var(--surface-text);
+}
+
+.assist-dialog .ask-status {
+  margin: 0;
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  color: var(--surface-text-muted);
+  text-align: left;
+}
+
+.assist-dialog .ask-source {
+  margin: 0;
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  color: var(--surface-text-subtle);
+}
+
+.assist-dialog .ask-note {
+  margin: 0;
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  color: var(--surface-text-subtle);
+}
+
+/* The visitor's question: a bubble on the right, its corner towards the edge square. */
+.assist-dialog .assist-user {
+  align-self: flex-end;
+  max-width: min(80%, 560px);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-panel) var(--radius-panel) 0 var(--radius-panel);
+  background: var(--surface-sunken);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  color: var(--surface-text-strong);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.assist-starters {
+  justify-content: flex-start;
+  margin-top: var(--space-1);
+}
+
+.assist-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: none;
+  padding: var(--space-2) var(--space-6) var(--space-4);
+}
+
+.assist-box {
+  min-height: 56px;
+  padding-left: var(--space-4);
+}
+
+.assist-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 768px) {
+  .assist-overlay {
+    padding: var(--space-4);
+  }
+
+  .assist-log {
+    padding: var(--space-4);
+  }
+
+  .assist-foot {
+    padding: var(--space-2) var(--space-4) var(--space-4);
+  }
+
+  .assist-dialog .assist-user {
+    max-width: 88%;
+  }
 }
 
 /* --- The experience's product --------------------------------------------- */
@@ -939,8 +1145,7 @@
   .nav-menu,
   .is-nav-open .landing-sheet,
   .landing-hero,
-  .xp-section,
-  .ask-card {
+  .xp-section {
     animation: none;
   }
 
