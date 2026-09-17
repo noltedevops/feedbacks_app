@@ -281,6 +281,12 @@ const de: Record<string, string> = {
   'The assistant has reached its limit for now.': 'Der Assistent hat sein Limit vorerst erreicht.',
   'Choose one of the common questions above, or try again later.':
     'Wählen Sie oben eine der häufigen Fragen oder versuchen Sie es später erneut.',
+  'AI assistant': 'KI-Assistent',
+  'Assistant': 'Assistent',
+  'Conversation': 'Unterhaltung',
+  'You asked': 'Ihre Frage',
+  'Hello! I answer questions about the NOLTE Geoservices platform - the Field App, the Dashboard, reports and access. Pick a common question or ask your own.':
+    'Hallo! Ich beantworte Fragen zur NOLTE Geoservices-Plattform - zur Feld-App, zum Dashboard, zu Berichten und zum Zugang. Wählen Sie eine häufige Frage oder stellen Sie Ihre eigene.',
   'What does this platform do?': 'Was leistet diese Plattform?',
   'It connects UXO survey results with the crews who dig. The office loads the anomaly targets from a magnetometer or georadar survey, the Field App takes them to the crew on a tablet or phone, and every excavation result comes back to the office for the Dashboard and reports.':
     'Sie verbindet Kampfmittel-Messergebnisse mit den Teams vor Ort. Das Büro lädt die Anomalie-Ziele aus einer Magnetik- oder Georadar-Messung, die Feld-App bringt sie auf Tablet oder Smartphone zum Team, und jedes Aushubergebnis fließt zurück ins Büro - für Dashboard und Berichte.',
