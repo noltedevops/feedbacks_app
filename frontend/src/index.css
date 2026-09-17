@@ -720,12 +720,13 @@ select.report-field {
    top of a stronger ink and a sunken wash, so the state never rests on the yellow
    alone (it is decorative at 1.5:1 on white).
 
-   88px wide so every label sets at the 12px floor: "Permissions" measures 74px at
-   12px/500 (75px when active, at 600), and the German "Berechtigungen" breaks at its
-   soft hyphen onto two lines.
+   64px wide and icon-only. Labels stay in the markup as each control's accessible
+   name, and show on hover and keyboard focus as a tooltip beside the rail (.rail-tip)
+   - the only way to name "Berechtigungsanfragen" without a 12px label wrapping into
+   three lines.
    ========================================================================== */
 .app-sidebar {
-  width: 88px;
+  width: 64px;
   flex-shrink: 0;
   height: 100%;
   display: flex;
@@ -804,11 +805,11 @@ select.report-field {
   width: 100%;
 }
 
-/* 80px wide with 2px sides: 76px of line, which is what "Permissions" needs at 12px. */
+/* 56px square-ish targets centred in the 64px rail. */
 .sidebar-item {
   position: relative;
-  width: 80px;
-  min-height: 56px;
+  width: 56px;
+  min-height: 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -847,7 +848,7 @@ select.report-field {
   font-weight: var(--weight-semibold);
 }
 
-/* The rule sits on the rail's inner edge: 4px out from an 80px item centred in 88. */
+/* The rule sits on the rail's inner edge: 4px out from a 56px item centred in 64. */
 .sidebar-item.active::before,
 .sidebar-logo.active::before {
   content: '';
@@ -860,19 +861,110 @@ select.report-field {
   background: var(--brand-yellow);
 }
 
-/* The logo is 48px in the 88px rail, so its rule sits 20px out. */
+/* The logo is 48px in the 64px rail, so its rule sits 8px out. */
 .sidebar-logo.active::before {
-  left: -20px;
+  left: -8px;
 }
 
+/* Visually hidden, still the control's name for a screen reader. Locked items carry
+   "- permission required" here, so the name says it and not only the lock glyph. */
 .sidebar-item-label {
-  max-width: 100%;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* The Field App and Dashboard marks: one-colour cut-outs of the product icons, painted
+   through a mask so the colour is a token and never baked into the image. */
+.rail-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  background-color: var(--accent-mark);
+  -webkit-mask: var(--rail-icon-src) center / contain no-repeat;
+  mask: var(--rail-icon-src) center / contain no-repeat;
+}
+
+.rail-icon--field {
+  --rail-icon-src: url('./assets/rail/field-app.png');
+}
+
+/* The dashboard mark is wider than tall; 28px gives it the same visual weight. */
+.rail-icon--dashboard {
+  --rail-icon-src: url('./assets/rail/dashboard.png');
+  width: 28px;
+  height: 28px;
+}
+
+/* --- Rail tooltips ---------------------------------------------------------
+   Inverse ink, so it reads as a tooltip in either theme. Every tip starts 16px past
+   the rail's edge, which is why each control sets its own gap: the distance from its
+   right edge to the rail's. The ::before bridges that gap, so the pointer can move
+   onto the tip without it closing (WCAG 1.4.13, hoverable); Escape dismisses it
+   (data-tips='off', set in App.tsx). */
+.rail-tip {
+  --rail-tip-gap: 20px;               /* 56px item: 4px to the rail edge + 16 */
+  position: absolute;
+  top: 50%;
+  left: calc(100% + var(--rail-tip-gap));
+  z-index: 10010;
+  padding: 6px 10px;
+  border-radius: var(--radius-control);
+  background: var(--surface-text-strong);
+  color: var(--surface);
+  box-shadow: var(--shadow-float);
+  font-family: var(--font-sans);
   font-size: var(--text-caption);
   line-height: var(--lh-caption);
   font-weight: var(--weight-medium);
-  text-align: center;
-  hyphens: manual;
-  overflow-wrap: break-word;
+  letter-spacing: 0;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--transition-fast), visibility var(--transition-fast);
+}
+
+.rail-tip::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 100%;
+  width: var(--rail-tip-gap);
+}
+
+.sidebar-logo .rail-tip {
+  --rail-tip-gap: 24px;               /* 48px logo: 8px to the edge */
+}
+
+.sidebar-avatar .rail-tip,
+.sidebar-theme .rail-tip {
+  --rail-tip-gap: 29px;               /* 40px controls: 12px to the edge, +1px border */
+}
+
+.sidebar-avatar,
+.sidebar-theme {
+  position: relative;
+}
+
+.app-sidebar :is(.sidebar-item, .sidebar-logo, .sidebar-avatar, .sidebar-theme):is(:hover, :focus-visible) > .rail-tip {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Dismissed with Escape, and never over the avatar's own open menu. Selectors match
+   the show rule's weight and come after it, so they win. */
+.app-sidebar[data-tips='off'] :is(.sidebar-item, .sidebar-logo, .sidebar-avatar, .sidebar-theme) > .rail-tip,
+.app-sidebar .sidebar-avatar[aria-expanded='true']:is(:hover, :focus-visible) > .rail-tip {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* Surfaces this account may not open: still clickable, since the click is what opens
@@ -881,16 +973,17 @@ select.report-field {
   color: var(--surface-text-subtle);
 }
 
+/* In the item's top-right corner, clear of the 28px dashboard mark (which ends 14px in). */
 .sidebar-item-lock {
   position: absolute;
-  top: 6px;
-  right: 14px;
+  top: 3px;
+  right: 2px;
 }
 
 .sidebar-item-badge {
   position: absolute;
-  top: 4px;
-  right: 12px;
+  top: 2px;
+  right: 2px;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
@@ -1044,19 +1137,27 @@ select.report-field {
   outline-offset: 1px;
 }
 
-/* The rail's variant: 68px wide inside the 88px rail. */
+/* The rail's variant: stacked, 40px wide - the width of the avatar and theme buttons
+   around it in the 64px rail. */
+.lang-switch-compact {
+  flex-direction: column;
+}
+
 .lang-switch-compact .lang-switch-thumb,
 .lang-switch-compact .lang-switch-option {
-  width: 32px;
+  width: 34px;
+  height: 26px;
+  min-height: 26px;
 }
 
 .lang-switch-compact[data-lang='DE'] .lang-switch-thumb {
-  transform: translateX(32px);
+  transform: translateY(26px);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .lang-switch-thumb,
-  .app-sidebar {
+  .app-sidebar,
+  .rail-tip {
     transition: none;
   }
 }
@@ -1065,7 +1166,7 @@ select.report-field {
    the markup carries no position of its own. */
 .sidebar-toggle-handle {
   position: absolute;
-  left: 88px;
+  left: 64px;
   top: var(--space-5);
   z-index: 10005;
   width: 16px;
@@ -2071,14 +2172,10 @@ select.report-field {
     padding: 0;
   }
 
-  /* Visually hidden, still the button's name for a screen reader. */
-  .sidebar-item-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
+  /* No tooltips on the bar: touch has no hover, and a tip beside a bottom bar would
+     open off the right of the screen. Each control keeps its name for screen readers. */
+  .rail-tip {
+    display: none;
   }
 
   /* The rule moves to the bar's top edge. */
