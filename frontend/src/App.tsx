@@ -18,7 +18,6 @@ import { useFilters, selectPoints, categoriesForProject, categoryLabel, INGEST_D
 import { makeT, type AppLang } from './i18n';
 import { useIsMobile } from './useIsMobile';
 import { 
-  Compass, 
   Wifi, 
   WifiOff, 
   RefreshCw, 
@@ -39,7 +38,6 @@ import {
   Lock,
   ShieldCheck,
   Users,
-  BarChart3,
   Tag
 } from 'lucide-react';
 import {
@@ -311,6 +309,12 @@ export default function App() {
     localStorage.getItem('theme') === 'dark' ? 'dark' : 'light'
   );
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // Escape hides the rail's tooltips until the pointer or focus moves to another
+  // control - a tooltip over the page must be dismissable without moving (WCAG 1.4.13).
+  // An attribute, not state: a re-render inside the keydown dispatch would swap out a
+  // modal's own Escape listener (useModal re-subscribes per render) before it runs.
+  const railRef = useRef<HTMLElement>(null);
+  const restoreRailTips = () => railRef.current?.removeAttribute('data-tips');
 
   // Narrow screens reflow both surfaces into a single scrolling column. Everything a
   // media query can do stays in index.css; this drives only the parts CSS cannot reach -
@@ -463,6 +467,12 @@ export default function App() {
       })
       .catch(() => { /* offline: keep the cached flags */ });
   }, [isLoggedIn]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') railRef.current?.setAttribute('data-tips', 'off'); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   // Monitor online status
   useEffect(() => {
@@ -1559,7 +1569,13 @@ export default function App() {
           {/* The rail: the app's primary navigation. A bottom bar on a phone - see the
               mobile block in index.css. Styling lives entirely in the stylesheet, so the
               markup here carries structure and state only. */}
-          <aside className={`app-sidebar${isSidebarCollapsed ? ' collapsed' : ''}`} aria-label={t('Main navigation')}>
+          <aside
+            className={`app-sidebar${isSidebarCollapsed ? ' collapsed' : ''}`}
+            aria-label={t('Main navigation')}
+            ref={railRef}
+            onPointerOver={restoreRailTips}
+            onFocus={restoreRailTips}
+          >
             <div className="sidebar-top">
 
               {/* The logo is the way to the Overview - there is no nav item for it. Never
@@ -1570,9 +1586,9 @@ export default function App() {
                 onClick={() => changeView('overview')}
                 aria-label={t('Overview')}
                 aria-current={view === 'overview' ? 'page' : undefined}
-                title={t('Overview')}
               >
                 <img src="/logo.png" alt="" />
+                <span className="rail-tip" aria-hidden="true">{t('Overview')}</span>
               </button>
 
               <nav className="sidebar-menu">
@@ -1581,10 +1597,10 @@ export default function App() {
                   className={`sidebar-item${view === 'field' && activeTab === 'map' ? ' active' : ''}${access.can_field ? '' : ' locked'}`}
                   onClick={() => openSurface('field')}
                   aria-current={view === 'field' ? 'page' : undefined}
-                  title={access.can_field ? t('Field App') : t('Field App - permission required')}
                 >
-                  <Compass size={20} aria-hidden="true" />
-                  <span className="sidebar-item-label">{t('Field App')}</span>
+                  <span className="rail-icon rail-icon--field" aria-hidden="true" />
+                  <span className="sidebar-item-label">{access.can_field ? t('Field App') : t('Field App - permission required')}</span>
+                  <span className="rail-tip" aria-hidden="true">{access.can_field ? t('Field App') : t('Field App - permission required')}</span>
                   {!access.can_field && <Lock size={12} className="sidebar-item-lock" aria-hidden="true" />}
                 </button>
 
@@ -1593,10 +1609,10 @@ export default function App() {
                   className={`sidebar-item${view === 'dashboard' ? ' active' : ''}${access.can_dashboard ? '' : ' locked'}`}
                   onClick={() => openSurface('dashboard')}
                   aria-current={view === 'dashboard' ? 'page' : undefined}
-                  title={access.can_dashboard ? t('Dashboard') : t('Dashboard - permission required')}
                 >
-                  <BarChart3 size={20} aria-hidden="true" />
-                  <span className="sidebar-item-label">{t('Dashboard')}</span>
+                  <span className="rail-icon rail-icon--dashboard" aria-hidden="true" />
+                  <span className="sidebar-item-label">{access.can_dashboard ? t('Dashboard') : t('Dashboard - permission required')}</span>
+                  <span className="rail-tip" aria-hidden="true">{access.can_dashboard ? t('Dashboard') : t('Dashboard - permission required')}</span>
                   {!access.can_dashboard && <Lock size={12} className="sidebar-item-lock" aria-hidden="true" />}
                 </button>
 
@@ -1605,10 +1621,10 @@ export default function App() {
                     type="button"
                     className="sidebar-item"
                     onClick={() => setShowAdminPanel(true)}
-                    title={t('Permission requests')}
                   >
                     <ShieldCheck size={20} aria-hidden="true" />
-                    <span className="sidebar-item-label">{t('Permissions')}</span>
+                    <span className="sidebar-item-label">{t('Permission requests')}</span>
+                    <span className="rail-tip" aria-hidden="true">{t('Permission requests')}</span>
                     {pendingRequests.length > 0 && (
                       <span className="sidebar-item-badge">{pendingRequests.length}</span>
                     )}
@@ -1620,10 +1636,10 @@ export default function App() {
                     type="button"
                     className="sidebar-item"
                     onClick={() => setShowUsersPanel(true)}
-                    title={t('Users')}
                   >
                     <Users size={20} aria-hidden="true" />
                     <span className="sidebar-item-label">{t('Users')}</span>
+                    <span className="rail-tip" aria-hidden="true">{t('Users')}</span>
                   </button>
                 )}
 
@@ -1633,10 +1649,10 @@ export default function App() {
                   data-tour="field.sync"
                   onClick={() => handleSync()}
                   disabled={syncing}
-                  title={t('Sync Data')}
                 >
                   <RefreshCw size={20} className={syncing ? 'animate-spin' : ''} aria-hidden="true" />
-                  <span className="sidebar-item-label">{t('Sync')}</span>
+                  <span className="sidebar-item-label">{t('Sync Data')}</span>
+                  <span className="rail-tip" aria-hidden="true">{t('Sync Data')}</span>
                   {pendingSyncCount > 0 && (
                     <span className="sidebar-item-badge">{pendingSyncCount}</span>
                   )}
@@ -1648,10 +1664,10 @@ export default function App() {
                   className="sidebar-item sidebar-status"
                   data-online={isOnline ? 'true' : 'false'}
                   role="status"
-                  title={isOnline ? t('Network Connection: Online') : t('Network Connection: Offline')}
                 >
                   {isOnline ? <Wifi size={20} aria-hidden="true" /> : <WifiOff size={20} aria-hidden="true" />}
-                  <span className="sidebar-item-label">{isOnline ? t('Online') : t('Offline')}</span>
+                  <span className="sidebar-item-label">{isOnline ? t('Network Connection: Online') : t('Network Connection: Offline')}</span>
+                  <span className="rail-tip" aria-hidden="true">{isOnline ? t('Network Connection: Online') : t('Network Connection: Offline')}</span>
                 </div>
               </nav>
             </div>
@@ -1665,9 +1681,9 @@ export default function App() {
                   aria-haspopup="dialog"
                   aria-expanded={showUserModal}
                   aria-label={`${t('User')}: ${currentUserFullName || currentUser}`}
-                  title={`${t('User')}: ${currentUserFullName || currentUser}`}
                 >
                   {initialsFor(currentUserFullName || currentUser)}
+                  <span className="rail-tip" aria-hidden="true">{`${t('User')}: ${currentUserFullName || currentUser}`}</span>
                 </button>
 
                 {/* Desktop keeps the anchored pop-up next to the avatar. On a phone the
@@ -1703,9 +1719,9 @@ export default function App() {
                     className="sidebar-theme"
                     onClick={toggleTheme}
                     aria-label={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
-                    title={theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}
                   >
                     {theme === 'dark' ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+                    <span className="rail-tip" aria-hidden="true">{theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}</span>
                   </button>
                 </>
               )}

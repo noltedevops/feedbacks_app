@@ -136,6 +136,11 @@
   --accent-rgb: 228 175 0;
   --on-accent: #141414;             /* 9.15:1 on #e4af00, 7.36:1 on the hover */
   --accent-ink: #8a6a00;
+  /* Gold as a mark that has to carry meaning on its own - the rail's Field App and
+     Dashboard icons. The chart gold (--chart-2), one value for both themes because it
+     clears 3:1 on every rail ground: 3.31:1 on white, 3.04:1 on the sunken hover
+     wash, 5.14:1 on the dark rail. The brand gold fails as a mark on white (2.01:1). */
+  --accent-mark: #b88400;
   /* The logo yellow. The 3px rule and the mark itself; never text on light. */
   --brand-yellow: #fece07;
 
