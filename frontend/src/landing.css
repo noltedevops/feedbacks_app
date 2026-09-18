@@ -1174,9 +1174,9 @@
   margin-bottom: var(--space-4);
   padding: 6px var(--space-4);
   border-radius: var(--radius-pill);
-  background: rgba(0, 237, 100, 0.08);
-  border: 1px solid rgba(0, 237, 100, 0.25);
-  color: var(--accent-ink);
+  background: rgba(254, 206, 7, 0.1);
+  border: 1px solid rgba(254, 206, 7, 0.35);
+  color: #fece07;
   font-size: var(--text-label);
   font-weight: var(--weight-semibold);
   cursor: pointer;
@@ -1184,8 +1184,8 @@
 }
 
 .mdb-hero-badge:hover {
-  background: rgba(0, 237, 100, 0.15);
-  border-color: rgba(0, 237, 100, 0.5);
+  background: rgba(254, 206, 7, 0.2);
+  border-color: rgba(254, 206, 7, 0.6);
   transform: translateY(-1px);
 }
 
@@ -1193,8 +1193,8 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #00ed64;
-  box-shadow: 0 0 10px #00ed64;
+  background: #fece07;
+  box-shadow: 0 0 10px #fece07;
   animation: pulse-glow 2s infinite ease-in-out;
 }
 
@@ -1211,21 +1211,21 @@
   transform: translateX(3px);
 }
 
-/* --- MongoDB Buttons ------------------------------------------------------ */
+/* --- MongoDB Buttons (Gold Primary) -------------------------------------- */
 .landing-root .mdb-btn-primary {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: linear-gradient(135deg, #fece07 0%, #e4af00 100%);
+  color: #001e2b;
   border: none;
   border-radius: var(--radius-pill);
-  font-weight: var(--weight-semibold);
-  box-shadow: 0 4px 16px rgba(0, 237, 100, 0.3);
+  font-weight: var(--weight-bold);
+  box-shadow: 0 4px 18px rgba(254, 206, 7, 0.35);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
 }
 
 .landing-root .mdb-btn-primary:hover {
-  background: var(--accent-hover);
+  background: linear-gradient(135deg, #ffdb38 0%, #f5bd00 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 237, 100, 0.45);
+  box-shadow: 0 8px 26px rgba(254, 206, 7, 0.55);
 }
 
 .landing-root .mdb-btn-secondary {
@@ -1239,7 +1239,7 @@
 
 .landing-root .mdb-btn-secondary:hover {
   background: var(--surface-sunken);
-  border-color: var(--accent);
+  border-color: #fece07;
   transform: translateY(-2px);
 }
 
@@ -1247,12 +1247,75 @@
   border-radius: var(--radius-pill);
 }
 
-/* --- Gradient Hero Title Highlight --------------------------------------- */
+/* --- Gradient Hero Title Highlight (Gold) --------------------------------- */
 .landing-title-em {
-  background: linear-gradient(135deg, #00ed64 0%, #00b84d 100%);
+  background: linear-gradient(135deg, #fece07 0%, #e4af00 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
+}
+
+/* --- MongoDB Language Switcher Pill -------------------------------------- */
+.landing-root .lang-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 3px 3px 10px;
+  gap: 4px;
+  border-radius: var(--radius-pill);
+  background: rgba(6, 29, 39, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(254, 206, 7, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.landing-root .lang-switch-globe {
+  color: #fece07;
+  flex: none;
+  z-index: 1;
+}
+
+.landing-root .lang-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 29px;
+  width: 36px;
+  height: calc(100% - 6px);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, #fece07 0%, #e4af00 100%);
+  pointer-events: none;
+  transition: transform var(--transition-normal);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.landing-root .lang-switch[data-lang='DE'] .lang-switch-thumb {
+  transform: translateX(36px);
+}
+
+.landing-root .lang-switch-option {
+  position: relative;
+  z-index: 1;
+  width: 36px;
+  min-height: 26px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-sans);
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.landing-root .lang-switch-option:hover {
+  color: #ffffff;
+}
+
+.landing-root .lang-switch-option.active {
+  color: #001e2b;
+  font-weight: 800;
 }
 
 /* --- MongoDB Interactive Workbench Frame --------------------------------- */
@@ -1270,8 +1333,8 @@
 }
 
 body.dark-theme .mdb-workbench-container {
-  border-color: rgba(0, 237, 100, 0.2);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 237, 100, 0.3);
+  border-color: rgba(254, 206, 7, 0.2);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 1px rgba(254, 206, 7, 0.3);
 }
 
 .mdb-workbench-header {
@@ -1307,16 +1370,16 @@ body.dark-theme .mdb-workbench-container {
   flex: 1;
   justify-content: flex-end;
   font-size: var(--text-caption);
-  font-weight: var(--weight-medium);
-  color: var(--accent-ink);
+  font-weight: var(--weight-semibold);
+  color: #fece07;
 }
 
 .sync-pulse {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #00ed64;
-  box-shadow: 0 0 8px #00ed64;
+  background: #fece07;
+  box-shadow: 0 0 8px #fece07;
 }
 
 .mdb-workbench-body {
@@ -1339,7 +1402,7 @@ body.dark-theme .mdb-workbench-container {
   display: inline-block;
   vertical-align: middle;
   margin-right: var(--space-2);
-  color: var(--accent-ink);
+  color: #fece07;
 }
 
 /* --- AI Assistant Wrapper ------------------------------------------------- */
@@ -1372,7 +1435,7 @@ body.dark-theme .mdb-ai-wrapper {
 }
 
 .mdb-ai-sparkle {
-  color: var(--accent-ink);
+  color: #fece07;
 }
 
 /* --- MongoDB Key Metrics Counter Section --------------------------------- */
@@ -1390,7 +1453,7 @@ body.dark-theme .mdb-ai-wrapper {
 }
 
 body.dark-theme .mdb-metrics-banner {
-  border-color: rgba(0, 237, 100, 0.15);
+  border-color: rgba(254, 206, 7, 0.2);
   background: linear-gradient(180deg, #0b2532 0%, #061d27 100%);
 }
 
@@ -1405,7 +1468,7 @@ body.dark-theme .mdb-metrics-banner {
   font-size: 2.25rem;
   line-height: 2.5rem;
   font-weight: 800;
-  color: var(--accent-ink);
+  color: #fece07;
   letter-spacing: -0.02em;
 }
 
@@ -1443,7 +1506,7 @@ body.dark-theme .mdb-metrics-banner {
   font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-overline);
   text-transform: uppercase;
-  color: var(--accent-ink);
+  color: #fece07;
 }
 
 .mdb-section-title {
@@ -1481,8 +1544,8 @@ body.dark-theme .mdb-metrics-banner {
 
 .mdb-bento-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(0, 237, 100, 0.4);
-  box-shadow: 0 12px 30px rgba(0, 237, 100, 0.12);
+  border-color: rgba(254, 206, 7, 0.45);
+  box-shadow: 0 12px 30px rgba(254, 206, 7, 0.15);
 }
 
 .mdb-bento-card--large {
@@ -1501,8 +1564,8 @@ body.dark-theme .mdb-metrics-banner {
   height: 48px;
   margin-bottom: var(--space-4);
   border-radius: var(--radius-item);
-  background: rgba(0, 237, 100, 0.1);
-  color: var(--accent-ink);
+  background: rgba(254, 206, 7, 0.12);
+  color: #fece07;
 }
 
 .mdb-bento-card h3 {
@@ -1525,8 +1588,8 @@ body.dark-theme .mdb-metrics-banner {
   margin-top: var(--space-4);
   padding: 4px var(--space-3);
   border-radius: var(--radius-pill);
-  background: rgba(0, 237, 100, 0.12);
-  color: var(--accent-ink);
+  background: rgba(254, 206, 7, 0.15);
+  color: #fece07;
   font-size: var(--text-caption);
   font-weight: var(--weight-semibold);
 }
@@ -1539,7 +1602,7 @@ body.dark-theme .mdb-metrics-banner {
   padding: var(--space-8) var(--space-6);
   border-radius: 24px;
   background: linear-gradient(135deg, #001e2b 0%, #003846 100%);
-  border: 1px solid rgba(0, 237, 100, 0.25);
+  border: 1px solid rgba(254, 206, 7, 0.3);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
   text-align: center;
   color: #ffffff;

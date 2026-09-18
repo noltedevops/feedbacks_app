@@ -1,3 +1,4 @@
+import { Globe } from 'lucide-react';
 import type { AppLang } from '../i18n';
 
 // Segmented language switch. `compact` is the narrow variant that fits the rail.
@@ -14,6 +15,7 @@ export function LangSwitch({ lang, onChange, compact = false }: {
       aria-label={lang === 'EN' ? 'Language' : 'Sprache'}
       title={lang === 'EN' ? 'Switch language (English / Deutsch)' : 'Sprache wechseln (Deutsch / English)'}
     >
+      {!compact && <Globe size={13} className="lang-switch-globe" aria-hidden="true" />}
       <span className="lang-switch-thumb" aria-hidden="true"></span>
       {(['EN', 'DE'] as AppLang[]).map((code) => (
         <button
