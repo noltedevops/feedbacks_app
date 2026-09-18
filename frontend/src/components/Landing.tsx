@@ -137,13 +137,6 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
       </header>
 
       <main className="landing-main">
-        {/* Top MongoDB-Style Announcement Pill */}
-        <div className="mdb-hero-badge" onClick={requestAccess} role="button" tabIndex={0}>
-          <span className="mdb-badge-pulse"></span>
-          <span className="mdb-badge-text">⚡ {t('UXO & Geophysics Clearance Platform')} • v2.4</span>
-          <ArrowRight size={14} className="mdb-badge-arrow" />
-        </div>
-
         <div className="landing-panel" role="tabpanel" id={panelId} aria-labelledby={tabId(experience)}>
           {/* Keyed Hero */}
           <div className="landing-hero" key={`hero-${experience}`}>
@@ -159,6 +152,15 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
               <button type="button" className="btn-secondary landing-cta-btn mdb-btn-secondary" onClick={onSignIn}>
                 {t(xp.open)}
               </button>
+            </div>
+
+            {/* AI Assistant Ask Box Section placed right under the hero CTA buttons */}
+            <div className="mdb-ai-wrapper">
+              <div className="mdb-ai-header">
+                <Sparkles size={18} className="mdb-ai-sparkle" />
+                <span>{t('AI Clearance Assistant')}</span>
+              </div>
+              <AskAssistant t={t} lang={lang} />
             </div>
           </div>
 
@@ -199,15 +201,6 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
                 </ul>
               </div>
             </section>
-          </div>
-
-          {/* AI Assistant Ask Box Section */}
-          <div className="mdb-ai-wrapper">
-            <div className="mdb-ai-header">
-              <Sparkles size={18} className="mdb-ai-sparkle" />
-              <span>{t('AI Clearance Assistant')}</span>
-            </div>
-            <AskAssistant t={t} lang={lang} />
           </div>
 
           {/* MongoDB Key Metrics Counter Section */}
