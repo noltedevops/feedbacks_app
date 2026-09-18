@@ -109,145 +109,120 @@
   /* --- Colour: light (default) ------------------------------------------ */
   color-scheme: light;
 
-  /* Grounds. The page is the brand's warm #e8e6e6 family, one step lighter, so
-     white panels read as panels on it. */
-  --app-bg: #f4f4f3;
+  /* Grounds. MongoDB inspired crisp off-white with clean contrast. */
+  --app-bg: #f9fbfb;
   --surface: #ffffff;
   --surface-raised: #ffffff;
-  --surface-sunken: #f4f4f3;
+  --surface-sunken: #f2f5f7;
 
-  /* Hairlines do the separating; shadows are kept for things that float.
-     --surface-border-strong is the outline of an input or a control, so it is
-     held to the 3:1 a control boundary needs (#8c8c8c: 3.36:1 on white). */
-  --surface-border: #e8e6e6;
-  --surface-border-strong: #8c8c8c;
+  --surface-border: #e8edeb;
+  --surface-border-strong: #b0bec5;
 
-  /* Ink, strongest to weakest. Each clears 4.5:1 on white and on the sunken ground. */
-  --surface-text-strong: #141414;   /* 18.4:1 */
-  --surface-text: #262626;          /* 15.1:1  the brand charcoal */
-  --surface-text-muted: #5a5a5a;    /*  6.9:1  secondary */
-  --surface-text-subtle: #6b6b6b;   /*  5.3:1  tertiary: timestamps, captions */
+  /* Ink, strongest to weakest. */
+  --surface-text-strong: #001e2b;
+  --surface-text: #1c2d37;
+  --surface-text-muted: #5c6f78;
+  --surface-text-subtle: #788e99;
 
-  /* The accent. A fill, and a fill only, on light grounds: as text the brand gold
-     is 2.01:1 on white. --accent-ink is its darkened sibling for the rare word
-     that must be gold (5.07:1). --on-accent is what sits on a gold fill. */
-  --accent: #e4af00;
-  --accent-hover: #cc9d00;
-  --accent-rgb: 228 175 0;
-  --on-accent: #141414;             /* 9.15:1 on #e4af00, 7.36:1 on the hover */
-  --accent-ink: #8a6a00;
-  /* Gold as a mark that has to carry meaning on its own - the rail's Field App and
-     Dashboard icons. The chart gold (--chart-2), one value for both themes because it
-     clears 3:1 on every rail ground: 3.31:1 on white, 3.04:1 on the sunken hover
-     wash, 5.14:1 on the dark rail. The brand gold fails as a mark on white (2.01:1). */
-  --accent-mark: #b88400;
-  /* The logo yellow. The 3px rule and the mark itself; never text on light. */
-  --brand-yellow: #fece07;
+  /* The accent: MongoDB Signature Emerald Green (#00ED64) and Forest Ink (#00684A) */
+  --accent: #00ed64;
+  --accent-hover: #00d95a;
+  --accent-rgb: 0 237 100;
+  --on-accent: #001e2b;
+  --accent-ink: #00684a;
+  --accent-mark: #00684a;
+  --brand-yellow: #00ed64;
 
-  --focus-ring: #8a6a00;            /* 5.07:1 on white - the 3:1 a focus ring needs */
+  --focus-ring: #00684a;
 
   /* Feedback ink. */
-  --danger-ink: #b91c1c;            /* 6.47:1 */
+  --danger-ink: #b91c1c;
   --danger-rgb: 185 28 28;
-  --info-ink: #1e5a96;              /* 7.10:1 */
+  --info-ink: #1e5a96;
 
-  /* Target status, as rgb triples so one token drives the ink, its tint and its
-     hairline: rgb(var(--x)), rgb(var(--x) / 0.12). Functional colour, not brand
-     colour - kept muted so the gold stays the only accent on screen. Each clears
-     4.5:1 as text on white and on the sunken ground. */
-  --status-found-rgb: 31 122 76;    /* #1f7a4c  investigated / found */
-  --status-pending-rgb: 180 35 24;  /* #b42318  pending */
-  --status-empty-rgb: 90 90 90;     /* #5a5a5a  dug, nothing found */
-  --status-scrap-rgb: 143 84 16;    /* #8f5410 */
-  --status-alarm-rgb: 106 69 176;   /* #6a45b0 */
+  /* Target status */
+  --status-found-rgb: 0 168 107;
+  --status-pending-rgb: 180 35 24;
+  --status-empty-rgb: 90 90 90;
+  --status-scrap-rgb: 143 84 16;
+  --status-alarm-rgb: 106 69 176;
 
-  /* Floating chrome over the map: toolbar, legend, basemap switcher. Opaque
-     enough to hold its text over any imagery. */
   --overlay: rgba(255, 255, 255, 0.96);
-  --overlay-border: rgba(20, 20, 20, 0.12);
-  --overlay-text: #262626;
-  --overlay-hover-rgb: 20 20 20;
+  --overlay-border: rgba(0, 30, 43, 0.12);
+  --overlay-text: #001e2b;
+  --overlay-hover-rgb: 0 30 43;
 
-  --scrim: rgba(20, 20, 20, 0.45);
-  --chart-grid: rgba(20, 20, 20, 0.08);
+  --scrim: rgba(0, 30, 43, 0.45);
+  --chart-grid: rgba(0, 30, 43, 0.08);
 
-  /* Chart series, in fixed order - slot 1 first, never cycled. Validated as a set with
-     the dataviz six checks against the white panel: lightness band, chroma floor,
-     adjacent CVD separation (worst dE 27.3), normal-vision floor (30.5), and every
-     slot >= 3:1 on the surface. The first three also pass all-pairs. Gold is slot 2
-     at #b88400 - the brand gold stepped down until it clears 3:1 as a mark. */
   --chart-1: #2a78d6;
-  --chart-2: #b88400;
+  --chart-2: #00684a;
   --chart-3: #4a3aa7;
 
-  /* Media: the camera, the photo lightbox and the chips that sit on a photograph. The
-     same in both themes, because what they frame is an image, not the app. */
-  --media-scrim: rgba(10, 10, 10, 0.92);
-  --media-ground: #0a0a0a;
+  --media-scrim: rgba(0, 30, 43, 0.92);
+  --media-ground: #001e2b;
   --media-border: rgba(255, 255, 255, 0.2);
-  --media-chip: rgba(20, 20, 20, 0.7);
-  --media-chip-hover: rgba(20, 20, 20, 0.88);
+  --media-chip: rgba(0, 30, 43, 0.7);
+  --media-chip-hover: rgba(0, 30, 43, 0.88);
   --on-media: #ffffff;
 
-  --shadow-float: 0 12px 32px -12px rgba(20, 20, 20, 0.22), 0 2px 6px rgba(20, 20, 20, 0.06);
-  --shadow-panel: 0 1px 2px rgba(20, 20, 20, 0.04);
+  --shadow-float: 0 16px 40px -12px rgba(0, 30, 43, 0.15), 0 2px 6px rgba(0, 30, 43, 0.05);
+  --shadow-panel: 0 1px 3px rgba(0, 30, 43, 0.06);
+  --shadow-glow-green: 0 0 25px rgba(0, 237, 100, 0.35);
 }
 
 /* --- Colour: dark ------------------------------------------------------- */
-/* The brand's black sections and #262626 charcoal. Only colour changes here -
-   type, space and shape are the same system in both themes. */
+/* MongoDB signature Deep Navy background (#001E2B) and Emerald highlights */
 body.dark-theme {
   color-scheme: dark;
 
-  --app-bg: #111111;
-  --surface: #1c1c1c;
-  --surface-raised: #262626;
-  --surface-sunken: #161616;
+  --app-bg: #001e2b;
+  --surface: #061d27;
+  --surface-raised: #0b2532;
+  --surface-sunken: #00141d;
 
-  --surface-border: #333333;
-  --surface-border-strong: #707070;  /* 3.06:1 on the raised ground */
+  --surface-border: #1e3a47;
+  --surface-border-strong: rgba(0, 237, 100, 0.3);
 
-  --surface-text-strong: #f2f2f2;
-  --surface-text: #d9d9d9;
-  --surface-text-muted: #a3a3a3;    /* 6.0:1 on the raised ground */
-  --surface-text-subtle: #939393;   /* 4.9:1 on the raised ground */
+  --surface-text-strong: #ffffff;
+  --surface-text: #e8edeb;
+  --surface-text-muted: #9fb1bc;
+  --surface-text-subtle: #788e99;
 
-  --accent: #e4af00;
-  --accent-hover: #f0bf1a;
-  --accent-rgb: 228 175 0;
-  --on-accent: #141414;
-  /* On a dark ground the logo yellow is legible as text: 10.1:1 on #262626. */
-  --accent-ink: #fece07;
-  --brand-yellow: #fece07;
+  --accent: #00ed64;
+  --accent-hover: #00ff6c;
+  --accent-rgb: 0 237 100;
+  --on-accent: #001e2b;
+  --accent-ink: #00ed64;
+  --brand-yellow: #00ed64;
 
-  --focus-ring: #fece07;
+  --focus-ring: #00ed64;
 
-  --danger-ink: #f87171;            /* red-400: 5.47:1 on the raised ground */
+  --danger-ink: #f87171;
   --danger-rgb: 248 113 113;
   --info-ink: #7cb3e6;
 
-  --status-found-rgb: 76 195 138;
+  --status-found-rgb: 0 237 100;
   --status-pending-rgb: 248 113 113;
   --status-empty-rgb: 163 163 163;
   --status-scrap-rgb: 240 169 79;
   --status-alarm-rgb: 182 156 246;
 
-  --overlay: rgba(28, 28, 28, 0.94);
-  --overlay-border: rgba(255, 255, 255, 0.1);
-  --overlay-text: #e5e5e5;
+  --overlay: rgba(6, 29, 39, 0.95);
+  --overlay-border: rgba(0, 237, 100, 0.2);
+  --overlay-text: #e8edeb;
   --overlay-hover-rgb: 255 255 255;
 
-  --scrim: rgba(0, 0, 0, 0.6);
+  --scrim: rgba(0, 15, 23, 0.75);
   --chart-grid: rgba(255, 255, 255, 0.08);
 
-  /* The same three hues stepped for the dark panel, validated against #1c1c1c: all in
-     the dark lightness band, adjacent CVD dE 27.1, every slot >= 3:1. */
   --chart-1: #3987e5;
-  --chart-2: #b88400;
+  --chart-2: #00ed64;
   --chart-3: #9085e9;
 
-  --shadow-float: 0 16px 40px -12px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-float: 0 20px 48px -12px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 237, 100, 0.3);
   --shadow-panel: none;
+  --shadow-glow-green: 0 0 30px rgba(0, 237, 100, 0.4);
 }
 
 /* The display and hero sizes step down on a phone; nothing else in the scale does. */
