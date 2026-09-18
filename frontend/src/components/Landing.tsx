@@ -138,6 +138,15 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
 
       <main className="landing-main">
         <div className="landing-panel" role="tabpanel" id={panelId} aria-labelledby={tabId(experience)}>
+          {/* AI Assistant Ask Box — above the hero title */}
+          <div className="mdb-ai-wrapper">
+            <div className="mdb-ai-header">
+              <Sparkles size={18} className="mdb-ai-sparkle" />
+              <span>{t('AI Clearance Assistant')}</span>
+            </div>
+            <AskAssistant t={t} lang={lang} />
+          </div>
+
           {/* Keyed Hero */}
           <div className="landing-hero" key={`hero-${experience}`}>
             <h1 className="landing-title">
@@ -152,15 +161,6 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
               <button type="button" className="btn-secondary landing-cta-btn mdb-btn-secondary" onClick={onSignIn}>
                 {t(xp.open)}
               </button>
-            </div>
-
-            {/* AI Assistant Ask Box Section placed right under the hero CTA buttons */}
-            <div className="mdb-ai-wrapper">
-              <div className="mdb-ai-header">
-                <Sparkles size={18} className="mdb-ai-sparkle" />
-                <span>{t('AI Clearance Assistant')}</span>
-              </div>
-              <AskAssistant t={t} lang={lang} />
             </div>
           </div>
 

@@ -123,13 +123,6 @@ export function AskAssistant({ t, lang }: { t: Translator; lang: AppLang }) {
 
       <p className="ask-note" id={noteId}>{note}</p>
 
-      <div className="ask-starters" role="group" aria-label={t('Common questions')}>
-        {STARTERS.map(([q], i) => (
-          <button key={q} type="button" className="ask-chip" aria-haspopup="dialog" onClick={e => openFrom(e, i)}>
-            {t(q)}
-          </button>
-        ))}
-      </div>
 
       {opener && (
         <AssistantDialog

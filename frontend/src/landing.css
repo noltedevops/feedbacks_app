@@ -17,12 +17,12 @@
 /* The landing is its own scroller: body is fixed to the viewport for the app shell,
    and the sticky header needs a scrolling ancestor to stick to. */
 .landing-root {
-  --accent: #00ed64;
-  --accent-hover: #00d95a;
-  --accent-rgb: 0 237 100;
+  --accent: #fece07;
+  --accent-hover: #e4af00;
+  --accent-rgb: 254 206 7;
   --on-accent: #001e2b;
-  --accent-ink: #00ed64;
-  --focus-ring: #00ed64;
+  --accent-ink: #b88400;
+  --focus-ring: #fece07;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -1412,7 +1412,7 @@ body.dark-theme .mdb-workbench-container {
   align-items: center;
   width: 100%;
   max-width: 640px;
-  margin-top: var(--space-7);
+  margin-top: var(--space-4);
   padding: var(--space-5);
   border-radius: var(--radius-panel);
   background: var(--surface);
@@ -1421,7 +1421,7 @@ body.dark-theme .mdb-workbench-container {
 }
 
 body.dark-theme .mdb-ai-wrapper {
-  border-color: rgba(0, 237, 100, 0.15);
+  border-color: rgba(254, 206, 7, 0.2);
 }
 
 .mdb-ai-header {
