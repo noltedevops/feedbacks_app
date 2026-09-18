@@ -430,18 +430,28 @@
 .ask {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
   width: 100%;
   max-width: 450px;
-  margin-top: var(--space-6);
+  margin-top: var(--space-4);
+}
+
+/* Keeps aria-describedby wired without taking any visual space */
+.ask-note--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .ask-box {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  min-height: 70px;
-  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+  min-height: 52px;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
   border: 1px solid var(--surface-border-strong);
   border-radius: var(--radius-item);
   background: var(--surface);
@@ -1411,9 +1421,9 @@ body.dark-theme .mdb-workbench-container {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 640px;
+  max-width: 540px;
   margin-top: var(--space-4);
-  padding: var(--space-5);
+  padding: var(--space-4);
   border-radius: var(--radius-panel);
   background: var(--surface);
   border: 1px solid var(--surface-border);
@@ -1428,8 +1438,8 @@ body.dark-theme .mdb-ai-wrapper {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-bottom: var(--space-3);
-  font-size: var(--text-body-lg);
+  margin-bottom: var(--space-2);
+  font-size: var(--text-body);
   font-weight: var(--weight-bold);
   color: var(--surface-text-strong);
 }
