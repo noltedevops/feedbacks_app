@@ -130,8 +130,8 @@
   --accent-rgb: 0 237 100;
   --on-accent: #001e2b;
   --accent-ink: #00684a;
-  --accent-mark: #00684a;
-  --brand-yellow: #00ed64;
+  --accent-mark: #b88400;
+  --brand-yellow: #fece07;
 
   --focus-ring: #00684a;
 
@@ -156,7 +156,7 @@
   --chart-grid: rgba(0, 30, 43, 0.08);
 
   --chart-1: #2a78d6;
-  --chart-2: #00684a;
+  --chart-2: #b88400;
   --chart-3: #4a3aa7;
 
   --media-scrim: rgba(0, 30, 43, 0.92);
@@ -194,7 +194,8 @@ body.dark-theme {
   --accent-rgb: 0 237 100;
   --on-accent: #001e2b;
   --accent-ink: #00ed64;
-  --brand-yellow: #00ed64;
+  --accent-mark: #fece07;
+  --brand-yellow: #fece07;
 
   --focus-ring: #00ed64;
 
