@@ -17,6 +17,12 @@
 /* The landing is its own scroller: body is fixed to the viewport for the app shell,
    and the sticky header needs a scrolling ancestor to stick to. */
 .landing-root {
+  --accent: #00ed64;
+  --accent-hover: #00d95a;
+  --accent-rgb: 0 237 100;
+  --on-accent: #001e2b;
+  --accent-ink: #00ed64;
+  --focus-ring: #00ed64;
   flex: 1;
   min-height: 0;
   display: flex;

@@ -124,16 +124,16 @@
   --surface-text-muted: #5c6f78;
   --surface-text-subtle: #788e99;
 
-  /* The accent: MongoDB Signature Emerald Green (#00ED64) and Forest Ink (#00684A) */
-  --accent: #00ed64;
-  --accent-hover: #00d95a;
-  --accent-rgb: 0 237 100;
-  --on-accent: #001e2b;
-  --accent-ink: #00684a;
+  /* The accent: NOLTE Signature Gold (#e4af00) for in-app controls, buttons and field outlines */
+  --accent: #e4af00;
+  --accent-hover: #cc9d00;
+  --accent-rgb: 228 175 0;
+  --on-accent: #141414;
+  --accent-ink: #8a6a00;
   --accent-mark: #b88400;
   --brand-yellow: #fece07;
 
-  --focus-ring: #00684a;
+  --focus-ring: #8a6a00;
 
   /* Feedback ink. */
   --danger-ink: #b91c1c;
@@ -172,7 +172,7 @@
 }
 
 /* --- Colour: dark ------------------------------------------------------- */
-/* MongoDB signature Deep Navy background (#001E2B) and Emerald highlights */
+/* MongoDB signature Deep Navy background (#001E2B) with NOLTE Gold accent */
 body.dark-theme {
   color-scheme: dark;
 
@@ -182,22 +182,22 @@ body.dark-theme {
   --surface-sunken: #00141d;
 
   --surface-border: #1e3a47;
-  --surface-border-strong: rgba(0, 237, 100, 0.3);
+  --surface-border-strong: rgba(228, 175, 0, 0.35);
 
   --surface-text-strong: #ffffff;
   --surface-text: #e8edeb;
   --surface-text-muted: #9fb1bc;
   --surface-text-subtle: #788e99;
 
-  --accent: #00ed64;
-  --accent-hover: #00ff6c;
-  --accent-rgb: 0 237 100;
-  --on-accent: #001e2b;
-  --accent-ink: #00ed64;
+  --accent: #e4af00;
+  --accent-hover: #f0bf1a;
+  --accent-rgb: 228 175 0;
+  --on-accent: #141414;
+  --accent-ink: #fece07;
   --accent-mark: #fece07;
   --brand-yellow: #fece07;
 
-  --focus-ring: #00ed64;
+  --focus-ring: #fece07;
 
   --danger-ink: #f87171;
   --danger-rgb: 248 113 113;
