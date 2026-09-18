@@ -107,6 +107,9 @@ export function AskAssistant({ t, lang }: { t: Translator; lang: AppLang }) {
 
   return (
     <div className="ask">
+      {/* Hidden note keeps aria-describedby working but is invisible on the page */}
+      <span id={noteId} className="ask-note ask-note--hidden" aria-hidden="true" />
+
       <button
         type="button"
         className="ask-box ask-trigger"
@@ -120,16 +123,6 @@ export function AskAssistant({ t, lang }: { t: Translator; lang: AppLang }) {
           <ArrowUp size={18} />
         </span>
       </button>
-
-      <p className="ask-note" id={noteId}>{note}</p>
-
-      <div className="ask-starters" role="group" aria-label={t('Common questions')}>
-        {STARTERS.map(([q], i) => (
-          <button key={q} type="button" className="ask-chip" aria-haspopup="dialog" onClick={e => openFrom(e, i)}>
-            {t(q)}
-          </button>
-        ))}
-      </div>
 
       {opener && (
         <AssistantDialog

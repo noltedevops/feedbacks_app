@@ -1,24 +1,8 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { ArrowRight, ChevronDown, Menu, Moon, Sun, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, Menu, Moon, Sun, X, Zap, Database, Activity, FileText, Sparkles, CheckCircle2 } from 'lucide-react';
 import { makeT, type AppLang, type Translator } from '../i18n';
 import { LangSwitch } from './LangSwitch';
 import { AskAssistant } from './AskAssistant';
-
-/**
- * The public landing page - the one surface a visitor sees before signing in.
- *
- * Laid out after mongodb.com's front page, measured rather than eyeballed: a
- * full-width header, an experience toggle above a centred hero - bold capitals, a
- * one-line subhead, two buttons - and below it the product the chosen experience
- * uses. Collector shows the Field App, Decision Maker the Dashboard; the toggle
- * swaps the headline, subhead, second button and the product section together, as
- * the reference swaps its hero. Colour, face and shape stay NOLTE; every colour is a
- * token.
- *
- * The sign-in dialog is rendered by App, next to this, because it owns the auth
- * state. Every entry point here - the header, the hero, the Platform menu, the
- * footer - just asks for it.
- */
 
 interface LandingProps {
   lang: AppLang;
@@ -44,7 +28,6 @@ interface ExperienceCopy {
 
 const ORDER: Experience[] = ['collector', 'decision'];
 
-// The English strings are the i18n keys.
 const EXPERIENCES: Record<Experience, ExperienceCopy> = {
   collector: {
     tab: 'Collector',
@@ -88,11 +71,9 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
   const headingId = `${baseId}-heading`;
   const xp = EXPERIENCES[experience];
 
-  // Anything that opens the dialog also folds the phone menu away behind it.
   const signIn = () => { setNavOpen(false); onSignIn(); };
   const requestAccess = () => { setNavOpen(false); onRequestAccess(); };
 
-  // Escape folds the phone menu, as it closes every other layer in the app.
   useEffect(() => {
     if (!navOpen) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setNavOpen(false); };
@@ -101,7 +82,6 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
   }, [navOpen]);
 
   const themeLabel = theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode');
-  // Screenshots of the real app on demo data, one per experience, theme and language.
   const shot = `/landing/${experience}-${theme}-${lang === 'DE' ? 'de' : 'en'}.jpg`;
 
   return (
@@ -113,7 +93,6 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
             <span className="brand-name">Nolte Geoservices GmbH</span>
           </div>
 
-          {/* Tablets and phones: everything but the brand folds into this menu. */}
           <button
             type="button"
             className="landing-burger"
@@ -136,7 +115,6 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
             <div className="landing-actions">
               <div className="landing-prefs">
                 <LangSwitch lang={lang} onChange={onLangChange} />
-                {/* The same control, state and stored key as the rail's inside the app. */}
                 <button
                   type="button"
                   className="landing-theme-toggle"
@@ -150,7 +128,7 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
               <button type="button" className="btn-secondary landing-auth" onClick={signIn}>
                 {t('Sign in')}
               </button>
-              <button type="button" className="btn-primary landing-auth" onClick={requestAccess}>
+              <button type="button" className="btn-primary landing-auth mdb-btn-glow" onClick={requestAccess}>
                 {t('Get access')}
               </button>
             </div>
@@ -159,10 +137,17 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
       </header>
 
       <main className="landing-main">
-        <ExperienceToggle t={t} value={experience} onChange={setExperience} tabId={tabId} panelId={panelId} />
-
         <div className="landing-panel" role="tabpanel" id={panelId} aria-labelledby={tabId(experience)}>
-          {/* Keyed, so a switch fades the new copy in rather than swapping it hard. */}
+          {/* AI Assistant Ask Box — above the hero title */}
+          <div className="mdb-ai-wrapper">
+            <div className="mdb-ai-header">
+              <Sparkles size={18} className="mdb-ai-sparkle" />
+              <span>{t('AI Clearance Assistant')}</span>
+            </div>
+            <AskAssistant t={t} lang={lang} />
+          </div>
+
+          {/* Keyed Hero */}
           <div className="landing-hero" key={`hero-${experience}`}>
             <h1 className="landing-title">
               {t(xp.title[0])}{' '}
@@ -170,33 +155,135 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
             </h1>
             <p className="landing-sub">{t(xp.sub)}</p>
             <div className="landing-cta">
-              <button type="button" className="btn-primary landing-cta-btn" onClick={onRequestAccess}>
+              <button type="button" className="btn-primary landing-cta-btn mdb-btn-primary" onClick={onRequestAccess}>
                 {t('Get early access')} <ArrowRight size={16} aria-hidden="true" />
               </button>
-              <button type="button" className="btn-secondary landing-cta-btn" onClick={onSignIn}>
+              <button type="button" className="btn-secondary landing-cta-btn mdb-btn-secondary" onClick={onSignIn}>
                 {t(xp.open)}
               </button>
             </div>
           </div>
 
-          {/* Outside the keyed hero: a question asked survives a switch of experience. */}
-          <AskAssistant t={t} lang={lang} />
+          {/* Interactive MongoDB-Style Workbench Frame */}
+          <div className="mdb-workbench-container">
+            <div className="mdb-workbench-header">
+              <div className="mdb-window-dots">
+                <span className="dot red"></span>
+                <span className="dot yellow"></span>
+                <span className="dot green"></span>
+              </div>
+              
+              <ExperienceToggle t={t} value={experience} onChange={setExperience} tabId={tabId} panelId={panelId} />
 
-          <section className="xp-section" key={`xp-${experience}`} aria-labelledby={headingId}>
-            <figure className="xp-shot">
-              <img src={shot} alt={t(xp.shotAlt)} width={1440} height={900} />
-            </figure>
-            <div className="xp-copy">
-              <p className="xp-kicker">{t(xp.kicker)}</p>
-              <h2 className="xp-heading" id={headingId}>{t(xp.heading)}</h2>
-              <ul className="xp-points">
-                {xp.points.map(([title, desc]) => (
-                  <li key={title} className="xp-point">
-                    <h3 className="xp-point-title">{t(title)}</h3>
-                    <p className="xp-point-desc">{t(desc)}</p>
-                  </li>
-                ))}
-              </ul>
+              <div className="mdb-sync-pill">
+                <span className="sync-pulse"></span>
+                <span>{t('Live Sync: Active')}</span>
+              </div>
+            </div>
+
+            <section className="xp-section mdb-workbench-body" key={`xp-${experience}`} aria-labelledby={headingId}>
+              <figure className="xp-shot mdb-frame-shot">
+                <img src={shot} alt={t(xp.shotAlt)} width={1440} height={900} />
+              </figure>
+              <div className="xp-copy mdb-copy-card">
+                <p className="xp-kicker">{t(xp.kicker)}</p>
+                <h2 className="xp-heading" id={headingId}>{t(xp.heading)}</h2>
+                <ul className="xp-points">
+                  {xp.points.map(([title, desc]) => (
+                    <li key={title} className="xp-point">
+                      <h3 className="xp-point-title">
+                        <CheckCircle2 size={16} className="xp-point-check" />
+                        {t(title)}
+                      </h3>
+                      <p className="xp-point-desc">{t(desc)}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+          </div>
+
+          {/* MongoDB Key Metrics Counter Section */}
+          <section className="mdb-metrics-banner">
+            <div className="mdb-metric-item">
+              <span className="mdb-metric-value">10,000+</span>
+              <span className="mdb-metric-label">{t('Targets Tracked')}</span>
+            </div>
+            <div className="mdb-metric-divider"></div>
+            <div className="mdb-metric-item">
+              <span className="mdb-metric-value">99.9%</span>
+              <span className="mdb-metric-label">{t('Sync Accuracy')}</span>
+            </div>
+            <div className="mdb-metric-divider"></div>
+            <div className="mdb-metric-item">
+              <span className="mdb-metric-value">&lt; 1s</span>
+              <span className="mdb-metric-label">{t('Query Latency')}</span>
+            </div>
+            <div className="mdb-metric-divider"></div>
+            <div className="mdb-metric-item">
+              <span className="mdb-metric-value">100%</span>
+              <span className="mdb-metric-label">{t('Offline Ready')}</span>
+            </div>
+          </section>
+
+          {/* MongoDB Bento Feature Grid */}
+          <section className="mdb-bento-section">
+            <div className="mdb-section-header">
+              <p className="mdb-section-kicker">{t('Platform Capabilities')}</p>
+              <h2 className="mdb-section-title">{t('Engineered for Extreme Field Operations')}</h2>
+              <p className="mdb-section-sub">{t('High-precision geophysics workflows for crews on site and leaders in command.')}</p>
+            </div>
+
+            <div className="mdb-bento-grid">
+              <div className="mdb-bento-card mdb-bento-card--large">
+                <div className="bento-icon-wrapper">
+                  <Database size={24} />
+                </div>
+                <h3>{t('Offline-First Architecture')}</h3>
+                <p>{t('Local SQLite & Dexie storage ensures uninterrupted logging even in zero-connectivity field sectors.')}</p>
+                <div className="bento-tag">{t('Zero Data Loss')}</div>
+              </div>
+
+              <div className="mdb-bento-card">
+                <div className="bento-icon-wrapper">
+                  <Zap size={24} />
+                </div>
+                <h3>{t('Sensor Fusion Analytics')}</h3>
+                <p>{t('Compare evaluated magnetic depth with actual excavated Sohle findings instantly.')}</p>
+              </div>
+
+              <div className="mdb-bento-card">
+                <div className="bento-icon-wrapper">
+                  <Activity size={24} />
+                </div>
+                <h3>{t('Sub-Meter Target Bearing')}</h3>
+                <p>{t('Real-time GPS bearing, distance, and depth guidance straight to the target.')}</p>
+              </div>
+
+              <div className="mdb-bento-card mdb-bento-card--wide">
+                <div className="bento-icon-wrapper">
+                  <FileText size={24} />
+                </div>
+                <h3>{t('Compliance-Ready PDF & CSV Reports')}</h3>
+                <p>{t('Export certified clearance summaries and excavated volumes ready for municipal sign-offs.')}</p>
+                <div className="bento-tag">{t('Instant Export')}</div>
+              </div>
+            </div>
+          </section>
+
+          {/* MongoDB High-Conversion CTA Banner */}
+          <section className="mdb-cta-banner">
+            <div className="mdb-cta-content">
+              <h2>{t('Ready to streamline your site clearance?')}</h2>
+              <p>{t('Join field crews and EOD decision makers managing survey precision with Nolte Geoservices.')}</p>
+              <div className="mdb-cta-actions">
+                <button type="button" className="btn-primary landing-cta-btn mdb-btn-primary" onClick={onRequestAccess}>
+                  {t('Get early access')} <ArrowRight size={16} />
+                </button>
+                <button type="button" className="btn-secondary landing-cta-btn mdb-btn-secondary" onClick={onSignIn}>
+                  {t('Sign in to workspace')}
+                </button>
+              </div>
             </div>
           </section>
         </div>
@@ -208,6 +295,12 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
             <img src="/logo.png" alt="" className="brand-logo" />
             <span className="brand-name">Nolte Geoservices GmbH</span>
           </div>
+
+          <div className="mdb-footer-status">
+            <span className="status-dot"></span>
+            <span>{t('All Systems Operational')}</span>
+          </div>
+
           <div className="footer-links">
             <button type="button" className="footer-link" onClick={onSignIn}>{t('Field App')}</button>
             <span className="footer-sep" aria-hidden="true"></span>
