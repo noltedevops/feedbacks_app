@@ -1148,6 +1148,13 @@ select.report-field {
    around it in the 64px rail. */
 .lang-switch-compact {
   flex-direction: column;
+  padding: 2px;
+  gap: 0;
+}
+
+/* No globe here, so the thumb starts at the padding edge rather than after the globe. */
+.lang-switch-compact .lang-switch-thumb {
+  left: 2px;
 }
 
 .lang-switch-compact .lang-switch-thumb,
