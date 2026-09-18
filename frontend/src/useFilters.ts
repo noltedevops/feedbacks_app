@@ -67,6 +67,7 @@ export function useFilters(): FilterGroup {
   const setProjectId = useCallback((value: string) => {
     setProjectIdRaw(value);
     setCategory('all');
+    setVmNr('all');
   }, []);
 
   // Stable identity, changing only when a value in the group does. Callers memoize a
@@ -149,3 +150,18 @@ export function categoriesForProject(points: LocalPoint[], projectId: string): s
   }
   return Array.from(values).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 }
+
+/**
+ * The VM numbers present under one project ('all' for every project), in natural order.
+ * Derived from the targets so selecting a project narrows the VM Nr. picker options.
+ */
+export function vmNumbersForProject(points: LocalPoint[], projectId: string): string[] {
+  const values = new Set<string>();
+  for (const p of points) {
+    if (!p.vm_nr) continue;
+    if (projectId !== 'all' && p.project_id !== projectId) continue;
+    values.add(p.vm_nr);
+  }
+  return Array.from(values).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+}
+

@@ -14,7 +14,7 @@ import { LangSwitch } from './components/LangSwitch';
 import { TourHost } from './tour/TourHost';
 import { TourLaunchers } from './tour/TourLaunchers';
 import type { TourId } from './tour/steps';
-import { useFilters, selectPoints, categoriesForProject, categoryLabel, INGEST_DEFAULT_CATEGORY } from './useFilters';
+import { useFilters, selectPoints, categoriesForProject, vmNumbersForProject, categoryLabel, INGEST_DEFAULT_CATEGORY } from './useFilters';
 import { makeT, type AppLang } from './i18n';
 import { useIsMobile } from './useIsMobile';
 import { 
@@ -1329,9 +1329,9 @@ export default function App() {
     matchesDepthBucket(p, filterDepth, dashFilters.status)
   ), [dashboardBasePoints, filterDepth, dashFilters.status]);
 
-  const allVmNumbers = useMemo(
-    () => points.map(p => p.vm_nr).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })),
-    [points]
+  const fieldVmNumbers = useMemo(
+    () => vmNumbersForProject(points, fieldFilters.projectId),
+    [points, fieldFilters.projectId]
   );
   const uniqueProjectIds = useMemo(
     () => Array.from(new Set(points.map(p => p.project_id || '11-24-2736'))).sort(),
@@ -1443,7 +1443,7 @@ export default function App() {
       ariaLabel={t('All VM Nr.')}
       options={[
         { value: 'all', label: t('All VM Nr.') },
-        ...allVmNumbers.map(vm => ({ value: vm.toString(), label: `VM ${vm}` }))
+        ...fieldVmNumbers.map(vm => ({ value: vm.toString(), label: `VM ${vm}` }))
       ]}
     />
   );
