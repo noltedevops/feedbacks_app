@@ -82,7 +82,7 @@ to the office database for analytics.
   deleting an anomaly silently deletes its excavation record, and a check for orphaned
   feedback still passes because nothing is left to be orphaned. With `RESTRICT` an
   accidental delete fails loudly. The one-time Wilhelmshaven migration deliberately
-  removes 18 targets with their feedback (archived first), so change the constraint
+  removes 798 targets and, by cascade, 52 feedback rows (archived first), so change the constraint
   after that migration, or have it delete those 18 feedback rows explicitly. See
   [ETL_DESIGN.md](ETL_DESIGN.md#foreign-keys-into-publicanomalies-and-the-feedback-split).
 

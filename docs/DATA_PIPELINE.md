@@ -373,11 +373,12 @@ Unresolved as of 2026-09-22. See also the open questions in
 - **What `*_raw_data` means**, and whether either table of each pair can be retired.
   Being followed up. Nothing should be deleted or reorganised in the meantime. As of
   2026-09-23 each pair is identical in content, not only in shape.
-- **Settled 2026-09-23: how the Wilhelmshaven rows are replaced.** `Magnetic` +
-  `Georadar` are the source. The `Restflaeche` layer is added to `Magnetic` from
-  `magnetic_data`, and the 18 DB-only rows are archived and then removed with their 18
-  feedback rows, leaving 50. Still open: which category the 351 `Restflaeche` rows get,
-  since `magnetic_data` has none. See [ETL_DESIGN.md](ETL_DESIGN.md#decisions), D12.
+- **Settled 2026-09-23: how the Wilhelmshaven rows are replaced.** A fresh start from
+  `Magnetic` + `Georadar` only. Every old 11-24-2736 row with no counterpart there (798:
+  `Nord Restflaeche`, `Sued 2` and the 18 DB-only rows) is archived and then removed,
+  and 52 feedback rows cascade with them, all from the 2026-07-15 bulk insert, leaving
+  16. Dry-run on a copy; the live run waits for the devices to sync and an explicit go.
+  See [ETL_DESIGN.md](ETL_DESIGN.md#one-time-migration-replacing-the-11-24-2736-rows).
 - **Whether the `sql/` migrations were run exactly as committed.** No ledger exists;
   see the note above.
 - **Whether the 61 bulk-inserted feedback rows are real excavation results or test data**,
