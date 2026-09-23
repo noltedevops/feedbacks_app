@@ -688,6 +688,38 @@ must never have, so it runs once as an admin role and is then retired.
    table (row count + md5), taken immediately before the run.
 3. **Your explicit go.** Nothing runs on live before that.
 
+### After the run: every device refreshes
+
+The app does not delete anything from a device by itself; it **replaces** the device's
+whole target list whenever it downloads one. `fetchFromServer()` and `/api/sync` both
+`clear()` the local `points` table and rewrite it from the server's list in one Dexie
+transaction (`App.tsx:554`, `:631`). The service worker never caches `/api/`
+(`sw.js:74`). So the 798 removed targets vanish from a device, and the 1,430 new ones
+appear, at its next download. That happens:
+
+- when the app starts or someone signs in while online, or
+- on a sync: the **Sync** button, or automatically when records are queued.
+
+A device that stays open and online with nothing queued does **not** download on its
+own. So, after the live run, each device, online, presses **Sync** (or closes and reopens
+the app). No cache clearing or reinstall is needed. Check: the Field App's target count
+over all projects is **2,342** (2,215 Wilhelmshaven + 127 Köln).
+
+**Until a device has refreshed, nobody should log work on it.** It still shows the
+removed targets. Feedback logged on one of them would be **silently lost**: the server
+skips feedback whose target no longer exists (`server.py:837-842`, a log warning only),
+and the device then drops it from its queue as accepted. Work logged on kept targets
+syncs normally.
+
+### Restoring from the backup
+
+The plain `pg_dump` restores every table, index, constraint, trigger, function and
+table/schema grant exactly (verified twice). It does **not** carry grants on the
+database itself: live allows only `postgres` and `bosco_k` to connect. After restoring a
+**whole database**, re-apply `REVOKE CONNECT, TEMPORARY ON DATABASE … FROM PUBLIC;
+GRANT CONNECT ON DATABASE … TO bosco_k;`. Rolling back this migration only needs the
+archive tables or the affected tables, not a database restore.
+
 ### Archive, before the migration transaction
 
 Committed on its own and never touched by the migration:
