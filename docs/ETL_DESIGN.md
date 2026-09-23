@@ -1,6 +1,6 @@
 # ETL design: project schemas → `public.anomalies`
 
-Status: **proposal, revision 4** (Phase 1, 2026-09-23). The one-time migration **ran on live on 2026-09-24**, see [Live run](#live-run-2026-09-24). The pipeline itself is not built yet. Nothing
+Status: **proposal, revision 4** (Phase 1, 2026-09-23). The one-time migration **ran on live on 2026-09-24**, see [Live run](#live-run-2026-09-24). The pipeline is built and accepted on a copy, see [Implementation](#implementation-phase-2-feat-etl-dbt-pipeline); not yet run against live. Nothing
 described under *Design* exists yet. The audit was read-only: every query ran in a
 `default_transaction_read_only` session, and nothing in the database was changed.
 
@@ -816,6 +816,76 @@ without `DROP IF EXISTS`.
 - The scratch databases were dropped after verification.
 
 ---
+
+## Implementation (Phase 2, `feat/etl-dbt-pipeline`)
+
+Built as designed, in `etl/` (runbook: [etl/README.md](../etl/README.md)):
+
+| Part | Where |
+|---|---|
+| Configuration, both projects | `etl/config/projects.yml`: Köln from `picks` (`coord_round: 2`, category from `field_3`); Wilhelmshaven from `Magnetic` + `Georadar` (Georadar `target_id` from `Rechswert`/`Hochwert`, easting/northing from `East`/`North`, category falling back to `Target Pic`) |
+| dbt models | `stg_candidates` (one `UNION ALL` branch per configured source, generated), `int_candidates` (dedup + uuid5 id), `excluded_rows`, `dup_report`, all in `etl` |
+| dbt tests | 33: keys, relationships, uuid5 identity, feedback resolving, every `anomalie_1` agreeing with `public.anomalies`, the app's indexes present; `target_id` vs coordinates as a warning |
+| Runner | `etl/runner/run.py`: advisory lock → config validation → checksum gate → dbt → uuid5 registry → one gated merge transaction → dbt test → run record |
+| Role | `etl_pipeline`, from `run.py setup-sql`. Verified on the copy: `DELETE`, `TRUNCATE`, and `UPDATE` of `status`, `vm_nr` or `easting` are refused, and the role cannot connect to the live database |
+| Container | `etl/Dockerfile`, compose service `etl` behind the `etl` profile; scheduling off until `ETL_INTERVAL_SECONDS` > 0 |
+| Acceptance suite | `etl/tests/acceptance.py <copy>` (refuses the live name) |
+
+### Where the build differs from the design, and why
+
+- **No table lock during the merge.** Taking a lock that blocks other writers needs
+  table-wide `UPDATE`/`DELETE`/`TRUNCATE`, which `etl_pipeline` deliberately lacks
+  (verified). Instead, runs cannot overlap (an advisory lock). The app only writes
+  `status` and field-moved coordinates, which the merge never touches. And every gate
+  compares rows that existed when the merge began (ids, VM numbers, every feedback row)
+  or counts that may only grow, so it holds under concurrent app writes. The feedback
+  gate became "no feedback row present at the start may be gone", stricter than a count.
+- **`spatial_ref_sys`.** PUBLIC's read access is revoked in this database, so
+  `setup-sql` grants the role `SELECT` on it. It is needed by the models' coordinate
+  transforms and by the app's trigger when the pipeline inserts.
+- **Approvals are procedural, not a separate login.** `approve-change` and
+  `approve-correction` run as `etl_pipeline`, which owns the `etl` tables. So the role
+  could in principle mark its own staged change approved. Approved coordinate
+  corrections go through `etl_admin.apply_correction` (`SECURITY DEFINER`, owned by
+  `postgres`), which updates only the easting/northing of the one anomaly named by an
+  accepted pair. A separate approver login, owning the decision columns, would enforce
+  the approval in the database. That is a follow-up if wanted.
+- **Köln `anomalie_1` normalised on the first run** (decided 2026-09-24): its 127 rows
+  gained their ids (equal to `public.anomalies`, all 127) and 3-decimal `target_id`s
+  (same values). Nothing else changed.
+- `anomalie_1.status` is always `pending`, as in both existing tables. It describes the
+  source; the investigated state lives in `public.anomalies`.
+- The VM registry is seeded every run (insert-if-missing) from `public.anomalies` and
+  from every `archive` table that has `project_id`, `vm_nr` and `target_id`. Today that
+  is the 798 removed Wilhelmshaven targets, so their numbers are never reissued. The next
+  Wilhelmshaven number is `2736-3014`, the next Köln number `5151-129`.
+
+### Acceptance on a copy (2026-09-24): 38 / 38
+
+Copy `nolte_etl_acceptance`, restored from `backup-nolte_geoservices-20260924-004051.sql`
+(live after the migration: 2,342 targets, 16 feedback), with `setup-sql` applied.
+
+| # | Test | Result |
+|---|---|---|
+| 1 | First run against the current state | `public.anomalies`, `feedback`, Wilhelmshaven `anomalie_1`, source tables and indexes **byte-identical**. Köln `anomalie_1`: identical apart from `id` and `target_id`; **all 127 ids equal `public.anomalies`'**; `target_id` values unchanged, now 3 decimals |
+| 2 | Second run | skipped by the checksum gate. A forced run: 0 inserted, staged, paired or rewritten, every snapshot identical |
+| 3 | Test row added to `Magnetic` | exactly 1 target inserted, `pending`, **`2736-3014`** (highest ever issued: 3013), geometry and lat/lon from the trigger; every other target and all feedback unchanged |
+| 4 | Category changed in `Georadar` (`2736-1584`, Kat-2 → Kat-3) | **staged, not applied**; after `approve-change` the next run applied it, touching only that row's category |
+| 5 | Test row moved 5 cm (`Rechtswert` +0.05) | **paired** with its old target by source key (`Nummer`), held back, not inserted; `public.anomalies` unchanged; DB-only set change reported as a WARNING. After `approve-correction`: same id, VM number and `target_id`, new coordinates, still no second target |
+| 6 | Invariants | feedback 16 and byte-identical throughout; GIST and query indexes intact; every run `ok` or `skipped`; `dbt test` 32 pass, 1 warning (the corrected test row: `target_id` kept, coordinates changed, by design), 0 errors |
+
+Reported each run and correct for the data: the two duplicate positions (`Nummer`
+180/181; `Georadar Array 1`/`Array 2`), and the six Wilhelmshaven tables no source uses
+(`Stoerkoerper Magnetik Nord`, `Stoerkoerper Magnetik Sued 1`, `magnetic_data`,
+`magnetic_raw_data`, `radar_data`, `radar_raw_data`).
+
+### Not done yet (your approval)
+
+- `setup-sql` has **not** been applied to the live database, and the pipeline has
+  **never run against live**. The `etl_pipeline` role exists in the cluster (roles are
+  cluster-wide) but cannot connect to `nolte_geoservices`.
+- Scheduling is off.
+- `ingest_anomalies.py`, `sql/` and the CSVs are still in place.
 
 ## Scheduler
 

@@ -14,7 +14,8 @@ same-origin and the frontend calls `/api/...` with an empty base URL.
 ```
   survey CSVs  ──► ingest_anomalies.py ──►  PostgreSQL 16 + PostGIS
   sql/*.sql    ──────────────────────────►         ▲   │
-  (both to be replaced: docs/ETL_DESIGN.md)        │   │
+  (both to be replaced by etl/)                    │   │
+  project schemas ──► etl/ (dbt + runner) ────────►│   │
                                                    │   │
                                         SQLAlchemy │   │ SELECT
                                                    │   ▼

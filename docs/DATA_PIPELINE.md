@@ -60,6 +60,13 @@ the script from the repo root or it will not find either.
 It looks for `georadar.csv` then `Radar_data.csv`, and `magnetic.csv` then
 `Magnetic_data.csv` — the unprefixed names take precedence if you drop in a newer export.
 
+## The ETL pipeline (`etl/`)
+
+Built 2026-09-24 to replace `ingest_anomalies.py` and the hand-run `sql/` scripts:
+configuration-driven, runs as the least-privilege `etl_pipeline` role, and never deletes
+from or rebuilds `public.anomalies`. Accepted on a copy; **not yet run against live**.
+See [etl/README.md](../etl/README.md) and [ETL_DESIGN.md](ETL_DESIGN.md).
+
 ## `ingest_anomalies.py`
 
 ```powershell
