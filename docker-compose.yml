@@ -51,6 +51,28 @@ services:
       db:
         condition: service_healthy
 
+  # The ETL runner (etl/). Behind a profile, so `docker compose up` never starts it:
+  #   docker compose --profile etl build etl
+  #   docker compose --profile etl run --rm etl run        (one run)
+  # Scheduling is off until ETL_INTERVAL_SECONDS is set above 0. It connects as the
+  # least-privilege etl_pipeline role, never as postgres.
+  etl:
+    build: ./etl
+    profiles: ["etl"]
+    environment:
+      ETL_DB_HOST: db
+      ETL_DB_PORT: "5432"
+      ETL_DB_NAME: ${ETL_DB_NAME:-nolte_geoservices}
+      ETL_DB_USER: ${ETL_DB_USER:-etl_pipeline}
+      # Not ":?": compose interpolates every service, so that form would break a plain
+      # `docker compose up` on machines without it. The runner refuses to start without it.
+      ETL_DB_PASSWORD: ${ETL_DB_PASSWORD:-}
+      ETL_INTERVAL_SECONDS: ${ETL_INTERVAL_SECONDS:-0}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   pgadmin_data:
