@@ -1,13 +1,14 @@
 # ETL design: project schemas → `public.anomalies`
 
-Status: **proposal, revision 2, awaiting approval** (Phase 1, 2026-09-23). Nothing
+Status: **proposal, revision 3, awaiting approval** (Phase 1, 2026-09-23). Nothing
 described under *Design* exists yet. The audit was read-only: every query ran in a
 `default_transaction_read_only` session, and nothing in the database was changed.
 
-Revision 2 applies the decisions of 2026-09-23. Wilhelmshaven's source is the new
-`Magnetic` + `Georadar` tables, its `target_id` uses the stored values rather than the Köln
-rounding, and its 1,583 current rows are replaced once by a
-[one-time migration](#one-time-migration-replacing-the-11-24-2736-rows).
+Revisions 2 and 3 apply the decisions of 2026-09-23. Wilhelmshaven's source is the new
+`Magnetic` + `Georadar` tables. Its `target_id` uses the stored 3-decimal values rather
+than the Köln rounding. Its 1,583 current rows are replaced once by a
+[one-time migration](#one-time-migration-replacing-the-11-24-2736-rows), which has been
+dry-run on a copy.
 
 Goal: the database is the single source of truth. A dbt pipeline on a schedule reads
 each project schema, builds that project's `anomalie_1`, and merges it into
@@ -26,78 +27,77 @@ hand-written `id_map`. Adding a project means adding configuration, not SQL.
 
 ## Before building: what the numbers say
 
-All figures below are from the live database on 2026-09-23. They were computed
-read-only, with the configuration exactly as specified.
+Revision 3, 2026-09-23. All figures come from the live database, read-only, and from a
+dry run on a copy of it ([One-time migration](#one-time-migration-replacing-the-11-24-2736-rows)).
 
-**1. Column names.** Magnetic and Georadar do not name their coordinates the same way:
+**1. Columns.** Magnetic and Georadar don't name their coordinates the same way:
 
 | Table | Easting | Northing | Type | As text |
 |---|---|---|---|---|
-| `Magnetic` | **`Rechtswert`** (there is no `Rechswert` in this table) | `Hochwert` | `numeric(10,3)` | always 3 decimals, trailing zeros kept: `443656.190` |
-| `Georadar` | `East` | `North` | `numeric(23,15)` | always 15 decimals, zero-padded: `443860.056540399960000` |
-| `Georadar` (also present) | `Rechswert` (sic) | `Hochwert` | `numeric`, scale 3 on every row | `443860.057`. Equals `round(East, 3)` on all 1,476 rows |
+| `Magnetic` | `Rechtswert` (there is no `Rechswert` in this table) | `Hochwert` | `numeric(10,3)` | always 3 decimals, trailing zeros kept: `443656.190` |
+| `Georadar` | `East` | `North` | `numeric(23,15)` | 15 decimals, zero-padded: `443860.056540399960000` |
+| `Georadar` | `Rechswert` (sic) | `Hochwert` | `numeric`, scale 3 on every row | `443860.057`. Equals `round(East, 3)` on all 1,476 rows |
 
-Both are right. Georadar has `East`/`North` *and* `Rechswert`/`Hochwert`, and the
-latter are the former rounded to 3 decimals. This design uses `East`/`North` for
-Georadar as instructed, and `Rechtswert`/`Hochwert` for Magnetic.
+As decided: Magnetic takes easting/northing **and** `target_id` from
+`Rechtswert`/`Hochwert`. Georadar takes **easting/northing from `East`/`North`** and
+**`target_id` from `Rechswert`/`Hochwert`**.
 
 **2. How the stored value becomes text.** `numeric::text` prints exactly the column's
-declared scale, including trailing zeros. So "as stored" means:
-
-- Magnetic: `11-24-2736-443656.190-5935538.441`, 3 decimals.
-- Georadar: `11-24-2736-443860.056540399960000-5935267.570306600000000`, 15 decimals, 57
-  characters, within `varchar(100)`.
-
-That output depends on the column's type. If a QGIS re-import changes
-`numeric(23,15)` to another scale, every Georadar `target_id`, and so every id, would
-change. **The configuration therefore pins the number of decimals per source**
-(`id_decimals: 3` for Magnetic, `15` for Georadar), and the model renders
-`round(value, id_decimals)::text`. Today that is byte-for-byte what is stored. After a
-type change it still is. Note that the 15-decimal values carry floating-point noise
-from the import (`…056540399960000`): they are what was stored, not surveyed precision.
+declared scale, trailing zeros included. Both `target_id` columns hold 3 decimals, so:
+`11-24-2736-443656.190-5935538.441`. That output follows the column type, so the config
+pins it (`id_decimals: 3`), and the model renders `round(value, 3)::text`. Today that is
+the stored text byte for byte, on all 741 Magnetic and all 1,476 Georadar rows. After a
+re-import that changed the column type, it would still be the same text. The 15-decimal
+float-noise ids from revision 2 are gone.
 
 **3. Does it reproduce the existing `target_id`s?**
 
-| Source | Rows | Distinct `target_id` | Reproduce an existing one |
-|---|---:|---:|---:|
-| `Magnetic` (3 decimals) | 741 | 740 | **740 of 740**, all identical: same id, same row, feedback stays linked |
-| `Georadar` from `East`/`North` (15 decimals) | 1,476 | 1,475 | **0**. The 45 existing radar targets reappear 0.0003–0.0007 m away under new ids |
-| *for comparison:* `Georadar` from `Rechswert`/`Hochwert` | 1,476 | 1,475 | 45 of 45 |
+| Source | Distinct `target_id` | Reproduce an existing one |
+|---|---:|---:|
+| `Magnetic` (`Nord` + `Sued 1`) | 740 | **740 of 740** |
+| `Magnetic` + the 351 `Restflaeche` rows from `magnetic_data` (D8) | 1,091 | **1,091 of 1,091** |
+| `Georadar` from `Rechswert`/`Hochwert` | 1,475 | **all 45** existing radar targets, plus 1,430 new |
 
-The 45 radar targets carry no feedback and are all `pending`, so re-keying them loses no
-field data. They do get new ids and new VM numbers (see [D9](#decisions)).
+Where it reproduces a `target_id`, the id is the same (`uuid5` reproduces all 1,583
+existing Wilhelmshaven ids), so feedback stays linked with nothing to re-point.
 
-**4. Category.** `Magnetic` has no `Target Pic` column and no null category (741 ×
-`Kat-1`), so the fallback applies to **0** rows there. In `Georadar`, **988** rows take
-their category from `Target Pic`: `Kat. 1` → `Kat-1` ×31, `Kat. 2` → `Kat-2` ×924,
-`Kat. 3` → `Kat-3` ×33. **No row** has a null category with an empty or non-numeric
-`Target Pic`. The 488 `Rebar_00n` rows all have a category, so the rule never reads
-`Rebar_002` as a number. If one of them ever lost its category, the rule would make it
-`Kat-2`. Check that is what you would want.
+One consequence to know: the pipeline never writes coordinates of existing rows, so the
+45 kept radar targets keep their stored 3-decimal easting/northing. The 1,430 new ones
+get `East`/`North` at full precision. For those, `target_id` (3 decimals) is not the text
+of `easting`/`northing`. That is by design, and it is why the identity test is id ↔
+`target_id`.
 
-**5. The migration as specified cannot pass its own check.** Of the 62 Wilhelmshaven
-feedback rows:
+**4. Category.** Georadar: 988 rows take their category from `Target Pic` (`Kat. 1` ×31,
+`Kat. 2` ×924, `Kat. 3` ×33), and **no row** has a null category with an empty or
+non-numeric `Target Pic`. Magnetic has no `Target Pic` column. Its original 741 rows all
+have `Kat-1`, so the rule applies to 0 of them.
 
-- **10** find their new anomaly by identical `target_id`, including `2736-1000`, the one
-  Wilhelmshaven row known to be a real field submission.
-- **52 find nothing.** 34 are on `Nord Restflaeche`, a layer the new tables do not have.
-  18 are the DB-only `Sued 1` rows. The nearest new point to any of them is **0.50 m**
-  away (median 8.8 m, max 26.8 m), usually a *georadar* pick in another layer. That is a
-  different target, not a moved one, so no tolerance was applied and none is proposed.
-  These 52 are listed as unmatched. All 52 come from the 2026-07-15 bulk insert of
-  unknown provenance, and per the standing rule none is treated as disposable.
+> **⚠ Open: the 351 `Restflaeche` rows would have no category.** `magnetic_data` has no
+> `category` column, so, as instructed, the rows go into `Magnetic` with `category`
+> empty. With no `Target Pic` to fall back on, the agreed rule **leaves them out rather
+> than guess**. Then the migration would delete their 351 targets, and with them 34
+> feedback rows. The dry run shows it: that variant fails the feedback gate (16 ≠ 50)
+> and rolls back. A category has to come from somewhere, and it is your call
+> ([D12](#decisions)).
 
-And because every foreign key into `public.anomalies` is **`ON DELETE CASCADE`**,
-deleting those 52 anomalies would not leave orphaned feedback. **It would silently
-delete the 52 feedback rows**, and a "zero orphans" check would still pass. The
-migration's gate therefore checks that the **feedback row count is unchanged (68)**,
-not only that there are no orphans. With the 52 unmatched, that gate fails and the
-transaction rolls back. You need to decide what happens to them ([D8](#decisions))
-before the migration can run.
+**5. The 18 DB-only rows.** All 18 feedback rows on them are from the 2026-07-15
+11:42:02 bulk insert (`2736-1566…1583`, 11:42:02.306–.388). **None is a known-real field
+submission**, so the rule to stop does not trigger. Their `photos` are empty arrays
+(`[]`). They are archived before the delete (anomalies and feedback, identical to the
+originals incl. photos, verified by md5), then removed with the rest. Expected feedback
+after the migration: **50**.
 
-**6. D7, the Sued 2 defect.** `Magnetic` contains **no `Sued 2` rows at all** (only `Nord`
-479 and `Sued 1` 262; eastings 442,966–443,842), so the defect does not exist there and
-nothing needs fixing. The 429 `Sued 2` targets are among the rows that disappear.
+**6. D7.** `Magnetic` has no `Sued 2` rows, so the defect does not exist there and
+nothing is fixed. The 429 `Sued 2` targets are removed with the old rows. One of them,
+`2736-1186`, is `investigated` with no feedback.
+
+**7. Backup.** `backup-nolte_geoservices-20260923-233514.sql` (plain `pg_dump`,
+2.07 MB, gitignored like the earlier dumps). It was restored into `nolte_restore_check`
+without errors, and **all 52 tables are identical** (row count and md5 over every row),
+as are the indexes, constraints, triggers and functions. The only difference is
+cosmetic: live stores the owner's default table privileges explicitly
+(`{postgres=arwdDxt/postgres}`) where the restore leaves them NULL, which means the
+same. `bosco_k`'s grants came back intact.
 
 ---
 
@@ -105,17 +105,22 @@ nothing needs fixing. The 429 `Sued 2` targets are among the rows that disappear
 
 | # | Decision | Status |
 |---|---|---|
-| D1 | Wilhelmshaven source | **Decided:** `Magnetic` + `Georadar`. `magnetic_data` / `radar_data` are not used |
-| D2 | uuid5 | **Decided:** a Python step in the runner, using `uuid.uuid5(uuid.NAMESPACE_DNS, target_id)`, the call that produced the existing ids |
+| D1 | Wilhelmshaven source | **Decided:** `Magnetic` + `Georadar`. `magnetic_data` / `radar_data` are not a source (`magnetic_data` only supplies the one-time `Restflaeche` insert, D8) |
+| D2 | uuid5 | **Decided:** a Python step in the runner, `uuid.uuid5(uuid.NAMESPACE_DNS, target_id)` |
 | D3 | Changes to existing rows | **Decided:** staged for approval; new targets go in automatically |
 | D4 | Where `anomalie_1` lives | **Decided:** in each project schema |
 | D5 | Scheduler | **Decided:** the small runner container |
 | D6 | DB-only rows | **Decided:** reported every run; a warning only when the set changes |
-| D7 | Sued 2 defect | **Resolved:** not present in `Magnetic` (it has no Sued 2 rows) |
-| **D8** | **The 52 unmatched feedback rows** | **Open, blocks the migration.** Options: **(a)** keep the anomalies that carry them (52 rows, or all 369 `Restflaeche` + DB-only `Sued 1` rows) and delete only old rows without feedback; the kept ones become DB-only rows, reported every run. **(b)** Add the missing targets to the source tables first. `Restflaeche` exists in `magnetic_data` at 3 decimals, so imported into `Magnetic` it would match by `target_id` exactly, keeping ids, VM numbers and feedback. The 18 exist in no table except `public.anomalies`, so they would have to be exported from there. **(c)** Accept losing them. Not recommended, and it contradicts the standing rule. |
-| **D9** | **VM numbers for Wilhelmshaven** | **Open.** "Same logic as Köln" is `ROW_NUMBER() OVER (ORDER BY random())`, which renumbers everything. That conflicts with requirement 3 ("existing rows keep their vm_nr forever"): the 740 kept magnetic targets hold `2736-46…2736-1136` today, and crews use those numbers. Recommendation: kept rows keep their number; new rows get `max + 1…` from the registry, never reusing a retired number, even `2736-1…45` from the re-keyed radar targets. |
-| **D10** | **Status of kept rows** | **Open.** "status: 'pending'" read literally would reset the 10 kept targets with feedback (and `2736-1040`, investigated with no feedback, also kept) to `pending`. Recommendation: `pending` for new rows only; kept rows keep their status (requirement 4). |
-| **D11** | **Duplicate positions** | **Open.** Georadar has one position twice, in `Array 1` and `Array 2` (same depth and category), and Magnetic has `Nummer` 180/181 twice in `Nord` (identical). One target each. Recommendation: identical rows collapse; otherwise the first source in config order wins and the layer is taken from it (`Array 1`); both are listed in the run report. |
+| D7 | Sued 2 defect | **Resolved:** not present in `Magnetic` |
+| D8 | The unmatched feedback | **Decided:** `Restflaeche` added to `Magnetic` from `magnetic_data` (existing data only; `geom` and `category` left empty). The 18 DB-only rows are archived, then removed. Feedback after = 50 |
+| D9 | VM numbers | **Decided:** existing targets keep theirs; new ones continue from the highest ever issued (`2736-1584…`) |
+| D10 | Status | **Decided:** `pending` for new rows only |
+| D11 | Duplicate positions | **Decided:** collapse; a row whose target has feedback or is `investigated` wins regardless of layer; the dropped one's VM number is retired. Today neither pair has a VM of its own to retire (see the migration) |
+| **D12** | **Category for the 351 `Restflaeche` rows** | **Open, blocks the migration.** (a) You set it in `Magnetic` after the insert (live has `Kat-1` on all 351 today, the ingest default). (b) A per-source default in config (`category: {column: category, default: 'Kat-1'}`) for rows with no category and no fallback. (c) Exclude them, which fails the feedback gate. |
+| D13 | `geom` of the 351 inserted rows | **To note:** left empty as instructed. The pipeline does not need it, but **QGIS will not draw these rows** until someone fills it. Filling it from `Rechtswert`/`Hochwert` would be derived data, so it is not done without your word. |
+
+Backlog, added to [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md): feedback → anomaly
+`ON DELETE RESTRICT` instead of `CASCADE`; restricted logins for project-schema editors.
 
 Two things came up that are not decisions for the pipeline, but you should know them:
 
@@ -321,38 +326,36 @@ The GIST index is created by SQLAlchemy/GeoAlchemy in `create_all`, so the app o
 
 ### Wilhelmshaven against the 1,583 live rows
 
-With the decided configuration (Magnetic `Rechtswert`/`Hochwert` at 3 decimals,
-Georadar `East`/`North` at 15, both as stored):
+With the decided configuration (`target_id` from the 3-decimal columns of both tables)
+and the 351 `Restflaeche` rows added to `Magnetic` (D8):
 
 | | Rows |
 |---|---:|
-| New `anomalie_1` (distinct `target_id`) | **2,215**: 740 magnetic + 1,475 georadar |
-| …identical to an existing target (id, feedback and history kept) | **740**, all magnetic, VM `2736-46…2736-1136` |
-| …new targets | **1,475**, all georadar. 45 of them are the existing radar targets re-keyed (see below) |
-| Existing targets with no identical counterpart | **843** |
+| New `anomalie_1` (distinct `target_id`) | **2,566**: 1,091 magnetic + 1,475 georadar |
+| …identical to an existing target (same id, feedback and VM number kept) | **1,136**: 1,091 magnetic + 45 georadar |
+| …new targets | **1,430**, all georadar |
+| Existing targets with no counterpart | **447** |
 
-The 843, by layer:
+The 447, by layer:
 
-| Layer | Old rows | `investigated` | With feedback | Nearest new point (same instrument), worst case |
-|---|---:|---:|---:|---:|
-| Georadar, 6 layers | 45 | 0 | 0 | **0.0007 m**: the same points, re-keyed by the 15-decimal `target_id` |
-| Stoerkoerper Magnetik Nord Restflaeche | 351 | 34 | **34** | 46.4 m. The layer is not in the new tables |
-| Stoerkoerper Magnetik Sued 1 (DB-only, `2736-1566…1583`) | 18 | 18 | **18** | 30.4 m |
-| Stoerkoerper Magnetik Sued 2 | 429 | 1 (`2736-1186`, no feedback) | 0 | 92.4 m. The layer is not in the new tables |
-| **Total** | **843** | **53** | **52** | |
+| Layer | Old rows | `investigated` | With feedback |
+|---|---:|---:|---:|
+| Stoerkoerper Magnetik Sued 2 (not in the new tables) | 429 | 1 (`2736-1186`, no feedback) | 0 |
+| Stoerkoerper Magnetik Sued 1, DB-only (`2736-1566…1583`) | 18 | 18 | 18, archived before removal |
+| **Total** | **447** | **19** | **18** |
 
-No value differences on the 740 kept rows: instrument, layer, depth and category
-(`Kat-1`) are the same in source and live.
+No value differences on the 1,136 kept rows: instrument, layer, depth and category are
+the same in source and live. (This assumes D12 gives the `Restflaeche` rows `Kat-1`;
+without a category they drop out, see the dry run.)
 
-Duplicates the pipeline must handle deterministically ([D11](#decisions)):
-
-- `Nummer` 180 and 181 in `Magnetic` (`Nord`) are the same point with identical values.
-  Live holds it once, as `2736-225`.
-- One Georadar position is in both `Array 1` and `Array 2`, with the same depth and
-  category.
+Duplicates (D11): `Nummer` 180/181 in `Magnetic` (`Nord`) are one existing target,
+`2736-225`. One Georadar position is in both `Array 1` and `Array 2`, with the same
+depth and category, and is new.
 
 *Revision 1 compared the old CSV mirrors (`magnetic_data` + `radar_data`), which would
-have reproduced 1,565 of the 1,583 rows. That option is retired by decision D1.*
+have reproduced 1,565 of the 1,583 rows. Revision 2 used Georadar's 15-decimal
+`East`/`North` for `target_id`, which reproduced none of the 45 radar targets. Both are
+superseded.*
 
 ---
 
@@ -418,13 +421,14 @@ projects:
           easting: Rechtswert
           northing: Hochwert
           depth: { column: "Tiefe [m]" }
-          category: { column: category }        # no Target Pic column in this table
+          category: { column: category }        # no Target Pic column in this table (see D12)
           layer: layer
       - table: Georadar
         instrument: georadar
-        id_decimals: 15          # numeric(23,15), as stored: 443860.056540399960000
+        id_decimals: 3           # target_id from the 3-decimal columns
+        id_columns: { easting: Rechswert, northing: Hochwert }   # sic, as spelled in the table
         columns:
-          easting: East
+          easting: East          # stored easting/northing: full precision
           northing: North
           depth: { column: "Tiefe [m]" }
           category: { column: category, fallback: { column: "Target Pic", rule: trailing_number } }
@@ -433,6 +437,9 @@ projects:
 
 - `coord_round` (optional) rounds the stored coordinates before anything else. Only Köln
   sets it. Without it, coordinates are used exactly as stored.
+- `id_columns` (optional) takes `target_id` from other columns than the stored
+  easting/northing. Georadar uses it: `Rechswert`/`Hochwert` for the id, `East`/`North`
+  for the position.
 - `id_decimals` fixes the number of decimals in `target_id`:
   `round(value::numeric, id_decimals)::text`, which keeps trailing zeros. It is pinned in
   config rather than taken from the column type, so a re-import that changes the column's
@@ -473,8 +480,9 @@ target_id = project_id || '-' || round(e::numeric, id_decimals)::text
 
 Köln: `coord_round 2`, `id_decimals 3` → `11-26-5151-359019.290-5645464.340`. This
 reproduces all 127 live Köln `target_id`s, and is the rendering the Köln append
-verified against Python's `.3f`. Wilhelmshaven: no rounding, 3 decimals for Magnetic,
-15 for Georadar (see [Before building](#before-building-what-the-numbers-say)).
+verified against Python's `.3f`. Wilhelmshaven: no rounding, 3 decimals, from
+`Rechtswert`/`Hochwert` (Magnetic) and `Rechswert`/`Hochwert` (Georadar)
+(see [Before building](#before-building-what-the-numbers-say)).
 
 `id = uuid.uuid5(uuid.NAMESPACE_DNS, target_id)` is computed by **a Python step in the
 runner** (D2), with the same call that produced the existing ids (`ingest_anomalies.py`,
@@ -679,75 +687,110 @@ drops a table it does not own.
 ## One-time migration: replacing the 11-24-2736 rows
 
 A separate, one-off script, **not part of the pipeline**. The pipeline keeps its rule of
-never deleting. The script needs `DELETE` on `public.anomalies` and `UPDATE` on
-`public.feedback`, which `etl_pipeline` must never have, so it runs once as an admin
-role and is then retired.
+never deleting. The script needs `DELETE` on `public.anomalies`, which `etl_pipeline`
+must never have, so it runs once as an admin role and is then retired.
 
 ### Preconditions
 
 1. Every field device has synced (you confirm). A device that syncs afterwards with
-   feedback for a deleted anomaly would have that feedback skipped (`/api/sync` skips
-   feedback whose anomaly is missing).
-2. A `pg_dump -Fc` backup, **restored into a scratch database and compared** (row count
-   and md5 per table) before anything runs.
-3. D8–D11 decided.
-4. The pipeline has built `p_11_24_2736_…anomalie_1` (2,215 rows), and it is the input.
+   feedback for a removed target would have it skipped (`/api/sync` skips feedback
+   whose anomaly is missing).
+2. A fresh `pg_dump`, restored and compared table by table, taken **immediately
+   before** the live run. The one from 2026-09-23 23:35 proves the procedure, but
+   field data may have changed since.
+3. D12 decided. The 351 `Restflaeche` rows inserted into `Magnetic` (after you have
+   seen [the preview](#the-restflaeche-insert)).
+4. The pipeline has built `p_11_24_2736_…anomalie_1` from `Magnetic` + `Georadar`.
 
-### Matching, old → new
+### The `Restflaeche` insert
 
-| Tier | Rule | Anomalies matched | Feedback rows matched |
-|---|---|---:|---:|
-| 1 | identical `target_id` (same id, nothing to re-point) | 740 | **10** |
-| 2 | same instrument, distance ≤ **0.001 m** | 45 (the re-keyed radar targets, 0.0003–0.0007 m) | **0** (they have none) |
-| none | | 798 | **52**, listed in the migration report by feedback id, VM number and layer |
+Into `Magnetic`, from `magnetic_data` where `layer = 'Stoerkoerper Magnetik Nord
+Restflaeche'`, only what exists there:
 
-The 1 mm tolerance is set by the data. The re-keyed radar points sit at ≤ 0.0007 m
-(rounding of the 15-decimal values), and the next-closest candidate for any leftover
-target is 0.50 m away, a different target. Any tolerance between 1 mm and 0.5 m
-gives the same result. Larger ones start linking unrelated targets, often across
-instruments. The 45 tier-2 targets are the same physical targets, so the recommendation
-under D9 is that they keep their VM numbers (`2736-1…45`) on their new ids.
+| `Magnetic` column | From `magnetic_data` | Note |
+|---|---|---|
+| `Nummer` bigint | `Nummer` float8 | whole numbers 1171–1521; no clash with Magnetic's 1–741 |
+| `Rechtswert` numeric(10,3) | `Rechtswert` float8 | no value has more than 3 decimals, so nothing is rounded |
+| `Hochwert` numeric(10,3) | `Hochwert` float8 | same |
+| `Tiefe [m]` numeric(10,1) | `Tiefe [m]` float8 | no value has more than 1 decimal |
+| `layer` | `layer` | |
+| **`geom`** | **none**, left empty | see D13 |
+| **`category`** | **none**, left empty | see D12 |
+
+`magnetic_data.snippet` has no counterpart in `Magnetic`, and it is empty for every
+`Restflaeche` row anyway. **351 rows go in.** One `Restflaeche` row in `magnetic_data`
+is entirely empty (no `Nummer`, coordinates or depth) and is left out. Every one of the
+351 reproduces an existing live `target_id` (`2736-524` onwards); 34 of them carry
+feedback. Full preview: `scratch/etl-migration/restflaeche_preview.csv` (gitignored),
+with the live VM number, status and feedback count beside each row.
+
+### Archive of the 18 DB-only rows
+
+Before the migration transaction, committed on its own and never touched by it:
+
+- `archive.anomalies_11_24_2736_db_only_20260923` (18 rows, every column)
+- `archive.feedback_11_24_2736_db_only_20260923` (18 rows, every column incl. `photos`)
+- the same as a JSON file next to the backup
+
+Verified identical to the source rows by md5. A restore is two `INSERT … SELECT`s,
+anomalies first.
 
 ### Steps, in one transaction
 
 ```
-LOCK public.anomalies, public.feedback   -- no sync can interleave
-1. build the old→new map (tiers above) into a temp table
-2. update kept rows (tier 1) from anomalie_1: category, layer, evaluated_depth only
-   (0 differences today); status untouched (D10)
-3. insert the new rows (status 'pending', VM numbers per D9)
-4. re-point feedback whose anomaly changed: anomaly_id AND target_id (0 rows today)
-   and set those new anomalies to 'investigated'
-5. delete old 11-24-2736 rows with no counterpart, except those kept under D8
+LOCK public.anomalies, public.feedback          -- no sync can interleave
+1. old→new map: identical target_id (1,136); then same instrument within 0.001 m
+   for anything left with feedback (0 today)
+2. kept rows: nothing written. 0 value differences today (category, layer, depth);
+   any that appear are staged for approval (D3), not applied here
+3. insert the new rows: status 'pending', VM from 2736-1584 (D9, D10)
+4. re-point feedback whose anomaly changed, anomaly_id AND target_id (0 today)
+5. delete old 11-24-2736 rows with no counterpart (447: Sued 2 429 + the 18)
 6. gates, else ROLLBACK:
-   - feedback row count = 68 (a CASCADE delete leaves no orphans, so orphans alone prove nothing)
-   - 0 orphaned feedback; every feedback.project_id = its anomaly's project_id
-   - every feedback.target_id = its anomaly's target_id
-   - 11-26-5151 rows byte-identical to before (md5 over the project's rows)
-   - Wilhelmshaven row count and investigated count = the expected figures below
-   - every id = uuid5(target_id); vm_nr unique
+   feedback = 50 exactly · 0 orphans · feedback.project_id and .target_id match
+   their anomaly · 11-24-2736 rows = expected · investigated = expected ·
+   11-26-5151 anomalies and feedback byte-identical · vm_nr unique ·
+   every id = uuid5(target_id)
 COMMIT
-7. record every VM number ever issued for 11-24-2736 (2736-1…1583 and the new ones)
-   in etl.vm_registry, so a retired number is never reissued
+7. record every VM number ever issued for 11-24-2736 in etl.vm_registry,
+   including the retired 2736-1566…1583 and the Sued 2 numbers
 ```
 
-### Expected figures, by D8 option
+### Dry run on a copy (2026-09-23)
 
-| | (a) keep only the 52 with feedback | (a′) keep all `Restflaeche` + DB-only `Sued 1` (369) | (c) delete all 843 |
-|---|---:|---:|---:|
-| Kept (identical) | 740 | 740 | 740 |
-| Inserted | 1,475 | 1,475 | 1,475 |
-| Kept without a source (DB-only afterwards) | 52 | 369 | 0 |
-| Deleted | 791 | 474 | 798 + 45 re-keyed |
-| **11-24-2736 rows after** | **2,267** | **2,584** | 2,215 |
-| **Feedback rows after** | **68** | **68** | **16**, gate fails |
-| `investigated` after | 63 (loses `2736-1186`, Sued 2, no feedback) | 63 | 11 |
+Copy `nolte_geoservices_etl_test`, made from the verified restore. Script and outputs:
+`scratch/etl-migration/` (gitignored). Two variants, each on a fresh copy:
 
-Option (b), importing the missing targets into the source tables first, changes the
-inputs, so its figures are computed once the import exists.
+| | **As specified** (`Restflaeche` category empty) | **Hypothetical** (`Restflaeche` category `Kat-1`) |
+|---|---:|---:|
+| `Restflaeche` rows inserted into `Magnetic` | 351 | 351 |
+| Candidates / excluded for null category | 2,568 / **351** | 2,568 / 0 |
+| `anomalie_1` rows | 2,215 | **2,566** |
+| Kept identical (Magnetic + Georadar) | 785 (740 + 45) | **1,136** (1,091 + 45) |
+| New, VM numbers | 1,430, `2736-1584…3013` | 1,430, `2736-1584…3013` |
+| Value differences on kept rows | 0 | 0 |
+| Old rows removed | 798 (`Restflaeche` 351, Sued 2 429, DB-only 18) | **447** (Sued 2 429, DB-only 18) |
+| Feedback re-matched by 1 mm tolerance | 0 | 0 |
+| Feedback on removed rows | 52 | **18** (the archived DB-only rows) |
+| Archive (anomalies / feedback, identical) | 18 / 18 ✓ | 18 / 18 ✓ |
+| **Gate: feedback = 50** | **16 ✗** | **50 ✓** |
+| Gate: orphans = 0 | 0 ✓ (the cascade leaves none) | 0 ✓ |
+| Gate: 11-24-2736 rows | 2,215 | **2,566 ✓** |
+| Gate: investigated | 11 | **45 ✓** (64 − 18 DB-only − `2736-1186`) |
+| Gates: Köln unchanged, VM unique, ids | ✓ ✓ ✓ | ✓ ✓ ✓ |
+| **Outcome** | **ROLLED BACK**. Copy unchanged: 68 feedback, 1,583 rows | **COMMITTED** |
+| After: new rows with `geom` (32632) + lat/lon from the trigger | n/a | 1,430 / 1,430 |
+| After: kept rows keep id and VM number | n/a | ✓ |
+| After: GIST index present; archive intact | ✓ / 18, 18 | ✓ / 18, 18 |
 
-Figures are from the live database on 2026-09-23. They are recomputed on the copy, and
-every difference is reported, before you approve the live run.
+The "as specified" run also shows why the gate counts rows. With 34 feedback rows
+silently cascade-deleted, the orphan check still passed.
+
+D11 in the dry run: `Magnetic` `Nummer` 180/181 are one target, which already exists
+(`2736-225`, no feedback, `pending`), so it keeps that number and no number is retired.
+The Georadar `Array 1`/`Array 2` pair is new, with no feedback or status. `Array 1`
+wins by config order, and only one VM number is issued. Nothing had to be retired in
+either case; the rule is in place for when it applies.
 
 ---
 
@@ -772,7 +815,7 @@ Dagster, which is lighter) later is a matter of wrapping `run.py` in a task.
 
 ## Phase 2 plan
 
-Not started until this is approved, and the migration not until D8–D11 are decided.
+Not started until this is approved, and the migration not until D12 is decided.
 
 1. `pg_dump -Fc` of the live database, then restore it into a scratch database and
    compare row counts and checksums per table, to prove the dump restores.
@@ -784,8 +827,9 @@ Not started until this is approved, and the migration not until D8–D11 are dec
    changes only that row, gets the next VM number, and moves no existing VM; one
    corrected coordinate produces a held-back correction pair, not a duplicate; a second
    run changes nothing; the indexes exist and the trigger derived geometry correctly.
-4. The migration on the copy: the matching report (tiers, the 52 listed), the expected
-   figures against the actual ones, 68/68 feedback resolving, a forced gate failure
-   showing the rollback leaves the copy untouched.
+4. The migration on the copy. **Done in advance on 2026-09-23** (see
+   [the dry run](#dry-run-on-a-copy-2026-09-23)): the as-specified variant rolled back
+   on the feedback gate and left the copy untouched; the `Kat-1` variant committed with
+   all gates passing. It is repeated with the final D12 choice and the built pipeline.
 5. Old scripts stay in place. The live run is a separate step you approve, after the
    devices have synced.
