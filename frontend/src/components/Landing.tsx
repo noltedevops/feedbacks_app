@@ -174,11 +174,6 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
               </div>
               
               <ExperienceToggle t={t} value={experience} onChange={setExperience} tabId={tabId} panelId={panelId} />
-
-              <div className="mdb-sync-pill">
-                <span className="sync-pulse"></span>
-                <span>{t('Live Sync: Active')}</span>
-              </div>
             </div>
 
             <section className="xp-section mdb-workbench-body" key={`xp-${experience}`} aria-labelledby={headingId}>
@@ -294,11 +289,6 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
           <div className="brand-mark brand-mark--sm">
             <img src="/logo.png" alt="" className="brand-logo" />
             <span className="brand-name">Nolte Geoservices GmbH</span>
-          </div>
-
-          <div className="mdb-footer-status">
-            <span className="status-dot"></span>
-            <span>{t('All Systems Operational')}</span>
           </div>
 
           <div className="footer-links">
