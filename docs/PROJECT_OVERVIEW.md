@@ -72,6 +72,31 @@ to the office database for analytics.
   a second project cannot be imported through that endpoint. `ingest_anomalies.py`
   has the same constant. Found while adding `feedback.project_id`; deliberately
   left alone there.
+- **Restricted logins for editing project schemas** — the QGIS session that built
+  the new Wilhelmshaven source tables on 2026-09-23 was connected as `postgres`, the
+  superuser. People editing project schemas should use their own restricted logins
+  (like `bosco_k` on the Köln schema: write access to that schema only), so an import
+  cannot touch `public`, other projects or roles, and each change can be traced to
+  a person.
+- **`feedback → anomalies` should be `ON DELETE RESTRICT`, not `CASCADE`** — today
+  deleting an anomaly silently deletes its excavation record, and a check for orphaned
+  feedback still passes because nothing is left to be orphaned. With `RESTRICT` an
+  accidental delete fails loudly. The one-time Wilhelmshaven migration deliberately
+  removes 798 targets and, by cascade, 52 feedback rows (archived first), so change the constraint
+  after that migration, or have it delete those 18 feedback rows explicitly. See
+  [ETL_DESIGN.md](ETL_DESIGN.md#foreign-keys-into-publicanomalies-and-the-feedback-split).
+- **Feedback for a target that no longer exists is silently lost** — `/api/sync` skips
+  it with only a server log warning (`server.py:837-842`), still answers success, and
+  the device then drops it from its queue as if it had been sent (`App.tsx`,
+  `handleSync`). The server should reject it explicitly (per record, in the response),
+  and the device should keep that record queued and warn the user, so no field work can
+  disappear without anyone knowing. Became concrete with the 2026-09-24 Wilhelmshaven
+  migration, which removed 798 targets.
+- **A device left open and online never refreshes its target list on its own** — the
+  list is downloaded only at app start / sign-in, on the Sync button, or when records are
+  queued. Removed or new targets reach an idle device only when someone presses Sync.
+  It should refresh periodically (and on regaining connectivity), so the list does not
+  depend on a person remembering to sync.
 
 ## Screenshots
 
