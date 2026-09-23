@@ -1373,23 +1373,35 @@ body.dark-theme .mdb-workbench-container {
 .mdb-window-dots .dot.yellow { background: #ffbd2e; }
 .mdb-window-dots .dot.green { background: #27c93f; }
 
-.mdb-sync-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+/* An empty twin of the dots, so the toggle stays centred in the bar. */
+.mdb-workbench-header::after {
+  content: '';
   flex: 1;
-  justify-content: flex-end;
-  font-size: var(--text-caption);
-  font-weight: var(--weight-semibold);
-  color: #fece07;
 }
 
-.sync-pulse {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #fece07;
-  box-shadow: 0 0 8px #fece07;
+/* A phone has no room for the dots beside the toggle: the toggle takes the bar. */
+@media (max-width: 480px) {
+  .mdb-workbench-header {
+    justify-content: center;
+    padding: var(--space-3);
+  }
+
+  .mdb-window-dots,
+  .mdb-workbench-header::after {
+    display: none;
+  }
+}
+
+/* The smallest phones fit the two tabs but not their visible label as well. The
+   label is decorative (aria-hidden); the tab list carries the same name. */
+@media (max-width: 374px) {
+  .xp-toggle {
+    padding-left: 2px;
+  }
+
+  .xp-toggle-label {
+    display: none;
+  }
 }
 
 .mdb-workbench-body {
@@ -1639,24 +1651,6 @@ body.dark-theme .mdb-metrics-banner {
   justify-content: center;
   gap: var(--space-4);
   flex-wrap: wrap;
-}
-
-/* --- Footer System Status ------------------------------------------------- */
-.mdb-footer-status {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-label);
-  font-weight: var(--weight-medium);
-  color: var(--surface-text-muted);
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #00ed64;
-  box-shadow: 0 0 8px #00ed64;
 }
 
 /* --- Responsive Adaptations for MongoDB Components ----------------------- */
