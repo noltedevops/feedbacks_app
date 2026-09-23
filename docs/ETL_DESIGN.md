@@ -1,6 +1,6 @@
 # ETL design: project schemas → `public.anomalies`
 
-Status: **proposal, revision 4, awaiting approval** (Phase 1, 2026-09-23). Nothing
+Status: **proposal, revision 4** (Phase 1, 2026-09-23). The one-time migration **ran on live on 2026-09-24**, see [Live run](#live-run-2026-09-24). The pipeline itself is not built yet. Nothing
 described under *Design* exists yet. The audit was read-only: every query ran in a
 `default_transaction_read_only` session, and nothing in the database was changed.
 
@@ -786,6 +786,34 @@ migration block ran as a savepoint inside an already-open transaction, and closi
 connection rolled it back. The gate figures were real (measured inside the
 transaction), but nothing was persisted. Revision 4 fixed the script and verifies from
 an independent session.
+
+### Live run (2026-09-24)
+
+Run at 00:12 on your go, with the same script as the rev-4 dry run
+(`scratch/etl-migration/live_migrate.py`, gitignored). It differs only in the database
+guard, a baseline check (68 / 1,583 / 64 / max VM 1583, else refuse), and `CREATE`
+without `DROP IF EXISTS`.
+
+- **Before:** all devices synced (your confirmation). Fresh backup
+  `backup-nolte_geoservices-20260924-000754.sql`, restored into a scratch database: 52
+  tables, indexes, constraints, triggers, functions and 208 grants identical. Pre-flight:
+  live identical to that backup; no `anomalie_1` or `archive` tables existed.
+- **Archive:** `archive.anomalies_11_24_2736_removed_20260923` (798) and
+  `archive.feedback_11_24_2736_removed_20260923` (52), identical to the pre-migration
+  rows. JSON copy: `scratch/etl-migration/live/archive_removed_11_24_2736.json`
+  (gitignored; it holds investigator names). None of the 52 was a known-real submission.
+- **Migration:** inserted 1,430, deleted 798, re-pointed 0. All gates passed, **COMMITTED**.
+- **Verified from separate sessions:** feedback **16** (11-24-2736: 10, 11-26-5151: 6),
+  all 7 known-real submissions present, 0 orphans; 11-24-2736 **2,215** rows (11
+  investigated), 11-26-5151 127 (6); **2,342** targets in total; VM numbers unique;
+  1,430/1,430 new rows `pending` with geometry and lat/lon from the trigger.
+  **Identical to the pre-migration backup:** Köln anomalies and feedback, the 785 kept
+  rows in every column, the 10 surviving Wilhelmshaven feedback rows, `Magnetic`,
+  `Georadar`, users, permission requests, projects.
+- `p_11_24_2736_…anomalie_1` (2,215 rows) now exists, owned by `postgres`. When the
+  pipeline is built it takes over the table (D4) and seeds `etl.vm_registry` from
+  `public.anomalies` plus the archive, so the retired numbers are never reissued.
+- The scratch databases were dropped after verification.
 
 ---
 
