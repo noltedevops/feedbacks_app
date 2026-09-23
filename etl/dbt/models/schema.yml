@@ -1,0 +1,34 @@
+version: 2
+
+models:
+  - name: stg_candidates
+    description: Every configured source row mapped to the anomalies columns.
+    columns:
+      - name: target_id
+        data_tests: [not_null]
+      - name: instrument
+        data_tests:
+          - accepted_values:
+              arguments: {values: ['magnetic', 'georadar']}
+
+  - name: int_candidates
+    description: One candidate per target, with its uuid5 id.
+    columns:
+      - name: id
+        data_tests: [unique, not_null]
+      - name: target_id
+        data_tests: [unique, not_null]
+      - name: source_target_id
+        data_tests: [unique, not_null]
+      - name: easting
+        data_tests: [not_null]
+      - name: northing
+        data_tests: [not_null]
+      - name: category
+        data_tests: [not_null]
+
+  - name: excluded_rows
+    description: Source rows with no category and no usable fallback. Listed, never guessed.
+
+  - name: dup_report
+    description: Positions produced by more than one source row.

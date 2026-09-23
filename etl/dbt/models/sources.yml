@@ -1,0 +1,48 @@
+version: 2
+
+sources:
+  - name: app
+    schema: public
+    description: The app's tables. Read here; written only by the runner's merge.
+    tables:
+      - name: projects
+        columns:
+          - name: project_id
+            data_tests: [unique, not_null]
+      - name: anomalies
+        columns:
+          - name: id
+            data_tests: [unique, not_null]
+          - name: target_id
+            data_tests: [unique, not_null]
+          - name: vm_nr
+            data_tests: [unique, not_null]
+          - name: instrument
+            data_tests: [not_null]
+          - name: easting
+            data_tests: [not_null]
+          - name: northing
+            data_tests: [not_null]
+          - name: project_id
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments: {to: "source('app', 'projects')", field: project_id}
+      - name: feedback
+        columns:
+          - name: anomaly_id
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments: {to: "source('app', 'anomalies')", field: id}
+
+  - name: etl
+    schema: etl
+    description: Pipeline state, created and owned by the runner.
+    tables:
+      - name: id_registry
+      - name: target_alias
+      - name: vm_registry
+        columns:
+          - name: vm_nr
+            data_tests: [unique, not_null]

@@ -1,0 +1,68 @@
+# Which project schemas feed public.anomalies, and how. Nothing project-specific lives
+# anywhere else: adding a project means adding an entry here. See docs/ETL_DESIGN.md.
+#
+# Per source:
+#   table        source table in the project schema (quoted as given)
+#   instrument   value written to anomalies.instrument
+#   key          stable source key, used to pair a corrected coordinate with its old
+#                target (optional)
+#   where        SQL filter on the source rows (optional)
+#   coord_round  round easting/northing to this many decimals before anything else
+#                (optional; without it the stored values are used as they are)
+#   id_decimals  decimals of easting/northing in target_id
+#   id_columns   columns target_id is built from, when they differ from the stored
+#                easting/northing (optional)
+#   columns      easting, northing, depth, category, layer. Each is a column name,
+#                {column: ..., round: n}, {expr: "<sql>"}, or null. category may carry
+#                a fallback: {column: ..., fallback: {column: ..., rule: trailing_number}}
+#
+# The order of sources is the priority when two rows share a target_id.
+
+correction_radius_m: 1.0     # a new target this close to one that just lost its source is paired, not inserted
+
+projects:
+  - project_id: "11-26-5151"
+    project_name: "Koeln Deutzerfeld"
+    schema: p_11_26_5151_koeln_deutzerfeld
+    srid: 25832
+    vm_prefix: "5151"
+    sources:
+      - table: picks
+        instrument: georadar
+        key: id
+        where: "field_3 not in (0, 4)"
+        coord_round: 2
+        id_decimals: 3
+        columns:
+          easting: field_1
+          northing: field_2
+          depth: { column: field_5, round: 2 }
+          category: { expr: "'Kat-' || field_3" }
+          layer: null
+
+  - project_id: "11-24-2736"
+    project_name: "Wilhemshaven Rüstersieler Seedeich"
+    schema: p_11_24_2736_wilhemshaven_r_stersieler_seedeich
+    srid: 25832
+    vm_prefix: "2736"
+    sources:
+      - table: Magnetic
+        instrument: magnetic
+        key: Nummer
+        id_decimals: 3
+        columns:
+          easting: Rechtswert
+          northing: Hochwert
+          depth: { column: "Tiefe [m]" }
+          category: { column: category }
+          layer: layer
+      - table: Georadar
+        instrument: georadar
+        id_decimals: 3
+        id_columns: { easting: Rechswert, northing: Hochwert }
+        columns:
+          easting: East
+          northing: North
+          depth: { column: "Tiefe [m]" }
+          category: { column: category, fallback: { column: "Target Pic", rule: trailing_number } }
+          layer: layer

@@ -1,0 +1,20 @@
+# The pipeline's dbt project. Every model lives in the etl schema, which the
+# etl_pipeline role owns. public.anomalies is deliberately NOT a model: dbt never owns,
+# rebuilds or drops it. The runner (../runner/run.py) merges into it in one transaction.
+name: nolte_etl
+version: "1.0"
+config-version: 2
+profile: nolte_etl
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+target-path: "target"
+clean-targets: ["target"]
+
+models:
+  nolte_etl:
+    +full_refresh: false
+
+vars:
+  etl: {}   # the runner passes etl/config/projects.yml here with --vars
