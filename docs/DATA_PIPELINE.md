@@ -257,10 +257,11 @@ Two things to know:
 - **The `*_raw_data` pairs are unexplained**, and do not differ in content at all:
   `EXCEPT ALL` in both directions is empty and an md5 over every row matches (checked
   2026-09-23). See [Open questions](#open-questions).
-- **Replaying the old script's logic over `magnetic_data` + `radar_data` reproduces
-  1,565 of the 1,583 live rows exactly.** The misses are exactly the 18 DB-only rows. The
-  new QGIS tables cover only two of the four magnetic layers and add 1,430 radar picks.
-  See [ETL_DESIGN.md](ETL_DESIGN.md#wilhelmshaven-against-the-1583-live-rows).
+- **The new `Magnetic` + `Georadar` tables are the intended Wilhelmshaven source**
+  (decided 2026-09-23). They cover two of the four magnetic layers and add 1,430 radar
+  picks. See [ETL_DESIGN.md](ETL_DESIGN.md#wilhelmshaven-against-the-1583-live-rows).
+  For the record, replaying the old script's logic over `magnetic_data` + `radar_data`
+  reproduces 1,565 of the 1,583 live rows exactly, missing only the 18 DB-only rows.
 
 The `11-26-5151` tables *are* on a live path, but only through the hand-run `sql/`
 scripts below.
@@ -372,9 +373,11 @@ Unresolved as of 2026-09-22. See also the open questions in
 - **What `*_raw_data` means**, and whether either table of each pair can be retired.
   Being followed up. Nothing should be deleted or reorganised in the meantime. As of
   2026-09-23 each pair is identical in content, not only in shape.
-- **Who is importing into the Wilhelmshaven schema, and which tables are meant to be the
-  source.** Four tables appeared on 2026-09-23 through a QGIS session connected as
-  `postgres`. See [ETL_DESIGN.md](ETL_DESIGN.md#decisions-needed), decision D1.
+- **What happens to the 52 feedback rows whose targets are not in the new Wilhelmshaven
+  source tables.** Settled 2026-09-23: `Magnetic` + `Georadar` are the intended source.
+  They lack the `Nord Restflaeche` and `Sued 2` layers and the 18 DB-only rows, and
+  52 feedback rows sit on those targets. See
+  [ETL_DESIGN.md](ETL_DESIGN.md#decisions), decision D8.
 - **Whether the `sql/` migrations were run exactly as committed.** No ledger exists;
   see the note above.
 - **Whether the 61 bulk-inserted feedback rows are real excavation results or test data**,

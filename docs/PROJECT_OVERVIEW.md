@@ -72,6 +72,12 @@ to the office database for analytics.
   a second project cannot be imported through that endpoint. `ingest_anomalies.py`
   has the same constant. Found while adding `feedback.project_id`; deliberately
   left alone there.
+- **Restricted logins for editing project schemas** — the QGIS session that built
+  the new Wilhelmshaven source tables on 2026-09-23 was connected as `postgres`, the
+  superuser. People editing project schemas should use their own restricted logins
+  (like `bosco_k` on the Köln schema: write access to that schema only), so an import
+  cannot touch `public`, other projects or roles, and each change can be traced to
+  a person.
 
 ## Screenshots
 
