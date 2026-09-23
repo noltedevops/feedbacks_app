@@ -13,29 +13,44 @@ same-origin and the frontend calls `/api/...` with an empty base URL.
 
 ```
   survey CSVs  ──► ingest_anomalies.py ──►  PostgreSQL 16 + PostGIS
-                                                   ▲   │
+  sql/*.sql    ──────────────────────────►         ▲   │
                                                    │   │
                                         SQLAlchemy │   │ SELECT
                                                    │   ▼
                                             ┌──────────────────┐
-                                            │  FastAPI         │
-                                            │  server.py       │
+                            Mistral API ◄───┤  FastAPI         │
+                            (no DB access)  │  server.py       │
                                             │  + static/ mount │
                                             └──────────────────┘
                                                 ▲          ▲
-                        POST /api/sync          │          │  GET /api/stats
+                        POST /api/sync          │          │  GET /api/projects
                         GET  /api/points        │          │  GET /api/reports/*
                                                 │          │
-                                     ┌──────────┴───┐  ┌───┴──────────┐
-                                     │  Field app   │  │  Dashboard   │
-                                     │  Dexie +     │  │  Recharts    │
-                                     │  service     │  │  (online     │
-                                     │  worker      │  │   only)      │
-                                     └──────────────┘  └──────────────┘
+                                     ┌──────────┴──────────┴──────────┐
+                                     │  ONE React bundle              │
+                                     │                                │
+                                     │  Dexie/IndexedDB + service     │
+                                     │  worker                        │
+                                     │     │                          │
+                                     │     ├──► Field app             │
+                                     │     └──► Dashboard (Recharts)  │
+                                     └────────────────────────────────┘
 ```
 
-The asymmetry is deliberate: the field app is built to survive with no network, the
-dashboard is not. Analytics are read straight from the server; the crew's work is not.
+Both surfaces read from the same local Dexie store. The field app is built to survive
+with no network; the dashboard is not, but that is a matter of which *other* calls it
+makes (`/api/projects`, `/api/reports/*`) rather than where its numbers come from.
+
+**The dashboard does not read analytics from the server.** Every total, chart and
+derived statistic on it is computed in the browser from the Dexie `points` array it is
+handed (`App.tsx:1981-1984`, `Dashboard.tsx:143-157`). `GET /api/stats` computes the
+same figures server-side but **has no caller** — there is no reference to it anywhere in
+`frontend/src/` or in the built bundle. Treat it as dead code until something calls it.
+
+> ⚠ **Before quoting any Dashboard figure:** 61 of the 68 feedback rows it aggregates
+> are of unestablished provenance — possibly real results migrated from an earlier
+> record, possibly test data. See
+> [DATA_PIPELINE.md](DATA_PIPELINE.md#-the-provenance-of-90-of-the-feedback-is-unknown).
 
 ## Backend
 
@@ -48,7 +63,7 @@ the lifespan hook seeds default users before the first request.
 |---|---|
 | `projects` | `project_id` (e.g. `11-24-2736`) + name |
 | `anomalies` | One survey target: `geom` (SRID 32632), `easting`/`northing`, `latitude`/`longitude`, `instrument`, `vm_nr`, `layer`, `category`, `evaluated_depth`, `status`, `target_id` |
-| `feedback` | One excavation record per anomaly: `tief`, `laenge`, `breite`, `m_cube`, `fundstueck`, `sohle_status`, `bilder_n`, `photos`, `notes`, `investigator`, `teams_tools` (JSON) |
+| `feedback` | One excavation record per anomaly: `tief`, `laenge`, `breite`, `m_cube`, `fundstueck`, `sohle_status`, `bilder_n`, `photos`, `notes`, `investigator`, `teams_tools` (JSON), plus the denormalised `project_id` and `target_id` — see [DATA_PIPELINE.md](DATA_PIPELINE.md#data-flowing-back) |
 | `users` | `password_hash`, `role`, and the access flags `can_field` / `can_dashboard` / `is_admin` / `must_change_password` |
 | `permission_requests` | A user asking for a surface they lack; an admin approves or denies |
 
@@ -125,7 +140,8 @@ the sidebar label. The dependencies in `server.py` are:
 | GET | `/api/stats` | dashboard |
 | GET | `/api/reports/feedback.pdf` | dashboard |
 | GET | `/api/reports/feedback.csv` | field or dashboard |
-| GET | `/api/reports/bilder/{feedback_id}` | open (link target from the PDF) |
+| GET | `/api/reports/bilder/{feedback_id}` | **no auth at all** — link target from the PDF (see below) |
+| POST | `/api/assistant` | open — the landing page, before sign-in |
 | POST | `/api/permissions/request` | authenticated |
 | GET | `/api/permissions/requests` | admin |
 | POST | `/api/permissions/requests/{id}/decide` | admin |
@@ -133,6 +149,29 @@ the sidebar label. The dependencies in `server.py` are:
 | PATCH | `/api/admin/users/{id}/access` | admin |
 | POST | `/api/admin/users/{id}/reset-password` | admin |
 | POST | `/api/seed` | admin — **wipes** feedback, anomalies and projects, then inserts demo data |
+
+Two of these have no reachable UI path, and are callable only against the API directly:
+
+- **`POST /api/points/import`** — `ImportExport.tsx` renders only on the
+  `activeTab !== 'map'` branch (`App.tsx:1808`), but `activeTab` initialises to `'map'`
+  (`:382`) and the one `setActiveTab` call sets it back to `'map'` (`:1028`). Nothing
+  ever selects `'import'`.
+- **`POST /api/seed`** — `handleSeedRequest` reaches `Dashboard` as `onSeedRequest`, which
+  destructures it unused as `_onSeedRequest` (`Dashboard.tsx:118`). Its only other
+  consumer is the unreachable `ImportExport`.
+
+**`GET /api/reports/bilder/{feedback_id}` has no auth dependency whatsoever**
+(`server.py:995-996`). Anyone who can reach the server and has or guesses a feedback id
+gets that excavation's full photo gallery. That is deliberate — it is the link target
+from the PDF, and requiring a session would break reports opened outside a signed-in
+browser — but it is an unauthenticated read of operational site photos and should be
+weighed again before the app leaves the LAN.
+
+`CORSMiddleware` is configured `allow_origins=["*"]` with `allow_credentials=True`
+(`server.py:52-58`). Auth is a bearer token in a header rather than a cookie, so this is
+not the classic credential-leak hole, but it does mean any site a signed-in user visits
+can call this API with a script-supplied token. Worth tightening when there is a real
+origin to name.
 
 `GET /api/points` is the shared read model: for each anomaly it attaches the most recent
 feedback and derives a display status — `false_alarm` when Fundstück is `ohne Fund`,
@@ -151,6 +190,47 @@ filter. Each row's *Bild* link points at `/api/reports/bilder/{feedback_id}`, a
 standalone gallery page, using the origin the report was requested from so a PDF pulled
 over the LAN keeps working. The CSV is written with a BOM so Excel renders umlauts.
 
+### The landing assistant (`assistant.py`)
+
+`POST /api/assistant` backs the "Ask AI Assistant" box on the landing page. It is
+registered as its own `APIRouter` and included *before* the static mount
+(`server.py:1236`), which answers every path that reaches it.
+
+**It touches no user data and no database.** It takes no `db` dependency, imports no
+models, and keeps no conversation history. Its only state is an in-process rate limiter
+(`assistant.py:132-160`), which is per-process and resets on restart.
+
+**Provider.** Mistral's EU-hosted API, pay-as-you-go, with training switched off in the
+organisation's admin panel. The model is pinned to the dated id `ministral-8b-2512`
+rather than a `-latest` alias, so it cannot change underneath; when Mistral retires it,
+calls fail, the page falls back to its predefined answers, and `assistant.py:44` is the
+fix. One POST with the standard library — no SDK. The key is read from
+`MISTRAL_API_KEY` **in the process environment and nowhere else**, deliberately not
+through `config.py`, which also reads `.env`.
+
+**It is public**, because the landing page is what a visitor sees before signing in, so
+it is fenced in on every side: 10 questions per IP per 10 minutes, 300/day across all
+visitors, a 500-character cap on the question and 400 tokens on the reply.
+
+**It never shows a visitor an error.** No key, limit reached, Mistral down, slow, or
+replying in an unexpected shape all come back as an ordinary 200 with status `limited`
+or `unavailable`, and the page falls back to its predefined answers.
+
+Two safety details worth knowing before touching it:
+
+- **Ordnance questions never reach the model.** `_is_ordnance_question` matches first and
+  returns a fixed referral sentence (`assistant.py:376-378`), so no prompt change and no
+  model quirk can turn it into advice about handling real munitions.
+- **Question text is never logged.** A visitor may type anything, personal data included.
+
+### Deployment
+
+There is one deployment: **local**, uvicorn on `:8000`, with Postgres and pgAdmin in
+Docker (`docker-compose.yml`). `MISTRAL_API_KEY` is set on that server, and the
+assistant has been probed live against it. There is no hosted environment, no HTTPS
+and no second instance — so "production" in any comment or commit message means this
+machine.
+
 ## Frontend
 
 `frontend/src/App.tsx` is the shell: landing page, sign-in, sidebar, surface switching,
@@ -162,7 +242,7 @@ online/offline state, sync orchestration, admin dialogs and the EN/DE toggle. Co
 | `components/FeedbackForm.tsx` | The excavation form, including camera capture and the Trupp & Geräte block |
 | `components/Dashboard.tsx` | Recharts analytics |
 | `components/FilterBar.tsx` | VM-Nr. / instrument / status filtering |
-| `components/ImportExport.tsx` | CSV paste or file upload into `/api/points/import` |
+| `components/ImportExport.tsx` | CSV paste or file upload into `/api/points/import` — **no UI path reaches it**, see the endpoint notes above |
 | `components/ReportDialog.tsx` | Project and date range for the CSV/PDF exports |
 | `db/indexedDb.ts` | Dexie schema, types, and `getResolvedStatus()` |
 | `auth.ts` | Token storage, access flags, `authFetch`, offline login policy |
@@ -229,7 +309,42 @@ Server-side, `/api/sync` upserts each record by primary key (dialect-specific
 `ON CONFLICT`), skips any feedback whose parent anomaly does not exist rather than
 raising a foreign-key error, normalises the incoming ISO-8601 `Z` timestamp to naive UTC
 to match `TIMESTAMP WITHOUT TIME ZONE`, marks the anomaly `investigated`, and returns the
-refreshed point list.
+refreshed point list. `project_id` is taken from the parent anomaly, never from the
+payload (`server.py:869`), so the stored project cannot disagree with the target.
+
+#### The `visit_date` guard
+
+This is the load-bearing line of the whole sync path (`server.py:820-824`):
+
+```python
+stmt = insert(table).values(**values).on_conflict_do_update(
+    index_elements=[table.c.id],
+    set_=updatable,
+    where=(table.c.visit_date.is_(None)) | (table.c.visit_date <= values["visit_date"]),
+)
+```
+
+`DO UPDATE` rather than `DO NOTHING`, because a crew can reopen a target and correct its
+measurements — those corrections have to reach the server. The `WHERE` clause is what
+keeps that safe in the other direction: **a stale copy that has been sitting in an
+offline queue for days can never clobber a newer visit already stored.**
+
+The consequence to remember when reading logs: a skipped update is silent. The request
+still returns success and the client still drops the queued record, so
+*"Synchronized 5 logs"* means five records were *accepted*, not that five rows changed.
+That is intentional — a stale record has nothing to contribute — but it means the count
+is not a write count.
+
+Re-editing a target reuses the existing feedback id (`App.tsx:723`), which is what makes
+the second submission an update rather than a second row. There is therefore **no
+history**: `feedback` holds one row per anomaly, and a correction overwrites the
+previous values. `GET /api/points` still orders by `visit_date DESC` and takes the first
+(`server.py:669-674`), so it would cope if that ever changed.
+
+One field is accepted and then dropped on the floor: `FeedbackCreate.status`
+(`server.py:73`) is never written — it is absent from the values dict at `:862-888`. The
+status shown everywhere is re-derived on read by the rule above. The client's `status`
+is dead weight on the wire.
 
 ### Offline sign-in
 
@@ -239,3 +354,37 @@ account may sign in, and it is granted the **field app only** — the dashboard 
 screens are server-backed and could otherwise show data the person is no longer allowed.
 That record deliberately outlives sign-out: it describes the device's history, not the
 current session.
+
+## Open questions
+
+Things a reader will notice and that nobody has yet been able to answer. Recorded so the
+next person does not spend the same hours on them. See also the open questions in
+[DATA_PIPELINE.md](DATA_PIPELINE.md#open-questions), which cover the ingested data.
+
+- **What `*_raw_data` means.** The `p_11_24_2736_…` schema holds `magnetic_data` /
+  `magnetic_raw_data` and `radar_data` / `radar_raw_data`. Each pair has identical
+  columns and identical row counts (1,522 and 45), no constraints and no comments, and
+  no code reads any of them. What distinguishes "raw" from the other is unknown and
+  being followed up. **Do not delete or reorganise them on the assumption they are
+  duplicates.**
+- **Why two anomalies are `investigated` with no feedback row** (`2736-1186`,
+  `2736-1040`). The only `DELETE` anywhere in the backend is `/api/seed`, which wipes
+  `feedback`, `anomalies` and `projects` together (`server.py:1059-1061`) and so cannot
+  produce this state. `anomalies.status` is never reset by anything, so these two rows
+  will stay out of step until someone corrects them.
+- **Who has been editing the database by hand, and with what authority.** Three `users`
+  rows were deleted through pgAdmin's admin login (`admin@nolte-geoservices.com`) on
+  2026-09-15, 06:26–06:43 UTC — established from pgAdmin's own query history. The two
+  orphaned anomalies above have the same character: a change with no code path behind
+  it. **Who was at the keyboard is not established.** Asked in September 2026, the
+  project owner could not confirm it was him, and does not know who else holds that
+  login. Until that is answered, treat the admin pgAdmin credential as shared and
+  unaccounted for, and assume manual edits can appear in any table without a trace.
+  - The `pg_stat_user_tables` counters that evidenced the user deletions have since been
+    reset (`stats_reset` is NULL, all counters zero), so that avenue is closed for any
+    future question of this kind.
+- **Whether the `sql/` migrations were run exactly as committed.** There is no record of
+  which migrations have been applied. The assertion gates in
+  `append_anomalie_1_to_anomalies.sql` passed and the 127 rows are present and correct,
+  but a modified-then-run version would be indistinguishable from the committed one.
+  A `schema_migrations` ledger is on the backlog.
