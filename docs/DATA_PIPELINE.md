@@ -232,12 +232,21 @@ the backend. They are landing zones for imported survey data.
 
 | Schema | Table | Rows | What it is |
 |---|---|---:|---|
-| `p_11_24_2736_wilhemshaven_r_stersieler_seedeich` | `magnetic_data` | 1,522 | Columns mirror `Magnetic_data.csv` exactly |
-| | `magnetic_raw_data` | 1,522 | Identical schema and count |
+| `p_11_24_2736_wilhemshaven_r_stersieler_seedeich` | `magnetic_data` | 1,522 | Columns mirror `Magnetic_data.csv` exactly. No geometry, no category |
+| | `magnetic_raw_data` | 1,522 | **Identical content** to `magnetic_data`, row for row |
 | | `radar_data` | 45 | Mirrors `Radar_data.csv` (14 columns) |
-| | `radar_raw_data` | 45 | Identical schema and count |
+| | `radar_raw_data` | 45 | **Identical content** to `radar_data`, row for row |
+| | `Magnetic` | 741 | **New 2026-09-23** (QGIS import). `Nord` + `Sued 1` with `geom` (25832) and `category` (all `Kat-1`) |
+| | `Stoerkoerper Magnetik Nord` | 479 | **New 2026-09-23.** POINT 25832 |
+| | `Stoerkoerper Magnetik Sued 1` | 262 | **New 2026-09-23.** POINTZ 25832 |
+| | `Georadar` | 1,476 | **New 2026-09-23.** Six radar layers; easting column is spelled `Rechswert`; `category` is null for 988 rows, which carry it in `Target Pic` instead |
 | `p_11_26_5151_koeln_deutzerfeld` | `picks` | 5,592 | PK `id`, `geom` POINT **SRID 25832**, `field_1..field_6` |
 | | `anomalie_1` | 127 | Staging table shaped like `public.anomalies`; no constraints, no `geom` |
+
+Every source geometry in both schemas is SRID 25832 (ETRS89 / UTM 32N);
+`public.anomalies` stores 32632. For these two projects the difference in derived lat/lon
+is below 0.1 mm. The full inventory, with column types and null rates, is in
+[ETL_DESIGN.md](ETL_DESIGN.md#project-schemas).
 
 Two things to know:
 
@@ -245,7 +254,13 @@ Two things to know:
   `ingest_anomalies.py` reads the CSV files from disk, not these tables. They hold 1,522
   magnetic rows where `public.anomalies` holds 1,538 — the same discrepancy discussed
   above, plus the rows dropped by dedup and the missing-coordinate filter.
-- **The `*_raw_data` pairs are unexplained.** See [Open questions](#open-questions).
+- **The `*_raw_data` pairs are unexplained**, and do not differ in content at all:
+  `EXCEPT ALL` in both directions is empty and an md5 over every row matches (checked
+  2026-09-23). See [Open questions](#open-questions).
+- **Replaying the old script's logic over `magnetic_data` + `radar_data` reproduces
+  1,565 of the 1,583 live rows exactly.** The misses are exactly the 18 DB-only rows. The
+  new QGIS tables cover only two of the four magnetic layers and add 1,430 radar picks.
+  See [ETL_DESIGN.md](ETL_DESIGN.md#wilhelmshaven-against-the-1583-live-rows).
 
 The `11-26-5151` tables *are* on a live path, but only through the hand-run `sql/`
 scripts below.
@@ -265,6 +280,15 @@ database can be verified against the committed SQL, is on the backlog.
 |---|---|
 | `anomalie_1_from_picks.sql` | Builds `p_11_26_5151_koeln_deutzerfeld.anomalie_1` from that schema's `picks` table, shaped exactly like `public.anomalies`. Excludes `field_3` categories 0 and 4, leaving 127 of 5592 rows; transforms from the source SRID to compute lat/lon; assigns `vm_nr` as a gap-free random-order sequence. `id` is left NULL. |
 | `append_anomalie_1_to_anomalies.sql` | Appends those 127 rows into `public.projects` + `public.anomalies` in one transaction, with `ON CONFLICT DO NOTHING` so a re-run is a no-op. |
+
+**What ran is not exactly what is committed.** Live `vm_nr` for `11-26-5151` spans
+`5151-1` to `5151-128` over 127 rows, with `5151-5` missing. The committed
+`ROW_NUMBER()` over the 127 filtered rows cannot produce a gap. Every other column
+reproduces exactly from `picks`.
+
+These scripts are to be replaced by the pipeline proposed in
+[ETL_DESIGN.md](ETL_DESIGN.md), which also explains what breaks in them when a new row
+appears.
 
 The second file is worth reading before writing any similar migration — its header
 documents the constraints it checked, the collision pre-flight it ran, and two things
@@ -346,7 +370,11 @@ Unresolved as of 2026-09-22. See also the open questions in
   `ingest_anomalies.py` must not be run against the live database. The cleanest fix is
   probably to export the 1,583 live rows back out to a CSV that *does* reproduce them.
 - **What `*_raw_data` means**, and whether either table of each pair can be retired.
-  Being followed up. Nothing should be deleted or reorganised in the meantime.
+  Being followed up. Nothing should be deleted or reorganised in the meantime. As of
+  2026-09-23 each pair is identical in content, not only in shape.
+- **Who is importing into the Wilhelmshaven schema, and which tables are meant to be the
+  source.** Four tables appeared on 2026-09-23 through a QGIS session connected as
+  `postgres`. See [ETL_DESIGN.md](ETL_DESIGN.md#decisions-needed), decision D1.
 - **Whether the `sql/` migrations were run exactly as committed.** No ledger exists;
   see the note above.
 - **Whether the 61 bulk-inserted feedback rows are real excavation results or test data**,

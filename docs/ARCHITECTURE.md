@@ -14,6 +14,7 @@ same-origin and the frontend calls `/api/...` with an empty base URL.
 ```
   survey CSVs  ──► ingest_anomalies.py ──►  PostgreSQL 16 + PostGIS
   sql/*.sql    ──────────────────────────►         ▲   │
+  (both to be replaced: docs/ETL_DESIGN.md)        │   │
                                                    │   │
                                         SQLAlchemy │   │ SELECT
                                                    │   ▼
@@ -72,6 +73,16 @@ the lifespan hook seeds default users before the first request.
 target always gets the same id, so existing feedback keeps pointing at it. Every insert
 path computes it explicitly — `models.py` also declares a `uuid4` default, but no code
 path reaches it.
+
+A target moved in the field (the draggable marker in the feedback form, synced as
+`point_updates`) gets new easting/northing/lat/lon but keeps its `id` and `target_id`.
+After a move, `target_id` no longer equals the formula over the stored coordinates. That
+is expected, so the id → `target_id` relation is the invariant to test, not
+`target_id` → coordinates. No live target has been moved as of 2026-09-23.
+
+The columns the app writes after ingestion (`status`, and the four coordinates via
+`point_updates`) are the ones the proposed ETL pipeline must never overwrite. See
+[ETL_DESIGN.md](ETL_DESIGN.md#columns-the-app-writes-after-ingestion).
 
 `feedback.photos` is a JSON-serialised array of base64 data URLs stored in a text column.
 That is the current design; moving photos to object storage is a known open item.
@@ -364,8 +375,8 @@ next person does not spend the same hours on them. See also the open questions i
 - **What `*_raw_data` means.** The `p_11_24_2736_…` schema holds `magnetic_data` /
   `magnetic_raw_data` and `radar_data` / `radar_raw_data`. Each pair has identical
   columns and identical row counts (1,522 and 45), no constraints and no comments, and
-  no code reads any of them. What distinguishes "raw" from the other is unknown and
-  being followed up. **Do not delete or reorganise them on the assumption they are
+  no code reads any of them. Checked 2026-09-23, their **content** is identical too,
+  row for row. What distinguishes "raw" from the other is unknown and being followed up. **Do not delete or reorganise them on the assumption they are
   duplicates.**
 - **Why two anomalies are `investigated` with no feedback row** (`2736-1186`,
   `2736-1040`). The only `DELETE` anywhere in the backend is `/api/seed`, which wipes
