@@ -1,0 +1,13 @@
+# Credentials come only from the environment (see etl/README.md).
+nolte_etl:
+  target: default
+  outputs:
+    default:
+      type: postgres
+      host: "{{ env_var('ETL_DB_HOST') }}"
+      port: "{{ env_var('ETL_DB_PORT', '5432') | as_number }}"
+      user: "{{ env_var('ETL_DB_USER') }}"
+      password: "{{ env_var('ETL_DB_PASSWORD') }}"
+      dbname: "{{ env_var('ETL_DB_NAME') }}"
+      schema: etl
+      threads: 1

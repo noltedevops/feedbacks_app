@@ -53,3 +53,8 @@ backup-*.sql
 # OS
 .DS_Store
 Thumbs.db
+
+# dbt build output
+etl/dbt/target/
+etl/dbt/logs/
+etl/dbt/dbt_packages/

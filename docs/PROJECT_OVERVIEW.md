@@ -98,6 +98,13 @@ to the office database for analytics.
   It should refresh periodically (and on regaining connectivity), so the list does not
   depend on a person remembering to sync.
 
+- **Show pending ETL approvals to admins in the app** — staged changes to existing
+  targets and coordinate-correction pairs wait for the `etl_approver` login, and today
+  the only ways to see them are the runner's log and the command-line status view
+  (`docker compose --profile etl run --rm etl-approve`). An admin screen, or at least a
+  badge with the count, would stop decisions from waiting unnoticed. See
+  [ETL_DESIGN.md](ETL_DESIGN.md#how-you-know-something-is-waiting).
+
 ## Screenshots
 
 Current running application (also in this `docs/` folder):
