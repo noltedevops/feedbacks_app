@@ -195,11 +195,13 @@ def referenced_columns(source: dict) -> set[str]:
 
 
 def validate_sources(conn, cfg) -> list[str]:
-    """Every configured table and column must exist; returns tables nobody configured."""
+    """Every configured table and column must exist; returns tables nobody configured.
+    Reads pg_catalog: PUBLIC's access to information_schema is revoked on live."""
     problems, unconfigured = [], []
     for p in cfg["projects"]:
         tables = {r[0] for r in conn.execute(
-            "select table_name from information_schema.tables where table_schema = %s", (p["schema"],))}
+            "select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace "
+            "where n.nspname = %s and c.relkind in ('r', 'p', 'v', 'm', 'f')", (p["schema"],))}
         configured = {s["table"] for s in p["sources"]} | {"anomalie_1"}
         unconfigured += [f"{p['schema']}.{t}" for t in sorted(tables - configured)]
         for s in p["sources"]:
@@ -207,7 +209,9 @@ def validate_sources(conn, cfg) -> list[str]:
                 problems.append(f"{p['schema']}.{s['table']}: table not found")
                 continue
             have = {r[0] for r in conn.execute(
-                "select column_name from information_schema.columns where table_schema = %s and table_name = %s",
+                "select a.attname from pg_attribute a join pg_class c on c.oid = a.attrelid "
+                "join pg_namespace n on n.oid = c.relnamespace "
+                "where n.nspname = %s and c.relname = %s and a.attnum > 0 and not a.attisdropped",
                 (p["schema"], s["table"]))}
             for c in sorted(referenced_columns(s) - have):
                 problems.append(f"{p['schema']}.{s['table']}: column {c!r} not found")
@@ -448,8 +452,11 @@ def merge(conn, cfg, run_id: int) -> dict:
 def seed_vm_registry(conn, cfg) -> None:
     prefixes = {p["project_id"]: p["vm_prefix"] for p in cfg["projects"]}
     tables = [("public", "anomalies")] + [tuple(r) for r in conn.execute(
-        """select c.table_schema, c.table_name from information_schema.columns c
-            where c.table_schema = 'archive' and c.column_name in ('project_id', 'vm_nr', 'target_id')
+        """select n.nspname, c.relname from pg_class c
+             join pg_namespace n on n.oid = c.relnamespace
+             join pg_attribute a on a.attrelid = c.oid
+            where n.nspname = 'archive' and c.relkind = 'r' and a.attnum > 0 and not a.attisdropped
+              and a.attname in ('project_id', 'vm_nr', 'target_id')
             group by 1, 2 having count(*) = 3""")]
     for schema, table in tables:
         conn.execute(sql.SQL("""insert into etl.vm_registry (project_id, vm_number, vm_nr, target_id, origin)
@@ -814,6 +821,8 @@ def setup_sql() -> str:
            "alter role etl_pipeline with password :'etl_password';",
            "alter role etl_approver with password :'approver_password';",
            "select format('grant connect on database %I to etl_pipeline, etl_approver', current_database()) \\gexec",
+           "-- the merge uses session-private temp tables; PUBLIC's TEMPORARY is revoked on live",
+           "select format('grant temporary on database %I to etl_pipeline', current_database()) \\gexec",
            "create schema if not exists etl authorization etl_pipeline;",
            "grant usage on schema public to etl_pipeline;",
            "grant select on public.anomalies, public.projects, public.feedback to etl_pipeline;",

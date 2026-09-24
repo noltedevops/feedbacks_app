@@ -96,6 +96,12 @@ def last_run():
 
 
 print(f"== acceptance on {COPY}")
+# Live revokes PUBLIC's USAGE on information_schema and PUBLIC's CONNECT/TEMPORARY on the
+# database. pg_dump does not carry those, so a restored copy would be more permissive
+# than live and hide failures (it did once). Reproduce them before testing.
+with db() as c:
+    c.execute("revoke usage on schema information_schema from public")
+    c.execute(f'revoke connect, temporary on database "{COPY}" from public')
 before = snap()
 koeln_before = qall(f"select id, target_id, easting, northing, latitude, longitude, vm_nr, category, layer, status, evaluated_depth, instrument, project_id from {K}.anomalie_1")
 print("  baseline:", json.dumps(before, indent=1))
