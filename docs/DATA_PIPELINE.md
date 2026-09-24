@@ -64,7 +64,9 @@ It looks for `georadar.csv` then `Radar_data.csv`, and `magnetic.csv` then
 
 Built 2026-09-24 to replace `ingest_anomalies.py` and the hand-run `sql/` scripts:
 configuration-driven, runs as the least-privilege `etl_pipeline` role, and never deletes
-from or rebuilds `public.anomalies`. Accepted on a copy; **not yet run against live**.
+from or rebuilds `public.anomalies`. Accepted on a copy; first supervised run on live
+2026-09-24 (it changed nothing but the Köln `anomalie_1` normalisation). Not yet
+scheduled.
 See [etl/README.md](../etl/README.md) and [ETL_DESIGN.md](ETL_DESIGN.md).
 
 ## `ingest_anomalies.py`
