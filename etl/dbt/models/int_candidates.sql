@@ -23,7 +23,13 @@ select r.project_id, r.source_table, r.source_prio, r.source_key, r.instrument,
        al.anomaly_id is not null            as via_alias,
        r.dup_n
 from ranked r
-left join {{ source('etl', 'target_alias') }} al on al.source_target_id = r.target_id
+left join (
+    -- a corrected source row maps onto its existing target only through an approver's
+    -- decision that has been carried out; etl_pipeline cannot write these
+    select new_target_id as source_target_id, anomaly_id
+    from {{ source('approval', 'decisions') }}
+    where kind = 'correction' and decision = 'approve' and outcome = 'applied'
+) al on al.source_target_id = r.target_id
 left join {{ source('etl', 'id_registry') }}  ir on ir.target_id = r.target_id
 left join {{ source('app', 'anomalies') }}    pa on pa.id = al.anomaly_id
 where r.rn = 1

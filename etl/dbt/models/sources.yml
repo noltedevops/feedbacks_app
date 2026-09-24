@@ -36,12 +36,17 @@ sources:
               - relationships:
                   arguments: {to: "source('app', 'anomalies')", field: id}
 
+  - name: approval
+    schema: etl_approval
+    description: The approver's decisions. etl_pipeline can read them, never write them.
+    tables:
+      - name: decisions
+
   - name: etl
     schema: etl
     description: Pipeline state, created and owned by the runner.
     tables:
       - name: id_registry
-      - name: target_alias
       - name: vm_registry
         columns:
           - name: vm_nr

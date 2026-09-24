@@ -50,8 +50,24 @@ def qall(sql, *a):
         return c.execute(sql, *a).fetchall()
 
 
-def pipeline(*args: str) -> tuple[int, str]:
-    cmd = ["docker", "compose", "--profile", "etl", "run", "--rm", "--no-deps", "-e", f"ETL_DB_NAME={COPY}", "etl", *args]
+ENV = dict(l.split("=", 1) for l in (REPO / ".env").read_text().splitlines() if "=" in l and not l.startswith("#"))
+
+
+def as_role(user: str, password: str, stmt: str) -> str:
+    """Run one statement on the copy as the given login; returns the error text or 'ok'."""
+    p = subprocess.run(["docker", "exec", "-e", f"PGPASSWORD={password}", "feedback_postgres_db", "psql", "-h", "127.0.0.1",
+                        "-U", user, "-d", COPY, "-X", "-q", "-v", "ON_ERROR_STOP=1", "-c", stmt], capture_output=True, text=True)
+    err = (p.stderr or "").strip().splitlines()
+    return "ok" if p.returncode == 0 else (err[0] if err else f"exit {p.returncode}")
+
+
+def approve(*args: str) -> tuple[int, str]:
+    return pipeline(*args, service="etl-approve")
+
+
+def pipeline(*args: str, service: str = "etl", env: dict | None = None) -> tuple[int, str]:
+    extra = sum((["-e", f"{k}={v}"] for k, v in (env or {}).items()), [])
+    cmd = ["docker", "compose", "--profile", "etl", "run", "--rm", "--no-deps", "-e", f"ETL_DB_NAME={COPY}", *extra, service, *args]
     p = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
     out = p.stdout + p.stderr
     print("    | " + "\n    | ".join(l for l in out.splitlines() if l.strip() and not l.startswith(("Container", " Container")))[-3000:], flush=True)
@@ -162,9 +178,27 @@ others_sql = "select md5(string_agg(a::text, '|' order by a.id)) from public.ano
 row_sql = ("select id, project_id, instrument, easting, northing, latitude, longitude, vm_nr, layer, status, "
            "target_id, evaluated_depth, geom::text from public.anomalies where id = %s")
 others_before, row_before = q1(others_sql, (victim[3],))[0], q1(row_sql, (victim[3],))
-rc, _ = pipeline("approve-change", str(staged[0][0])) if staged else (1, "")
+PW, APW = ENV["ETL_DB_PASSWORD"], ENV["ETL_APPROVER_PASSWORD"]
+cid = staged[0][0] if staged else -1
+check("etl_pipeline cannot approve its own change",
+      "permission denied" in as_role("etl_pipeline", PW, f"select etl_admin.decide_change({cid}, 'approve')"))
+check("etl_pipeline cannot write a decision directly",
+      "permission denied" in as_role("etl_pipeline", PW, "insert into etl_approval.decisions (kind, ref_id, decision, anomaly_id, decided_by) "
+                                                          f"values ('change', {cid}, 'approve', '{victim[3]}', 'me')"))
+check("etl_pipeline cannot update public.anomalies (not even category)",
+      "permission denied" in as_role("etl_pipeline", PW, f"update public.anomalies set category = 'Kat-3' where id = '{victim[3]}'"))
+check("etl_pipeline cannot carry out a change nobody approved",
+      "not an approved, open change" in as_role("etl_pipeline", PW, "select etl_admin.apply_change(999999)"))
+check("etl_approver cannot write public.anomalies either",
+      "permission denied" in as_role("etl_approver", APW, f"update public.anomalies set category = 'Kat-3' where id = '{victim[3]}'"))
+rc, _ = approve("approve-change", str(cid)) if staged else (1, "")
+check("etl_approver approves through the approval function", rc == 0)
+# the pipeline tampers with its own staged row after approval: the approved snapshot wins
+as_role("etl_pipeline", PW, f"update etl.change_log set new_value = 'Kat-9' where change_id = {cid}")
 rc, _ = pipeline("run")
-check("after approval the next run applies it", q1("select category from public.anomalies where id = %s", (victim[3],))[0] == "Kat-3")
+check("after approval the next run applies it, with the approved value (Kat-3, not the tampered Kat-9)",
+      q1("select category from public.anomalies where id = %s", (victim[3],))[0] == "Kat-3",
+      q1("select category from public.anomalies where id = %s", (victim[3],))[0])
 check("the applied change touched only that row's category",
       q1(others_sql, (victim[3],))[0] == others_before and q1(row_sql, (victim[3],)) == row_before)
 check("the change is recorded as applied",
@@ -186,7 +220,9 @@ check("move: NOT inserted as a new target", q1("select count(*) from public.anom
 check("move: public.anomalies unchanged", snap()["anomalies"] == s5["anomalies"])
 check("move: the run reports the DB-only set changed (the old target lost its source)", "WARNING" in out)
 if pairs:
-    pipeline("approve-correction", str(pairs[0][0]))
+    check("etl_pipeline cannot approve its own correction pair",
+          "permission denied" in as_role("etl_pipeline", PW, f"select etl_admin.decide_correction({pairs[0][0]}, 'approve')"))
+    approve("approve-correction", str(pairs[0][0]))
     rc, _ = pipeline("run")
     row = q1("select vm_nr, target_id, easting, northing, status from public.anomalies where target_id = '11-24-2736-443500.123-5936000.456'")
     check("approved correction: same target keeps id, VM number and target_id, coordinates updated",
@@ -201,6 +237,79 @@ runs = qall("select run_id, status from etl.runs order by run_id")
 check("every pipeline run ended ok or skipped (dbt tests included)", all(s in ("ok", "skipped") for _, s in runs), runs)
 rc, _ = pipeline("run", "--force")
 check("final forced run: dbt tests all pass", rc == 0 and last_run()[1] == "ok", last_run()[1])
+
+
+# ---------------------------------------------------------------- 7. a device syncs during a run
+def run_with_pause(during) -> tuple[int, str]:
+    """Start a run that holds its merge transaction open before the gates, do `during`
+    (committed, from another session) while it waits, then let it finish."""
+    cmd = ["docker", "compose", "--profile", "etl", "run", "--rm", "--no-deps", "-e", f"ETL_DB_NAME={COPY}",
+           "-e", "ETL_TEST_PAUSE_BEFORE_GATES=20", "etl", "run"]
+    p = subprocess.Popen(cmd, cwd=REPO, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    out = []
+    for line in p.stdout:
+        out.append(line)
+        if "TEST HOOK" in line:
+            during()
+            break
+    rest, _ = p.communicate()
+    out.append(rest)
+    text = "".join(out)
+    print("    | " + "\n    | ".join(l for l in text.splitlines() if "GATES" in l or "TEST HOOK" in l or " ok." in l or "FAILED" in l))
+    return p.returncode, text
+
+
+print("\n== 7. a device syncs new feedback while a run is in its merge transaction")
+fb_cols = "id, anomaly_id, visited, visit_date, investigator, investigator_username, notes, project_id, target_id"
+target = q1("select id, target_id from public.anomalies where project_id = '11-24-2736' and status = 'pending' "
+            "and vm_nr = '2736-1590'")
+n_fb = q1("select count(*) from public.feedback")[0]
+with db() as c:   # give the run something to do: one more new source row
+    c.execute(f"""insert into {W}."Magnetic" ("Nummer", "Rechtswert", "Hochwert", "Tiefe [m]", layer, category)
+                  values (990002, 443510.001, 5936010.002, 0.8, 'Stoerkoerper Magnetik Nord', 'Kat-1')""")
+
+
+def device_syncs():
+    with db() as c:   # what /api/sync does: insert the feedback row, mark the target investigated
+        c.execute(f"insert into public.feedback ({fb_cols}) values (gen_random_uuid()::text, %s, true, now(), "
+                  "'Acceptance Test', 'acceptance', 'written during the run', '11-24-2736', %s)", (target[0], target[1]))
+        c.execute("update public.anomalies set status = 'investigated' where id = %s", (target[0],))
+    print("    (device sync committed while the run waited)")
+
+
+rc, out = run_with_pause(device_syncs)
+check("run with a concurrent sync: passes its gates and commits", rc == 0 and last_run()[1] == "ok", last_run()[1])
+check("the new feedback row survives: feedback grew by one", q1("select count(*) from public.feedback")[0] == n_fb + 1)
+check("the run's own work committed (its new target is in)",
+      q1("select count(*) from public.anomalies where target_id = '11-24-2736-443510.001-5936010.002'")[0] == 1)
+check("the synced target is investigated, as the device set it",
+      q1("select status from public.anomalies where id = %s", (target[0],))[0] == "investigated")
+
+print("\n== 7b. a feedback row that existed before the run disappears during it")
+with db() as c:
+    c.execute(f"""insert into {W}."Magnetic" ("Nummer", "Rechtswert", "Hochwert", "Tiefe [m]", layer, category)
+                  values (990003, 443520.001, 5936020.002, 0.9, 'Stoerkoerper Magnetik Nord', 'Kat-1')""")
+gone = q1(f"select {fb_cols} from public.feedback where investigator_username = 'acceptance'")
+
+
+def feedback_lost():
+    with db() as c:
+        c.execute("delete from public.feedback where id = %s", (gone[0],))
+    print("    (a pre-existing feedback row deleted while the run waited)")
+
+
+n_an = q1("select count(*) from public.anomalies")[0]
+rc, out = run_with_pause(feedback_lost)
+check("the lost row fails the gate and the run rolls back", rc != 0 and last_run()[1] == "failed" and "feedback lost" in out,
+      last_run()[2])
+check("nothing from the rolled-back run remains (its new target is not in)",
+      q1("select count(*) from public.anomalies")[0] == n_an
+      and q1("select count(*) from public.anomalies where target_id = '11-24-2736-443520.001-5936020.002'")[0] == 0)
+with db() as c:
+    c.execute(f"insert into public.feedback ({fb_cols}) values (%s, %s, %s, %s, %s, %s, %s, %s, %s)", gone)
+rc, _ = pipeline("run")
+check("with the row back, the next run succeeds and inserts the target", rc == 0 and last_run()[1] == "ok"
+      and q1("select count(*) from public.anomalies where target_id = '11-24-2736-443520.001-5936020.002'")[0] == 1)
 
 failed = [r for r in results if not r[1]]
 print(f"\n{len(results) - len(failed)}/{len(results)} checks passed")

@@ -27,7 +27,6 @@ Connection: ETL_DB_HOST, ETL_DB_PORT, ETL_DB_NAME, ETL_DB_USER, ETL_DB_PASSWORD.
 from __future__ import annotations
 
 import argparse
-import getpass
 import hashlib
 import json
 import os
@@ -133,12 +132,6 @@ create table if not exists etl.correction_candidates (
 );
 create unique index if not exists correction_open
     on etl.correction_candidates (new_target_id) where status in ('pending', 'conflict', 'accepted');
-create table if not exists etl.target_alias (
-    source_target_id  varchar(100) primary key,
-    anomaly_id        varchar(36) not null,
-    pair_id           bigint,
-    created_at        timestamptz not null default now()
-);
 create table if not exists etl.db_only_state (
     project_id  varchar(50) primary key,
     anomaly_ids text[] not null,
@@ -164,14 +157,17 @@ def load_config() -> dict:
     return cfg
 
 
-def connect() -> psycopg.Connection:
+def connect(approver: bool = False) -> psycopg.Connection:
+    """The pipeline connects as etl_pipeline; decisions are taken as etl_approver, a
+    separate login the pipeline process is never given."""
     env = os.environ
-    missing = [k for k in ("ETL_DB_HOST", "ETL_DB_NAME", "ETL_DB_USER", "ETL_DB_PASSWORD") if not env.get(k)]
+    user_var, pw_var = ("ETL_APPROVER_USER", "ETL_APPROVER_PASSWORD") if approver else ("ETL_DB_USER", "ETL_DB_PASSWORD")
+    missing = [k for k in ("ETL_DB_HOST", "ETL_DB_NAME", user_var, pw_var) if not env.get(k)]
     if missing:
         raise SystemExit(f"missing environment: {', '.join(missing)}")
     return psycopg.connect(host=env["ETL_DB_HOST"], port=int(env.get("ETL_DB_PORT", "5432")),
-                           dbname=env["ETL_DB_NAME"], user=env["ETL_DB_USER"],
-                           password=env["ETL_DB_PASSWORD"], application_name="nolte_etl")
+                           dbname=env["ETL_DB_NAME"], user=env[user_var], password=env[pw_var],
+                           application_name="nolte_etl_approver" if approver else "nolte_etl")
 
 
 def ident(*parts: str) -> sql.Identifier:
@@ -231,10 +227,8 @@ def fingerprint(conn, cfg) -> dict:
         fp["public"][p["project_id"]] = conn.execute(
             "select count(*)::text || ':' || md5(coalesce(string_agg(id || '/' || coalesce(vm_nr, '') || '/' || target_id, '|' order by id), '')) "
             "from public.anomalies where project_id = %s", (p["project_id"],)).fetchone()[0]
-    fp["decisions"] = conn.execute(
-        "select (select count(*) from etl.change_log where status = 'approved') || '/' || "
-        "(select count(*) from etl.correction_candidates where status in ('accepted', 'rejected') and applied_run is null)"
-    ).fetchone()[0]
+    # decisions the approver has taken that no run has processed yet
+    fp["decisions"] = conn.execute("select count(*) from etl_approval.decisions where outcome is null").fetchone()[0]
     return fp
 
 
@@ -344,14 +338,17 @@ def merge(conn, cfg, run_id: int) -> dict:
         # 2. every VM number ever issued: public, plus any archive table that holds some
         seed_vm_registry(conn, cfg)
 
-        # 3. decisions taken since the last run
-        s["corrections_applied"] = apply_accepted_corrections(conn, run_id)
-        s["changes_applied"] = apply_approved_changes(conn, run_id)
+        # 3. the approver's decisions since the last run. Only etl_admin functions can
+        #    carry them out, and only as the approver took them (etl_pipeline has no
+        #    UPDATE on public.anomalies at all).
+        s["corrections_applied"] = apply_decided_corrections(conn, run_id)
+        s["changes_applied"] = apply_decided_changes(conn, run_id)
         if s["corrections_applied"]:
-            # an accepted correction adds an alias, which changes int_candidates' ids
-            conn.execute("""update etl.int_candidates c set id = a.anomaly_id, target_id = p.target_id, via_alias = true
-                              from etl.target_alias a join public.anomalies p on p.id = a.anomaly_id
-                             where a.source_target_id = c.source_target_id and c.id is distinct from a.anomaly_id""")
+            # an applied correction maps the corrected source row onto the existing target
+            conn.execute("""update etl.int_candidates c set id = d.anomaly_id, target_id = p.target_id, via_alias = true
+                              from etl_approval.decisions d join public.anomalies p on p.id = d.anomaly_id
+                             where d.kind = 'correction' and d.decision = 'approve' and d.outcome = 'applied'
+                               and d.new_target_id = c.source_target_id and c.id is distinct from d.anomaly_id""")
 
         for p in cfg["projects"]:
             pid = p["project_id"]
@@ -395,6 +392,13 @@ def merge(conn, cfg, run_id: int) -> dict:
             for t in ("cand", "db_only", "fresh"):
                 conn.execute(sql.SQL("drop table {}").format(ident(t)))
             s["projects"][pid] = ps
+
+        # Test hook, acceptance suite only: hold the transaction open so the suite can
+        # write feedback the way a syncing device would, mid-run. Unset in production.
+        pause = float(os.environ.get("ETL_TEST_PAUSE_BEFORE_GATES") or 0)
+        if pause > 0:
+            print(f"  TEST HOOK: paused {pause:.0f}s before the gates", flush=True)
+            time.sleep(pause)
 
         # 10. gates
         g = {
@@ -458,38 +462,46 @@ def seed_vm_registry(conn, cfg) -> None:
                      (f"seed:{schema}.{table}", list(prefixes), json.dumps(prefixes)))
 
 
-def apply_accepted_corrections(conn, run_id) -> int:
+def apply_decided_corrections(conn, run_id) -> int:
+    """Carry out the approver's correction decisions. apply_correction moves the target
+    to the coordinates the approver saw; the pipeline cannot move anything itself."""
     n = 0
-    for pair_id, new_tid, old_id in conn.execute(
-            "select pair_id, new_target_id, old_anomaly_id from etl.correction_candidates "
-            "where status = 'accepted' order by pair_id").fetchall():
-        conn.execute("insert into etl.target_alias (source_target_id, anomaly_id, pair_id) values (%s, %s, %s) "
-                     "on conflict (source_target_id) do nothing", (new_tid, old_id, pair_id))
-        conn.execute("select etl_admin.apply_correction(%s)", (pair_id,))
-        conn.execute("update etl.correction_candidates set status = 'applied', applied_run = %s where pair_id = %s",
-                     (run_id, pair_id))
-        n += 1
-    conn.execute("update etl.correction_candidates set applied_run = %s where status = 'rejected' and applied_run is null",
-                 (run_id,))
+    for did, pair_id, decision in conn.execute(
+            "select decision_id, ref_id, decision from etl_approval.decisions "
+            "where kind = 'correction' and outcome is null order by decision_id").fetchall():
+        if decision == "approve":
+            conn.execute("select etl_admin.apply_correction(%s)", (did,))
+            status, n = "applied", n + 1
+        else:
+            conn.execute("select etl_admin.close_decision(%s, 'closed')", (did,))
+            status = "rejected"
+        conn.execute("update etl.correction_candidates set status = %s, applied_run = %s where pair_id = %s",
+                     (status, run_id, pair_id))
     return n
 
 
-def apply_approved_changes(conn, run_id) -> int:
+def apply_decided_changes(conn, run_id) -> int:
+    """Carry out the approver's change decisions. apply_change writes exactly the value
+    the approver approved, and only while the live value is still the one it was staged
+    against (else 'stale'). A change the source no longer asks for is closed unapplied."""
     n = 0
-    for col, typ in STAGED_COLUMNS:
-        # applied only while the live value is still the one the change was staged against
-        n += conn.execute(sql.SQL("""update public.anomalies a set {c} = l.new_value::{t}
-                                       from etl.change_log l
-                                      where l.status = 'approved' and l.column_name = %s and l.anomaly_id = a.id
-                                        and a.{c}::text is not distinct from l.old_value""").format(
-            c=ident(col), t=sql.SQL(typ)), (col,)).rowcount
-    for col, _ in STAGED_COLUMNS:
-        conn.execute(sql.SQL("""update etl.change_log l
-                                   set status = case when a.{c}::text is not distinct from l.new_value then 'applied' else 'stale' end,
-                                       applied_run = %s
-                                  from public.anomalies a
-                                 where l.status = 'approved' and l.column_name = %s and l.anomaly_id = a.id""").format(
-            c=ident(col)), (run_id, col))
+    for did, change_id, decision, anomaly_id, col, new in conn.execute(
+            "select decision_id, ref_id, decision, anomaly_id, column_name, new_value from etl_approval.decisions "
+            "where kind = 'change' and outcome is null order by decision_id").fetchall():
+        if decision != "approve":
+            conn.execute("select etl_admin.close_decision(%s, 'closed')", (did,))
+            outcome = "rejected"
+        else:
+            src = conn.execute(sql.SQL("select {}::text from etl.int_candidates where id = %s").format(ident(col)),
+                               (anomaly_id,)).fetchone()
+            if src is None or src[0] != new:
+                conn.execute("select etl_admin.close_decision(%s, 'superseded')", (did,))
+                outcome = "superseded"
+            else:
+                outcome = conn.execute("select etl_admin.apply_change(%s)", (did,)).fetchone()[0]
+                n += outcome == "applied"
+        conn.execute("update etl.change_log set status = %s, applied_run = %s where change_id = %s",
+                     (outcome, run_id, change_id))
     return n
 
 
@@ -618,36 +630,43 @@ def report(s: dict) -> None:
 
 
 # ----------------------------------------------------------------------------- decisions
-def decide_changes(ids: list[int], run: int | None, status: str) -> None:
-    conn = connect()
-    who = os.environ.get("ETL_APPROVER") or getpass.getuser()
+def decide_changes(ids: list[int], run: int | None, decision: str) -> None:
+    """As etl_approver: record decisions through etl_admin.decide_change, which snapshots
+    exactly what is approved. The pipeline's own login cannot call it."""
+    conn = connect(approver=True)
     if run is not None:
-        n = conn.execute("update etl.change_log set status = %s, decided_at = now(), decided_by = %s "
-                         "where status = 'staged' and run_id = %s", (status, who, run)).rowcount
-    else:
-        n = conn.execute("update etl.change_log set status = %s, decided_at = now(), decided_by = %s "
-                         "where status = 'staged' and change_id = any(%s)", (status, who, ids)).rowcount
+        ids = [r[0] for r in conn.execute(
+            "select change_id from etl.change_log where status = 'staged' and run_id = %s order by change_id", (run,))]
+    done = []
+    for cid in ids:
+        conn.execute("select etl_admin.decide_change(%s, %s)", (cid, decision))
+        done.append(cid)
     conn.commit()
-    print(f"{n} change(s) {status}; approved ones are applied on the next run")
+    print(f"{len(done)} change(s) {decision}d: {done}. The next run carries them out.")
 
 
-def decide_correction(pair_id: int, status: str) -> None:
-    conn = connect()
-    who = os.environ.get("ETL_APPROVER") or getpass.getuser()
-    n = conn.execute("update etl.correction_candidates set status = %s, decided_at = now(), decided_by = %s "
-                     "where pair_id = %s and status in ('pending', 'conflict')", (status, who, pair_id)).rowcount
+def decide_correction(pair_id: int, decision: str) -> None:
+    conn = connect(approver=True)
+    conn.execute("select etl_admin.decide_correction(%s, %s)", (pair_id, decision))
     conn.commit()
-    print(f"pair {pair_id}: {status}" if n else f"pair {pair_id}: not open, nothing changed")
+    print(f"pair {pair_id}: {decision}d. The next run carries it out.")
 
 
-def status() -> None:
-    conn = connect()
+def status(approver: bool = False) -> None:
+    conn = connect(approver=approver)
     for title, q in (
-        ("staged changes", "select change_id, project_id, vm_nr, column_name, old_value, new_value, run_id "
-                           "from etl.change_log where status = 'staged' order by change_id"),
-        ("open correction pairs", "select pair_id, project_id, old_vm_nr, source_table, source_key, round(distance_m::numeric, 3), "
-                                  "matched_by, old_has_feedback, old_status, status from etl.correction_candidates "
-                                  "where status in ('pending', 'conflict') order by pair_id"),
+        ("staged changes awaiting a decision",
+         "select l.change_id, l.project_id, l.vm_nr, l.column_name, l.old_value, l.new_value, l.run_id "
+         "from etl.change_log l where l.status = 'staged' and not exists (select 1 from etl_approval.decisions d "
+         "where d.kind = 'change' and d.ref_id = l.change_id) order by l.change_id"),
+        ("correction pairs awaiting a decision",
+         "select k.pair_id, k.project_id, k.old_vm_nr, k.source_table, k.source_key, round(k.distance_m::numeric, 3), "
+         "k.matched_by, k.old_has_feedback, k.old_status, k.status from etl.correction_candidates k "
+         "where k.status in ('pending', 'conflict') and not exists (select 1 from etl_approval.decisions d "
+         "where d.kind = 'correction' and d.ref_id = k.pair_id) order by k.pair_id"),
+        ("decisions not yet carried out",
+         "select decision_id, kind, ref_id, decision, decided_by, decided_at from etl_approval.decisions "
+         "where outcome is null order by decision_id"),
         ("DB-only rows", "select project_id, cardinality(anomaly_ids) from etl.db_only_state order by 1"),
         ("last runs", "select run_id, status, forced, started_at, finished_at from etl.runs order by run_id desc limit 10"),
     ):
@@ -658,26 +677,153 @@ def status() -> None:
 
 
 # ----------------------------------------------------------------------------- admin
+APPROVAL_SQL = r"""
+-- ---------------------------------------------------------------- approvals
+-- Decisions live where etl_pipeline can read but never write. Only these postgres-owned
+-- functions act on them: etl_approver decides (the content is snapshotted at that
+-- moment); etl_pipeline carries out exactly what was decided, or closes it unapplied.
+create schema if not exists etl_approval authorization postgres;
+revoke all on schema etl_approval from public;
+grant usage on schema etl_approval to etl_pipeline, etl_approver;
+create table if not exists etl_approval.decisions (
+    decision_id  bigserial primary key,
+    kind         text not null check (kind in ('change', 'correction')),
+    ref_id       bigint not null,
+    decision     text not null check (decision in ('approve', 'reject')),
+    anomaly_id   varchar(36) not null,
+    column_name  text,
+    old_value    text,
+    new_value    text,
+    new_target_id varchar(100),
+    new_easting  double precision,
+    new_northing double precision,
+    decided_by   text not null,
+    decided_at   timestamptz not null default now(),
+    outcome      text,          -- applied | stale | superseded | closed
+    outcome_at   timestamptz,
+    unique (kind, ref_id)
+);
+revoke all on etl_approval.decisions from public;
+grant select on etl_approval.decisions to etl_pipeline, etl_approver;
+
+create schema if not exists etl_admin authorization postgres;
+revoke all on schema etl_admin from public;
+grant usage on schema etl_admin to etl_pipeline, etl_approver;
+
+create or replace function etl_admin.decide_change(p_change_id bigint, p_decision text) returns bigint
+language plpgsql security definer set search_path = pg_catalog, public as $fn$
+declare r record; d bigint;
+begin
+  if p_decision not in ('approve', 'reject') then raise exception 'decision must be approve or reject'; end if;
+  select * into r from etl.change_log where change_id = p_change_id and status = 'staged';
+  if not found then raise exception 'change % is not staged', p_change_id; end if;
+  if r.column_name not in ('category', 'layer', 'evaluated_depth', 'instrument') then
+    raise exception 'column % cannot be changed by the pipeline', r.column_name; end if;
+  insert into etl_approval.decisions (kind, ref_id, decision, anomaly_id, column_name, old_value, new_value, decided_by)
+  values ('change', p_change_id, p_decision, r.anomaly_id, r.column_name, r.old_value, r.new_value, session_user)
+  returning decision_id into d;
+  return d;
+end $fn$;
+
+create or replace function etl_admin.decide_correction(p_pair_id bigint, p_decision text) returns bigint
+language plpgsql security definer set search_path = pg_catalog, public as $fn$
+declare r record; d bigint;
+begin
+  if p_decision not in ('approve', 'reject') then raise exception 'decision must be approve or reject'; end if;
+  select * into r from etl.correction_candidates where pair_id = p_pair_id and status in ('pending', 'conflict');
+  if not found then raise exception 'pair % is not open', p_pair_id; end if;
+  insert into etl_approval.decisions (kind, ref_id, decision, anomaly_id, new_target_id, new_easting, new_northing, decided_by)
+  values ('correction', p_pair_id, p_decision, r.old_anomaly_id, r.new_target_id, r.new_easting, r.new_northing, session_user)
+  returning decision_id into d;
+  return d;
+end $fn$;
+
+create or replace function etl_admin.apply_change(p_decision_id bigint) returns text
+language plpgsql security definer set search_path = pg_catalog, public as $fn$
+declare d record; cur text;
+begin
+  select * into d from etl_approval.decisions
+   where decision_id = p_decision_id and kind = 'change' and decision = 'approve' and outcome is null for update;
+  if not found then raise exception 'decision % is not an approved, open change', p_decision_id; end if;
+  if d.column_name not in ('category', 'layer', 'evaluated_depth', 'instrument') then
+    raise exception 'column % cannot be changed by the pipeline', d.column_name; end if;
+  execute format('select %I::text from public.anomalies where id = $1', d.column_name) into cur using d.anomaly_id;
+  if cur is distinct from d.old_value then
+    update etl_approval.decisions set outcome = 'stale', outcome_at = now() where decision_id = p_decision_id;
+    return 'stale';
+  end if;
+  execute format('update public.anomalies set %I = $1::%s where id = $2', d.column_name,
+                 case when d.column_name = 'evaluated_depth' then 'double precision' else 'varchar' end)
+    using d.new_value, d.anomaly_id;
+  update etl_approval.decisions set outcome = 'applied', outcome_at = now() where decision_id = p_decision_id;
+  return 'applied';
+end $fn$;
+
+drop function if exists etl_admin.apply_correction(bigint);
+create function etl_admin.apply_correction(p_decision_id bigint) returns text
+language plpgsql security definer set search_path = pg_catalog, public as $fn$
+declare d record;
+begin
+  select * into d from etl_approval.decisions
+   where decision_id = p_decision_id and kind = 'correction' and decision = 'approve' and outcome is null for update;
+  if not found then raise exception 'decision % is not an approved, open correction', p_decision_id; end if;
+  update public.anomalies set easting = d.new_easting, northing = d.new_northing where id = d.anomaly_id;
+  if not found then raise exception 'anomaly % not found', d.anomaly_id; end if;
+  update etl_approval.decisions set outcome = 'applied', outcome_at = now() where decision_id = p_decision_id;
+  return 'applied';
+end $fn$;
+
+-- close a decision without applying it: can only ever prevent a write, never cause one
+create or replace function etl_admin.close_decision(p_decision_id bigint, p_outcome text) returns void
+language plpgsql security definer set search_path = pg_catalog, public as $fn$
+begin
+  if p_outcome not in ('superseded', 'closed') then raise exception 'outcome must be superseded or closed'; end if;
+  update etl_approval.decisions set outcome = p_outcome, outcome_at = now()
+   where decision_id = p_decision_id and outcome is null;
+  if not found then raise exception 'decision % is not open', p_decision_id; end if;
+end $fn$;
+
+revoke all on all functions in schema etl_admin from public;
+grant execute on function etl_admin.decide_change(bigint, text), etl_admin.decide_correction(bigint, text) to etl_approver;
+grant execute on function etl_admin.apply_change(bigint), etl_admin.apply_correction(bigint),
+                          etl_admin.close_decision(bigint, text) to etl_pipeline;
+
+-- what the approver reads to decide: the pipeline's staged changes and pairs, and the targets
+grant usage on schema etl to etl_approver;
+alter default privileges for role etl_pipeline in schema etl grant select on tables to etl_approver;
+grant select on all tables in schema etl to etl_approver;
+grant usage on schema public to etl_approver;
+grant select on public.anomalies to etl_approver;
+"""
+
+
 def setup_sql() -> str:
-    """One-time SQL for an admin (postgres): role, schemas, grants, ownership. Generated
-    from the config so a new project gets its grants from the same file."""
+    """One-time SQL for an admin (postgres): roles, schemas, grants, ownership, approval
+    functions. Generated from the config so a new project gets its grants from here."""
     cfg = load_config()
     lit = lambda v: "'" + str(v).replace("'", "''") + "'"
     q = lambda v: '"' + str(v).replace('"', '""') + '"'
-    out = ["-- Generated by etl/runner/run.py setup-sql. Run once as postgres:",
-           "--   psql -v ON_ERROR_STOP=1 -v etl_password=... -f setup.sql",
-           "do $$ begin if not exists (select 1 from pg_roles where rolname = 'etl_pipeline') then",
-           "  create role etl_pipeline login nosuperuser nocreatedb nocreaterole noreplication nobypassrls; end if; end $$;",
+    out = ["-- Generated by etl/runner/run.py setup-sql. Run as postgres (safe to re-run):",
+           "--   psql -v ON_ERROR_STOP=1 -v etl_password=... -v approver_password=... -f setup.sql",
+           "do $$ begin",
+           "  if not exists (select 1 from pg_roles where rolname = 'etl_pipeline') then",
+           "    create role etl_pipeline login nosuperuser nocreatedb nocreaterole noreplication nobypassrls; end if;",
+           "  if not exists (select 1 from pg_roles where rolname = 'etl_approver') then",
+           "    create role etl_approver login nosuperuser nocreatedb nocreaterole noreplication nobypassrls; end if;",
+           "end $$;",
            "alter role etl_pipeline with password :'etl_password';",
-           "select format('grant connect on database %I to etl_pipeline', current_database()) \\gexec",
+           "alter role etl_approver with password :'approver_password';",
+           "select format('grant connect on database %I to etl_pipeline, etl_approver', current_database()) \\gexec",
            "create schema if not exists etl authorization etl_pipeline;",
            "grant usage on schema public to etl_pipeline;",
            "grant select on public.anomalies, public.projects, public.feedback to etl_pipeline;",
            "-- coordinate transforms, in the models and in the app's trigger on insert",
            "grant select on public.spatial_ref_sys to etl_pipeline;",
            "grant insert on public.anomalies, public.projects to etl_pipeline;",
-           "grant update (category, layer, evaluated_depth, instrument) on public.anomalies to etl_pipeline;",
-           "-- deliberately absent: DELETE, TRUNCATE, UPDATE of any other column, any write on feedback",
+           "-- no UPDATE at all: existing rows change only through the approval functions below",
+           "revoke update on public.anomalies from etl_pipeline;",
+           "revoke update (category, layer, evaluated_depth, instrument) on public.anomalies from etl_pipeline;",
+           "-- deliberately absent: DELETE, TRUNCATE, UPDATE, any write on feedback",
            ""]
     for p in cfg["projects"]:
         s = q(p["schema"])
@@ -690,31 +836,16 @@ def setup_sql() -> str:
     out += ["-- retired VM numbers held in archive tables",
             "do $$ begin if exists (select 1 from pg_namespace where nspname = 'archive') then",
             "  execute 'grant usage on schema archive to etl_pipeline';",
-            "  execute 'grant select on all tables in schema archive to etl_pipeline'; end if; end $$;",
-            "",
-            "-- the only coordinate write the pipeline can make: an approved correction pair",
-            "create schema if not exists etl_admin authorization postgres;",
-            "revoke all on schema etl_admin from public;",
-            "grant usage on schema etl_admin to etl_pipeline;",
-            "create or replace function etl_admin.apply_correction(p_pair_id bigint) returns void",
-            "language plpgsql security definer set search_path = pg_catalog, public as $fn$",
-            "declare r record;",
-            "begin",
-            "  select * into r from etl.correction_candidates where pair_id = p_pair_id and status = 'accepted';",
-            "  if not found then raise exception 'pair % is not an accepted correction', p_pair_id; end if;",
-            "  update public.anomalies set easting = r.new_easting, northing = r.new_northing where id = r.old_anomaly_id;",
-            "  if not found then raise exception 'anomaly % not found', r.old_anomaly_id; end if;",
-            "end $fn$;",
-            "revoke all on function etl_admin.apply_correction(bigint) from public;",
-            "grant execute on function etl_admin.apply_correction(bigint) to etl_pipeline;"]
-    return "\n".join(out) + "\n"
+            "  execute 'grant select on all tables in schema archive to etl_pipeline'; end if; end $$;"]
+    return "\n".join(out) + "\n" + APPROVAL_SQL
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run"); r.add_argument("--force", action="store_true")
-    sub.add_parser("loop"); sub.add_parser("status"); sub.add_parser("setup-sql")
+    sub.add_parser("loop"); sub.add_parser("setup-sql")
+    st = sub.add_parser("status"); st.add_argument("--approver", action="store_true", help="connect as etl_approver")
     for name in ("approve-change", "reject-change"):
         c = sub.add_parser(name); c.add_argument("ids", nargs="*", type=int); c.add_argument("--run", type=int)
     for name in ("approve-correction", "reject-correction"):
@@ -732,13 +863,13 @@ def main() -> int:
             run()
             time.sleep(interval)
     if a.cmd == "status":
-        status(); return 0
+        status(approver=a.approver); return 0
     if a.cmd == "setup-sql":
         sys.stdout.write(setup_sql()); return 0
     if a.cmd in ("approve-change", "reject-change"):
-        decide_changes(a.ids, a.run, "approved" if a.cmd == "approve-change" else "rejected"); return 0
+        decide_changes(a.ids, a.run, "approve" if a.cmd == "approve-change" else "reject"); return 0
     if a.cmd in ("approve-correction", "reject-correction"):
-        decide_correction(a.pair_id, "accepted" if a.cmd == "approve-correction" else "rejected"); return 0
+        decide_correction(a.pair_id, "approve" if a.cmd == "approve-correction" else "reject"); return 0
     return 2
 
 

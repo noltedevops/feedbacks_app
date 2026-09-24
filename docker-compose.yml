@@ -73,6 +73,25 @@ services:
       db:
         condition: service_healthy
 
+  # Decisions on staged changes and correction pairs, as the separate etl_approver login.
+  # Holds only the approver's credentials; the pipeline service above never has them.
+  #   docker compose --profile etl run --rm etl-approve status --approver
+  #   docker compose --profile etl run --rm etl-approve approve-change 12 13
+  etl-approve:
+    build: ./etl
+    profiles: ["etl"]
+    entrypoint: ["python", "runner/run.py"]
+    command: ["status", "--approver"]
+    environment:
+      ETL_DB_HOST: db
+      ETL_DB_PORT: "5432"
+      ETL_DB_NAME: ${ETL_DB_NAME:-nolte_geoservices}
+      ETL_APPROVER_USER: ${ETL_APPROVER_USER:-etl_approver}
+      ETL_APPROVER_PASSWORD: ${ETL_APPROVER_PASSWORD:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   pgadmin_data:

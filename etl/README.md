@@ -12,9 +12,11 @@ project schemas ──dbt──► etl.stg_candidates ─► etl.int_candidates 
 - **Configuration only.** `config/projects.yml` names each project's schema, source tables,
   column mapping, SRID and VM prefix. Nothing project-specific is in the code.
 - **Never deletes or rebuilds.** New targets are inserted as `pending` with the next VM
-  number never issued before. Changes to existing rows are staged for approval.
-  Coordinates, status, VM numbers and ids of existing rows are never written. The
-  `etl_pipeline` role cannot `DELETE`, `TRUNCATE` or update those columns at all.
+  number never issued before. The `etl_pipeline` role has no `UPDATE`, `DELETE` or
+  `TRUNCATE` on `public.anomalies` at all.
+- **Changes to existing rows need an approver.** They are staged; a separate login,
+  `etl_approver`, decides; the next run carries out exactly what was approved, through
+  functions the database only lets it call for an approved decision.
 - **Idempotent.** A run with no source, config or decision change since the last
   successful run is skipped. A forced run with nothing to do writes nothing.
 
@@ -24,24 +26,27 @@ project schemas ──dbt──► etl.stg_candidates ─► etl.int_candidates 
 # 1. a password for the pipeline's own login, in .env (gitignored)
 #    ETL_DB_USER=etl_pipeline
 #    ETL_DB_PASSWORD=<random>
+#    ETL_APPROVER_USER=etl_approver
+#    ETL_APPROVER_PASSWORD=<another random>
 # 2. build, then generate the grants from the config and apply them
 docker compose --profile etl build etl
 docker compose --profile etl run --rm --no-deps etl setup-sql > setup.sql
 docker exec -i -e PGPASSWORD=... feedback_postgres_db psql -U postgres -d nolte_geoservices \
-    -v ON_ERROR_STOP=1 -v etl_password="$ETL_DB_PASSWORD" < setup.sql
+    -v ON_ERROR_STOP=1 -v etl_password="$ETL_DB_PASSWORD" \
+    -v approver_password="$ETL_APPROVER_PASSWORD" < setup.sql
 ```
 
-`setup-sql` creates the role, the `etl` schema it owns, the grants per project schema,
-and read access to `spatial_ref_sys` (PUBLIC's is revoked in this database). It also
-transfers each existing `anomalie_1` to the pipeline, and creates the
-`etl_admin.apply_correction` function. Re-run it after adding a project.
+`setup-sql` creates both roles, the `etl` schema the pipeline owns, the approval schema
+and functions, the grants per project schema, and read access to `spatial_ref_sys`
+(PUBLIC's is revoked in this database). It also transfers each existing `anomalie_1` to
+the pipeline. Safe to re-run; re-run it after adding a project.
 
 ## Running
 
 ```sh
 docker compose --profile etl run --rm etl run            # one run
 docker compose --profile etl run --rm etl run --force    # ignore the "nothing changed" check
-docker compose --profile etl run --rm etl status         # staged changes, correction pairs, last runs
+docker compose --profile etl run --rm etl-approve        # what is waiting for a decision
 ```
 
 Scheduling: `docker compose --profile etl up -d etl` starts the `loop` command. It does
@@ -49,7 +54,9 @@ nothing until `ETL_INTERVAL_SECONDS` is set above 0 in `.env`.
 
 ## Decisions
 
-A run stages; a person decides; the next run applies.
+A run stages; the approver decides; the next run carries out exactly that. Decisions are
+taken with the `etl-approve` service, which holds only the approver's login:
+`docker compose --profile etl run --rm etl-approve approve-change 12 13`.
 
 | Situation | What the run does | Decide with |
 |---|---|---|
