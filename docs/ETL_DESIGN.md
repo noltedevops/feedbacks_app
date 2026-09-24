@@ -1,6 +1,6 @@
 # ETL design: project schemas → `public.anomalies`
 
-Status: **proposal, revision 4** (Phase 1, 2026-09-23). The one-time migration **ran on live on 2026-09-24**, see [Live run](#live-run-2026-09-24). The pipeline is built and accepted on a copy, see [Implementation](#implementation-phase-2-feat-etl-dbt-pipeline); not yet run against live. Nothing
+Status: **proposal, revision 4** (Phase 1, 2026-09-23). The one-time migration **ran on live on 2026-09-24**, see [Live run](#live-run-2026-09-24). The pipeline is built, accepted on a copy, and **ran on live on 2026-09-24** (supervised, not yet scheduled), see [Implementation](#implementation-phase-2-feat-etl-dbt-pipeline). Nothing
 described under *Design* exists yet. The audit was read-only: every query ran in a
 `default_transaction_read_only` session, and nothing in the database was changed.
 
@@ -945,13 +945,33 @@ Reported each run and correct for the data: the two duplicate positions (`Nummer
 (`Stoerkoerper Magnetik Nord`, `Stoerkoerper Magnetik Sued 1`, `magnetic_data`,
 `magnetic_raw_data`, `radar_data`, `radar_raw_data`).
 
-### Not done yet (your approval)
+### First supervised run on live (2026-09-24)
 
-- `setup-sql` has **not** been applied to the live database, and the pipeline has
-  **never run against live**. The `etl_pipeline` role exists in the cluster (roles are
-  cluster-wide) but cannot connect to `nolte_geoservices`.
-- Scheduling is off.
-- `ingest_anomalies.py`, `sql/` and the CSVs are still in place.
+- **Backup:** `backup-nolte_geoservices-20260924-085132.sql`, restored into a scratch
+  database: all 55 tables identical (count + md5).
+- **`setup-sql` applied to live**, the same SQL as tested. Afterwards `etl_pipeline` has
+  `SELECT` + `INSERT` on `public.anomalies`, no column `UPDATE`, owns both `anomalie_1`.
+- **First attempt stopped in validation, before writing anything:** live revokes
+  PUBLIC's `USAGE` on `information_schema` (and PUBLIC's `TEMPORARY` on the database),
+  which a restored copy does not reproduce. Fixed in `fix/etl-live-acls`: the runner reads
+  `pg_catalog`, `setup-sql` grants `TEMPORARY` to `etl_pipeline`, and the acceptance suite
+  now reproduces live's ACLs on the copy (52/52 under them). The attempt left only the
+  pipeline's own empty `etl` tables. Live was re-checked identical to the backup before
+  the retry.
+- **Run 1: ok.** dbt 33/33 pass, 0 warnings. Gates: feedback 16, lost 0, orphaned 0,
+  VM duplicates 0, id mismatches 0. Inserted 0, staged 0, correction pairs 0, DB-only 0.
+  Köln `anomalie_1` rewritten (127/127), Wilhelmshaven `anomalie_1` untouched.
+- **Verified against the pre-run backup:** of the 55 tables, **only Köln `anomalie_1`
+  differs**. It is identical in every column except `id` and `target_id`: 127/127 ids
+  equal `public.anomalies`', 0 null, and the `target_id` values are the same coordinates,
+  now written with 3 decimals. `public.anomalies`, `feedback`, Wilhelmshaven
+  `anomalie_1`, every source table and the archive are byte-identical.
+- **Run 2: skipped** (no change since run 1).
+- The scratch databases (`nolte_etl_acceptance`, the restore check) were dropped after
+  verification.
+
+Still yours to decide: the schedule (`ETL_INTERVAL_SECONDS`), and Phase 3 (retiring
+`ingest_anomalies.py`, `sql/` and the CSVs, which are still in place).
 
 ## Scheduler
 
