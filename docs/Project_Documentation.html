@@ -198,18 +198,20 @@
   </div>
 
   <div class="callout" style="margin-top:18px">
-    <p><span class="label">About this revision.</span> This document was last generated on 16 July 2026 from
-    branch <code>backendtest</code>. It has been reconciled against branch <code>main</code> as of
-    21 August 2026. The largest change since then is that <strong>authentication is now real</strong> —
-    the previous revision described client-side login theatre with no server-side checks, which is no
-    longer true (§11.1). The database layer also now <strong>fails loudly</strong> instead of silently
-    falling back to SQLite (§7, §16).</p>
+    <p><span class="label">About this revision.</span> Reconciled against branch <code>main</code> as of
+    25 September 2026; the previous revision was 21 August 2026. The largest change since then is
+    <strong>how survey data gets into the database</strong>: a configuration-driven ETL pipeline
+    (<code>etl/</code>) now loads it from per-project database schemas, and the one-off CSV script, the
+    hand-run SQL migrations, the unreachable import panel and the destructive seed endpoint have all been
+    removed (§10). The platform now carries a second project, Köln Deutzerfeld, and the Wilhelmshaven
+    targets were replaced from new source tables on 24 September 2026.</p>
     <p>This document is <strong>internal engineering and handover documentation</strong>, not a client
     deliverable. §17 is deliberately candid about what is still wrong.</p>
     <p>Companion Markdown docs live in the repository and are the maintained day-to-day reference:
     <code>README.md</code>, <code>docs/ARCHITECTURE.md</code>, <code>docs/DATA_PIPELINE.md</code>,
-    <code>docs/OPERATIONS.md</code> and <code>docs/PROJECT_OVERVIEW.md</code>. Where this PDF and those
-    files disagree, the Markdown is newer.</p>
+    <code>docs/ETL_DESIGN.md</code>, <code>etl/README.md</code>, <code>docs/OPERATIONS.md</code> and
+    <code>docs/PROJECT_OVERVIEW.md</code>. Where this PDF and those files disagree, the Markdown is
+    newer.</p>
   </div>
 </div>
 
@@ -222,21 +224,21 @@
   safely removing unexploded ordnance (old wartime bombs, mines, and munitions) buried in the ground
   before construction work begins.</p>
 
-  <p>The concrete use case is a real project: “11-24-2736 — Wilhelmshaven Rüstersieler Seedeich”, a
-  sea-dike site in Wilhelmshaven, northern Germany. The workflow it supports looks like this:</p>
+  <p>It carries two real projects: “11-24-2736 — Wilhelmshaven Rüstersieler Seedeich”, a sea-dike site
+  in Wilhelmshaven, northern Germany, and “11-26-5151 — Köln Deutzerfeld”. The workflow it supports looks
+  like this:</p>
 
   <ol>
     <li><strong>Survey phase</strong> (already done, outside this app). Geophysicists scan the site with
     two instruments — georadar (ground-penetrating radar, GPR) and magnetometers. Each suspicious
     underground signal is recorded as an <em>anomaly</em> (also called a <em>target</em>): a point with
-    coordinates and an estimated depth. These results arrive as CSV exports
-    (<code>Radar_data.csv</code>, <code>Magnetic_data.csv</code>).</li>
+    coordinates, an estimated depth and a category (Kat-1 to Kat-3). The survey results are imported,
+    typically from QGIS, into one database schema per project.</li>
 
-    <li><strong>Loading targets into the platform.</strong> A Python script
-    (<code>ingest_anomalies.py</code>) cleans, merges, and loads the anomalies from both instruments into
-    a central PostgreSQL/PostGIS database. The raw CSVs contain ~2,430 magnetic rows and ~45 radar rows;
-    after dropping rows with missing or duplicate coordinates, the live database currently holds 1,583
-    anomalies and 61 feedback records.</li>
+    <li><strong>Loading targets into the platform.</strong> An ETL pipeline (<code>etl/</code>) reads
+    those project schemas and adds new targets to the central target table, on a 15-minute schedule. It
+    never deletes a target, and changes to existing ones wait for an approver (§10). On 25 September 2026
+    the database held 2,342 targets (2,215 Wilhelmshaven, 127 Köln) and 16 feedback records.</li>
 
     <li><strong>Field investigation.</strong> A field worker opens the web app on site, sees all targets
     on an interactive map, walks/digs to each one, and records what was actually found: the excavated
@@ -275,6 +277,8 @@
     <tr><td>Feedback</td><td>The record a field worker creates after physically investigating one target (what was found, how deep, photos, notes, crew). Stored in the <code>feedback</code> table.</td></tr>
     <tr><td>VM Nr.</td><td>“Verdachtsmoment-Nummer” — a human-friendly sequential target label like <code>2736-17</code> (project short-code + running number).</td></tr>
     <tr><td><code>target_id</code></td><td>A stable, unique string built from project id + coordinates, e.g. <code>11-24-2736-442972.981-5937097.795</code>. Used to derive a deterministic UUID for each anomaly.</td></tr>
+    <tr><td>Category (Kat-1 … Kat-3)</td><td>The survey's own classification of a target, known before anyone digs. Carried from each project's source data by the ETL pipeline. Not the same as the Fundstück, which is what the excavation found.</td></tr>
+    <tr><td>Project schema</td><td>One database schema per project (e.g. <code>p_11_26_5151_koeln_deutzerfeld</code>) holding the imported survey tables. The ETL pipeline reads them; the app itself never does.</td></tr>
     <tr><td>Fundstück (German)</td><td>“Found object” — what the excavation uncovered, e.g. Eisenstange (iron bar), Eisendraht (iron wire), <em>ohne Fund</em> (nothing found).</td></tr>
     <tr><td>Sohle / Sohle status (German)</td><td>“Pit floor.” <em>Frei</em> = cleared to the bottom; <em>Nicht Frei</em> = could not be fully cleared (e.g. blocked by a utility pipe).</td></tr>
     <tr><td>Tiefe / Länge / Breite / m³</td><td>German for depth / length / width / cubic metres — the dimensions of the excavation opening.</td></tr>
@@ -289,7 +293,7 @@
 <!-- ============================ 3 ============================ -->
 <div class="section">
   <h2>3. System Architecture</h2>
-  <p>The system has three tiers plus a one-off data pipeline:</p>
+  <p>The system has three tiers plus a scheduled data pipeline:</p>
 
 <pre class="diagram"> ┌──────────────────────────────────────────────────────────────────────┐
  │                        BROWSER (field tablet / office PC)            │
@@ -297,8 +301,8 @@
  │  ./static by the backend).  Layout reflows: phone / tablet / desktop  │
  │                                                                      │
  │   ┌───────────┐  ┌────────────┐  ┌──────────────┐  ┌─────────────┐   │
- │   │ FieldMap  │  │ Feedback   │  │  Dashboard   │  │ ImportExport│   │
- │   │ (Leaflet) │  │ Form       │  │  (Recharts)  │  │ (CSV/seed)  │   │
+ │   │ FieldMap  │  │ Feedback   │  │  Dashboard   │  │ Overview +  │   │
+ │   │ (Leaflet) │  │ Form       │  │  (Recharts)  │  │ guided tour │   │
  │   └───────────┘  └────────────┘  └──────────────┘  └─────────────┘   │
  │           │                │                                         │
  │           ▼                ▼                                         │
@@ -306,7 +310,7 @@
  │   │  IndexedDB via Dexie ("NolteFieldDb")  │  │  Service worker   │  │
  │   │  points / pendingFeedback /            │  │  sw.js — app      │  │
  │   │  pendingPointUpdates                   │  │  shell precache   │  │
- │   │        ← offline cache + queue         │  │  (uxo-tracker-v2) │  │
+ │   │        ← offline cache + queue         │  │  (uxo-tracker-v4) │  │
  │   └────────────────────────────────────────┘  └───────────────────┘  │
  └───────────────────────────┬──────────────────────────────────────────┘
                              │  HTTP/JSON, same-origin  (Bearer token)
@@ -314,7 +318,7 @@
  ┌──────────────────────────────────────────────────────────────────────┐
  │                    BACKEND — FastAPI (server.py)                     │
  │   /api/auth/*   /api/points   /api/sync   /api/stats                 │
- │   /api/admin/*  /api/permissions/*   /api/reports/*                  │
+ │   /api/admin/*  /api/permissions/*   /api/reports/*   /api/assistant │
  │   PBKDF2 password hashing + HMAC-signed tokens                       │
  │   Per-surface guards: field / dashboard / admin                      │
  │   + serves ./static                                                  │
@@ -324,13 +328,14 @@
  ┌──────────────────────────────────────────────────────────────────────┐
  │        DATABASE — PostgreSQL 16 + PostGIS 3.4 (Docker container)     │
  │   projects ── anomalies ── feedback     users ── permission_requests │
+ │   + one schema per project (survey imports), etl, archive            │
  │   + PL/pgSQL trigger keeping geom ↔ easting/northing ↔ lat/lon       │
  │     in sync (so QGIS/ArcGIS edits and web edits stay consistent)     │
  │   Unreachable → the app STOPS (opt-in SQLite fallback only)          │
  │   Admin UI: pgAdmin 4 container on http://127.0.0.1:8080             │
  └──────────────────────────────────────────────────────────────────────┘
-    One-off pipeline:  Radar_data.csv + Magnetic_data.csv
-                       └─► ingest_anomalies.py (pandas) ─► anomalies table</pre>
+    Survey data:  project schemas ─► etl/ (dbt + Python runner, own container,
+                  every 15 minutes) ─► public.anomalies</pre>
 
   <h3>Why this shape?</h3>
   <ul>
@@ -371,7 +376,8 @@
     <tr><td>lucide-react</td><td>Icon set</td></tr>
     <tr><td>PWA assets (<code>manifest.json</code>, <code>sw.js</code>)</td><td>Installable app and service-worker offline shell, sourced from <code>frontend/public/</code></td></tr>
     <tr><td>Reporting</td><td><span class="new">reportlab</span></td><td><code>report.py</code> — the Öffnungsmaßnahmen PDF and the CSV export</td></tr>
-    <tr><td>Pipeline</td><td>pandas</td><td>CSV cleaning and bulk ingestion (<code>ingest_anomalies.py</code>)</td></tr>
+    <tr><td>Pipeline</td><td>dbt (dbt-postgres) + a Python runner</td><td>The ETL from the project schemas into <code>public.anomalies</code> (<code>etl/</code>), run as its own Docker Compose service under a least-privilege database role</td></tr>
+    <tr><td>Landing assistant</td><td>Mistral API (<code>ministral-8b-2512</code>)</td><td>The “Ask AI Assistant” box on the landing page (<code>assistant.py</code>). Standard-library HTTP, no SDK; no database access</td></tr>
     <tr><td>Tooling</td><td>Docker Compose, Node.js 22 (fetched by <code>install_node.py</code>), ESLint</td><td>Infrastructure and code quality</td></tr>
   </table>
 
@@ -389,10 +395,10 @@
 <pre>C:\Apps\feedbackapp\
 ├── server.py             ← FastAPI backend: auth, API endpoints, reports, static serving
 ├── models.py             ← SQLAlchemy tables (Project, Anomaly, Feedback, User, PermissionRequest)
-├── database.py           ← DB connection, retry/fallback, table init, PostGIS trigger, UTM↔lat/lon
+├── database.py           ← DB connection, retry/fallback, table init, PostGIS trigger
 ├── config.py             ← Settings from .env; warns on POSTGRES_PASSWORD / DATABASE_URL mismatch
 ├── report.py             ← CSV + Öffnungsmaßnahmen PDF generation (reportlab)
-├── ingest_anomalies.py   ← CSV → PostgreSQL bulk-ingestion pipeline (pandas)
+├── assistant.py          ← The landing page's assistant: POST /api/assistant, Mistral, limits
 ├── manage_access.py      ← CLI: list / grant / revoke / set-password
 ├── install_node.py       ← Helper that downloads a portable Node.js into .\node
 ├── test_utm.py           ← Standalone sanity check for the UTM conversion math
@@ -400,14 +406,16 @@
 ├── docker-compose.yml    ← PostgreSQL/PostGIS + pgAdmin, both bound to 127.0.0.1
 ├── .env                  ← Live configuration (NOT committed)
 ├── .env.example          ← Committed template and the source of truth for every setting
-├── .gitignore            ← Excludes .env, *.db, node/, __pycache__, backup-*.sql, scratch/
-├── Radar_data.csv        ← Raw georadar survey export (~45 targets)
-├── Magnetic_data.csv     ← Raw magnetometer survey export (~2,400 targets)
+├── .gitignore            ← Excludes .env, *.db, node/, __pycache__, backup-*.sql, scratch/, archive/
 ├── reportTemplate.pdf    ← The Excel-exported layout report.py reproduces
 ├── scripts\
 │   └── doctor.py         ← Read-only diagnostics for the database, credentials and pgAdmin
-├── sql\                  ← One-off migration SQL for bringing in additional projects
-├── docs\                 ← This PDF plus ARCHITECTURE / DATA_PIPELINE / OPERATIONS / OVERVIEW
+├── etl\                  ← The survey data pipeline (its own container)
+│   ├── config\projects.yml  ← Each project's schema, source tables, column mapping, SRID, VM prefix
+│   ├── dbt\                 ← dbt models: staging, candidates, duplicate and exclusion reports
+│   ├── runner\run.py        ← Change check, uuid5 ids, the gated merge, approvals, setup SQL
+│   └── tests\acceptance.py  ← Full acceptance suite, run against a copy of the database only
+├── docs\                 ← This PDF plus ARCHITECTURE / DATA_PIPELINE / ETL_DESIGN / OPERATIONS / OVERVIEW
 ├── static\               ← Production build of the React app (served at "/"), committed
 │   ├── index.html, assets\, logo.png, manifest.json, sw.js ...
 └── frontend\             ← React + TypeScript source code
@@ -417,14 +425,19 @@
         ├── App.tsx                  ← Root component: login, surfaces, sync logic, admin dialogs
         ├── auth.ts                  ← Token storage, access flags, authFetch, offline-login policy
         ├── i18n.ts                  ← EN/DE translation layer
+        ├── useFilters.ts            ← Target filters (project, VM Nr., instrument, category, status)
         ├── useIsMobile.ts           ← Shared 768px breakpoint for the JS-driven reflow
+        ├── geo.ts                   ← Distance and bearing from the crew to a target
         ├── db\indexedDb.ts          ← Dexie schema + status-resolution helper
+        ├── tour\                    ← Guided tours of the two surfaces
         └── components\
+            ├── Landing.tsx          ← Public landing page, incl. the assistant box
+            ├── AuthDialog.tsx       ← Sign-in and sign-up
+            ├── Overview.tsx         ← Post-login home: introduction and tour launchers
             ├── FieldMap.tsx         ← Leaflet map, markers, basemaps, resize handling
             ├── FeedbackForm.tsx     ← Investigation entry form incl. camera capture
             ├── Dashboard.tsx        ← Analyst dashboard with charts and KPIs
             ├── FilterBar.tsx        ← VM-Nr. / instrument / status filtering
-            ├── ImportExport.tsx     ← CSV paste-import and demo-data seeding
             └── ReportDialog.tsx     ← Project + date range for the CSV/PDF exports</pre>
 
   <div class="callout">
@@ -462,7 +475,7 @@
     <tr><td><code>easting</code> / <code>northing</code></td><td>FLOAT</td><td>UTM 32N metres (survey coordinates)</td></tr>
     <tr><td><code>latitude</code> / <code>longitude</code></td><td>FLOAT</td><td>WGS84 degrees (for the web map)</td></tr>
     <tr><td><code>vm_nr</code></td><td>VARCHAR(50)</td><td>Sequential label, e.g. <code>2736-17</code></td></tr>
-    <tr><td><code>category</code></td><td>VARCHAR(50)</td><td><code>Kat-1</code> from the CSV ingestion; the SQL migrations carry the source category through</td></tr>
+    <tr><td><code>category</code></td><td>VARCHAR(50)</td><td>The survey's classification, <code>Kat-1</code> to <code>Kat-3</code>, carried from each project's source by the ETL pipeline</td></tr>
     <tr><td><code>layer</code></td><td>VARCHAR(255)</td><td>Source survey layer, e.g. <code>Stoerkoerper Magnetik Nord</code></td></tr>
     <tr><td><code>status</code></td><td>VARCHAR(50)</td><td><code>pending</code> → <code>investigated</code></td></tr>
     <tr><td><code>target_id</code></td><td>VARCHAR(100), UNIQUE</td><td><code>{project}-{easting}-{northing}</code></td></tr>
@@ -472,12 +485,12 @@
   <div class="callout">
     <p><span class="label">Stable IDs — a deliberate design choice.</span> Anomaly IDs are not random.
     They are <code>uuid5(NAMESPACE_DNS, target_id)</code>, i.e. a hash of the project + coordinates.
-    Re-running the ingestion or the seed always produces the same IDs, so feedback recorded against a
-    target never becomes orphaned when the target list is reloaded. (Commit <code>b39c85b</code>
-    introduced this.) <code>models.py</code> also declares a <code>uuid4</code> default on the column, but
-    no insert path reaches it — every one passes an explicit uuid5. Verified in
-    <code>sql/append_anomalie_1_to_anomalies.sql</code>: recomputing the rule for all 1,583 stored rows
-    reproduced every id with zero mismatches.</p>
+    Loading the same target twice always produces the same ID, so feedback recorded against a target
+    never becomes orphaned when the target list is reloaded. (Commit <code>b39c85b</code> introduced
+    this.) <code>models.py</code> also declares a <code>uuid4</code> default on the column, but no insert
+    path reaches it — the ETL pipeline passes an explicit uuid5, as every retired loader did. Recomputing
+    the rule for all 1,710 rows stored on 22 September 2026 reproduced every id with zero mismatches, and
+    the pipeline's <code>dbt test</code> re-checks it on every run.</p>
   </div>
 
   <h3>6.3 feedback — field investigation results</h3>
@@ -495,6 +508,7 @@
     <tr><td><code>photos</code></td><td>TEXT</td><td>JSON array of base64-encoded images</td></tr>
     <tr><td><code>notes</code> / <code>other</code></td><td>TEXT</td><td>Free-text remarks / “Sonstige” description</td></tr>
     <tr><td><code>investigator</code> / <code>investigator_username</code></td><td>VARCHAR(100)</td><td>Who logged it</td></tr>
+    <tr><td><code>project_id</code></td><td>FK → projects</td><td>Denormalized from the parent anomaly, never taken from the client, so it cannot disagree with the target</td></tr>
     <tr><td><code>target_id</code></td><td>VARCHAR(100)</td><td>Denormalized copy for traceability — nothing joins on it</td></tr>
     <tr><td><code><span class="new">teams_tools</span></code></td><td>JSON</td><td>The Trupp &amp; Geräte block: <code>need_update</code>, <code>truppfuehrer</code>, <code>maschinenfuehrer</code>, <code>bez_suchfeld</code>, <code>messgeraet</code>, <code>sondierer</code>. Travels as one column and drives the report header.</td></tr>
   </table>
@@ -522,7 +536,7 @@
   <h3>6.6 Additive migrations</h3>
   <p><code>create_all</code> creates missing tables but never alters existing ones, so columns added after
   a database was first seeded have to be added explicitly. <code>init_db()</code> does this by hand for
-  <code>feedback.teams_tools</code> and for the four user flags, checking
+  <code>feedback.teams_tools</code>, <code>feedback.project_id</code> and the four user flags, checking
   <code>information_schema</code> (or <code>PRAGMA table_info</code> on SQLite) first. The backfill runs
   only for columns that particular run added — dashboard-only accounts lose <code>can_field</code> and
   gain <code>can_dashboard</code> once — so a later edit to somebody's access is never overwritten on the
@@ -543,14 +557,15 @@
   </ul>
   <p>Case 2 is why an insert that supplies its own lat/lon but leaves <code>geom</code> null will have
   those values recomputed from SRID 32632 — intentional, so every row obtains its coordinates the same
-  way. See <code>sql/append_anomalie_1_to_anomalies.sql</code>, which measured the resulting divergence at
-  at most 0.0069 m.</p>
+  way. When the Köln targets were first appended, the resulting divergence from their source's own
+  lat/lon was measured at most 0.0069 m (see <code>docs/DATA_PIPELINE.md</code>).</p>
 </div>
 
 <!-- ============================ 7 ============================ -->
 <div class="section">
   <h2>7. The Backend Server (FastAPI)</h2>
-  <p><code>server.py</code> is the whole backend — about 1,210 lines. On startup it:</p>
+  <p><code>server.py</code> is the whole API — about 1,000 lines, plus the landing assistant in
+  <code>assistant.py</code>. On startup it:</p>
   <ol>
     <li>Calls <code>init_db()</code>: connects to the database, enables PostGIS, creates missing tables,
     applies the additive column migrations, and installs the sync trigger.</li>
@@ -606,7 +621,7 @@
   </table>
   <p>Every one of them first blocks a user whose <code>must_change_password</code> flag is set. Request
   and response shapes remain Pydantic models: <code>UserRegister</code>, <code>UserLogin</code>,
-  <code>FeedbackCreate</code>, <code>PointCreate</code>, <code>PointUpdate</code>,
+  <code>FeedbackCreate</code>, <code>PointUpdate</code>,
   <code>SyncPayload</code>, <code>TeamsTools</code>, <code>UserAccessUpdate</code> and
   <code>PermissionRequestCreate</code>.</p>
 
@@ -625,7 +640,8 @@
 <!-- ============================ 8 ============================ -->
 <div class="section">
   <h2>8. API Reference</h2>
-  <p>Guards: <span class="tag open">open</span> no token needed &middot;
+  <p><code>POST /api/points/import</code> and <code>POST /api/seed</code> were removed on 25 September
+  2026 (§10). Guards: <span class="tag open">open</span> no token needed &middot;
   <span class="tag auth">auth</span> any signed-in user &middot;
   <span class="tag field">field</span> <span class="tag dash">dash</span> the matching surface flag &middot;
   <span class="tag admin">admin</span> <code>is_admin</code>.</p>
@@ -655,7 +671,6 @@
     <tr><th class="c2">Method &amp; Path</th><th class="c3">Guard</th><th>Behaviour</th></tr>
     <tr><td><code>GET /api/points</code></td><td><span class="tag auth">auth</span></td><td>Fetches every target with its latest feedback. For each anomaly, finds the newest feedback row (by <code>visit_date</code>), derives a display status (§13), parses the photos JSON, and returns one combined object per target. This is what the frontend caches into IndexedDB. Both surfaces read it.</td></tr>
     <tr><td><code>POST /api/sync</code></td><td><span class="tag field">field</span></td><td>Accepts <code>{feedback: [...], point_updates: [...]}</code>. Each feedback item is <strong>upserted</strong> by primary key with a dialect-specific <code>ON CONFLICT DO UPDATE</code>: a re-send of an unchanged record is a no-op, an edited record overwrites the stored one, and an id already present can no longer fail its batch mates with a duplicate-key error. A <code>WHERE visit_date &lt;= :visit_date</code> guard keeps a stale copy sitting in an offline queue from clobbering a newer visit. Items whose parent anomaly does not exist are skipped with a warning. Incoming ISO-8601 <code>Z</code> timestamps are normalised to naive UTC to match the column type. Marks each anomaly <code>investigated</code>, applies coordinate updates, and responds with counts plus a fresh full point list so the client refreshes its cache in the same round-trip. On commit failure it rolls back and returns HTTP 400.</td></tr>
-    <tr><td><code>POST /api/points/import</code></td><td><span class="tag admin">admin</span></td><td>Imports targets from the UI's CSV tool. Ensures project <code>11-24-2736</code> exists, converts each row's UTM coordinates to lat/lon in Python, assigns the next <code>vm_nr</code> sequence numbers and deterministic UUIDs, and inserts them as <code>georadar</code> anomalies. Additive, not destructive.</td></tr>
     <tr><td><code>GET /api/projects</code></td><td><span class="tag auth">auth</span></td><td>Projects that actually carry anomalies, for the report filter dropdown.</td></tr>
   </table>
 
@@ -667,11 +682,11 @@
     <tr><td><code>GET /api/reports/bilder/{feedback_id}</code></td><td><span class="tag open">open</span></td><td>The target of the <em>Bild</em> links inside the PDF: a standalone page with every photo of one VM point and a download link each. Served <code>no-store</code>.</td></tr>
   </table>
 
-  <h3>8.5 Analytics, demo data and the web app</h3>
+  <h3>8.5 Analytics, the landing assistant and the web app</h3>
   <table>
     <tr><th class="c2">Method &amp; Path</th><th class="c3">Guard</th><th>Behaviour</th></tr>
     <tr><td><code>GET /api/stats</code></td><td><span class="tag dash">dash</span></td><td>Total/visited/unvisited counts, completion percentage, and a distribution over the statuses <code>clear</code> / <code>scrap</code> / <code>uxo</code> / <code>false_alarm</code> / <code>unvisited</code>.</td></tr>
-    <tr><td><code>POST /api/seed</code></td><td><span class="tag admin">admin</span></td><td><strong>Destructive.</strong> Wipes feedback, anomalies and projects; re-creates the project; inserts 29 hard-coded real targets transcribed from an Excel report; then pre-fills 4 of them with example feedback (a cleared iron bar, scrap metal, a false alarm, and a “PMN-2 landmine” UXO case) so all marker colours are demonstrable.</td></tr>
+    <tr><td><code>POST /api/assistant</code></td><td><span class="tag open">open</span></td><td>The landing page's “Ask AI Assistant”, before sign-in. Touches no user data and no database. Rate-limited (10 questions per IP per 10 minutes, 300 a day in total), and never shows a visitor an error: any failure returns a normal response and the page falls back to its predefined answers. Questions about handling ordnance never reach the model.</td></tr>
     <tr><td><code>GET /</code></td><td><span class="tag open">open</span></td><td>Serves <code>static/index.html</code> (the built React app), or a JSON status message if <code>static/</code> is absent.</td></tr>
   </table>
 </div>
@@ -679,80 +694,92 @@
 <!-- ============================ 9 ============================ -->
 <div class="section">
   <h2>9. Coordinate Systems &amp; Conversions</h2>
-  <p>Two coordinate systems coexist, and the project converts between them in three places:</p>
+  <p>Two coordinate systems coexist, and the project converts between them in these places:</p>
   <table>
     <tr><th class="c2">System</th><th>Used by</th><th class="c3">Example</th></tr>
-    <tr><td>UTM Zone 32N (EPSG:32632) — metres</td><td>Surveyors, CSVs, PostGIS geometry, excavation reports</td><td>E 442 972.981, N 5 937 097.795</td></tr>
+    <tr><td>UTM Zone 32N (EPSG:32632) — metres</td><td>Surveyors, the project schemas (as ETRS89 / UTM 32N, SRID 25832), PostGIS geometry, excavation reports</td><td>E 442 972.981, N 5 937 097.795</td></tr>
     <tr><td>WGS84 (EPSG:4326) — degrees</td><td>Leaflet web map, GPS</td><td>53.57° N, 8.14° E</td></tr>
   </table>
   <ul>
-    <li><strong>Python</strong> — <code>database.py</code> implements <code>utm32n_to_latlon()</code> and
-    <code>latlon_to_utm32n()</code> from scratch using the standard Transverse-Mercator series expansion
-    on the WGS84 ellipsoid (no external geodesy library). <code>test_utm.py</code> is a small standalone
+    <li><strong>SQL</strong> — the PostGIS trigger uses <code>ST_Transform</code> for every conversion
+    server-side (the authoritative version), and the ETL pipeline uses it to derive lat/lon from each
+    source's own SRID.</li>
+    <li><strong>TypeScript</strong> — <code>latLonToUtm32nJS()</code> in <code>FeedbackForm.tsx</code>
+    converts a dragged marker's new lat/lon back to easting/northing while offline, using the standard
+    Transverse-Mercator series expansion on the WGS84 ellipsoid.</li>
+    <li><strong>Python</strong> — <code>database.py</code> still carries the same formula as
+    <code>latlon_to_utm32n()</code>, which nothing in the app calls. Its inverse and the TypeScript copy
+    of it went with the import panel on 25 September 2026. <code>test_utm.py</code> is a small standalone
     script for sanity-checking the math.</li>
-    <li><strong>TypeScript</strong> — the same formulas are ported to JS:
-    <code>utm32nToLatLonJS()</code> in <code>ImportExport.tsx</code> (imports) and
-    <code>latLonToUtm32nJS()</code> in <code>FeedbackForm.tsx</code> (converting a dragged marker's new
-    lat/lon back to easting/northing while offline).</li>
-    <li><strong>SQL</strong> — the PostGIS trigger uses <code>ST_Transform</code> for the same conversions
-    server-side (the authoritative version).</li>
   </ul>
-  <p>Four implementations of the same math is a known liability; see §17.</p>
+  <p>Duplicated conversion math is a known liability; see §17.</p>
 </div>
 
 <!-- ============================ 10 ============================ -->
 <div class="section">
-  <h2>10. The Data Ingestion Pipeline (ingest_anomalies.py)</h2>
-  <p>This script performs the initial bulk load of survey results into PostgreSQL. Steps:</p>
-  <ol>
-    <li><strong>Read</strong> <code>Radar_data.csv</code> (georadar) and <code>Magnetic_data.csv</code>
-    (magnetometer) with pandas, auto-detecting whether the separator is <code>;</code> or <code>,</code>.
-    It prefers <code>georadar.csv</code> / <code>magnetic.csv</code> if those exist, so a newer export can
-    be dropped in without renaming.</li>
-    <li><strong>Tag &amp; merge:</strong> add an <code>instrument</code> discriminator column to each set,
-    concatenate them, and rename the German survey columns (<code>Rechtswert</code>→<code>easting</code>,
-    <code>Hochwert</code>→<code>northing</code>, <code>Tiefe [m]</code>→<code>evaluated_depth</code>).</li>
-    <li><strong>Clean:</strong> drop rows missing coordinates; fix a known systematic coordinate error in
-    the “Stoerkoerper Magnetik Sued 2” layer (easting short by 397,000 m, northing off by +21,000 m); drop
-    duplicate coordinates, since <code>target_id</code> is derived from the position and is UNIQUE.</li>
-    <li><strong>Enrich:</strong> assign <code>project_id</code>, <code>status='pending'</code>,
-    <code>category='Kat-1'</code>, sequential <code>vm_nr</code> labels, coordinate-derived
-    <code>target_id</code> strings, deterministic UUIDv5 ids, and WKT point geometry text.</li>
-    <li><strong>Load:</strong> drops and rebuilds the three data tables (destructive!), re-creates them
-    via <code>init_db()</code> (which also reinstalls the trigger), seeds the project row, bulk-stages the
-    DataFrame into a temp table with <code>to_sql</code>, then inserts into <code>anomalies</code>
-    converting WKT to PostGIS geometry with <code>ST_GeomFromText(..., 32632)</code>.</li>
-  </ol>
+  <h2>10. The Data Pipeline (etl/)</h2>
+  <p>Survey targets reach <code>public.anomalies</code> through one path: a configuration-driven ETL
+  pipeline, built in September 2026 and running on the live database since 24 September 2026. It runs as
+  its own Docker Compose service, <code>etl</code>, every 15 minutes (<code>ETL_INTERVAL_SECONDS=900</code>),
+  and skips any run where neither the sources, the configuration nor a pending decision has changed.</p>
 
-  <div class="callout warn">
-    <p><span class="label">Warning.</span> Both <code>ingest_anomalies.py</code> and
-    <code>POST /api/seed</code> erase existing anomalies and feedback before loading. Never run them
-    against a database holding real field data you want to keep. Take a dump first — see §16.</p>
-  </div>
+<pre class="diagram"> project schemas ──dbt──► etl.stg_candidates ─► etl.int_candidates ──runner merge──► public.anomalies
+ (config/projects.yml)        (views, tables in the etl schema)        (one transaction,   + &lt;schema&gt;.anomalie_1
+                                                                         gated)</pre>
 
-  <div class="callout warn">
-    <p><span class="label">Two things that will bite you.</span> The script resolves
-    <code>Magnetic_data.csv</code>, <code>Radar_data.csv</code> <em>and</em> <code>.env</code> as bare
-    relative paths against the current working directory, so it must be run from the repository root and
-    the CSVs must stay there. It also imports <strong>pandas, which
-    <code>requirements.txt</code> does not pin</strong> — install it separately.</p>
-  </div>
+  <ul>
+    <li><strong>Configuration only.</strong> <code>etl/config/projects.yml</code> names each project's
+    schema, source tables, column mapping, SRID and VM prefix. Nothing project-specific is in the code;
+    adding a project means adding an entry there.</li>
+    <li><strong>Never deletes or rebuilds.</strong> New targets are inserted as <code>pending</code> with
+    the next VM number never issued before. The <code>etl_pipeline</code> role has no
+    <code>UPDATE</code>, <code>DELETE</code> or <code>TRUNCATE</code> on <code>public.anomalies</code> at
+    all. A target that no source produces any more is listed and warned about, never removed.</li>
+    <li><strong>Changes to existing targets need an approver.</strong> A changed category, layer, depth or
+    instrument is staged in <code>etl.change_log</code>; a new position within
+    <code>correction_radius_m</code> of a target that just lost its source is paired, not inserted. A
+    separate login, <code>etl_approver</code>, decides through the <code>etl-approve</code> service, and
+    the next run carries out exactly what was approved.</li>
+    <li><strong>The identity rule is kept.</strong> <code>target_id</code> and the uuid5 id are computed
+    by the runner with Python's <code>uuid</code> module, the same call that produced every existing id,
+    and recorded in an append-only registry.</li>
+    <li><strong>Tested every run.</strong> <code>dbt test</code> checks keys, relationships, the uuid5
+    rule, that every feedback row resolves, and that the app's indexes are present.
+    <code>tests/acceptance.py</code> runs a full acceptance suite against a <em>copy</em> of the database;
+    it refuses the live one.</li>
+  </ul>
 
-  <h3>10.1 The other ingestion paths</h3>
-  <p><code>POST /api/points/import</code> is the additive alternative, backing the Import tab in the UI.
-  <code>POST /api/seed</code> loads demo data only. Both hardcode project <code>11-24-2736</code>.</p>
+  <h3>10.1 The two projects</h3>
+  <table>
+    <tr><th class="c2">Project</th><th>Sources</th><th class="c3">Targets</th></tr>
+    <tr><td><code>11-24-2736</code> Wilhelmshaven</td><td><code>Magnetic</code> (magnetic, category from its own column) and <code>Georadar</code> (georadar, category from its own column or, failing that, the trailing number of <code>Target Pic</code>)</td><td>2,215</td></tr>
+    <tr><td><code>11-26-5151</code> Köln</td><td><code>picks</code> (georadar); category <code>'Kat-' || field_3</code>, excluding classes 0 and 4. The pipeline also keeps the schema's <code>anomalie_1</code> staging table in step.</td><td>127</td></tr>
+  </table>
+  <p>Counts as of 25 September 2026. Source rows with no category and no usable fallback are left out and
+  listed, never guessed.</p>
 
-  <h3>10.2 <span class="new">SQL migrations (sql\)</span></h3>
-  <p>Hand-written, single-purpose SQL for bringing an additional project's data into
-  <code>public.anomalies</code> — records of specific migrations that were run, not a migration framework.
-  <code>anomalie_1_from_picks.sql</code> builds a staging table shaped like <code>public.anomalies</code>
-  from a <code>picks</code> table; <code>append_anomalie_1_to_anomalies.sql</code> appends those 127 rows
-  in one transaction, with <code>ON CONFLICT DO NOTHING</code> so a re-run is a no-op.</p>
-  <p>The second file is worth reading before writing anything similar. Two of its findings generalise:
-  Postgres <strong>cannot compute UUIDv5</strong> here (it needs SHA-1, which core Postgres lacks, and
-  neither <code>pgcrypto</code> nor <code>uuid-ossp</code> is installed), so the ids are precomputed in
-  Python and carried in a CTE rather than installing an extension on production; and the BEFORE INSERT
-  trigger <strong>overwrites any lat/lon you supply</strong> when <code>geom</code> is null (§6.7).</p>
+  <h3>10.2 The one-time Wilhelmshaven migration</h3>
+  <p>On 24 September 2026 the Wilhelmshaven targets were replaced by the new <code>Magnetic</code> and
+  <code>Georadar</code> source tables: 1,430 targets were inserted and 798 old ones with no counterpart
+  in the new sources were removed, taking 52 feedback rows with them by cascade. Both were archived
+  first, in the database's <code>archive</code> schema and as a JSON file kept outside git. Feedback
+  logged on a removed target by a device that had not yet synced would have been lost, which is why the
+  migration waited for the devices to sync.</p>
+
+  <h3>10.3 What it replaced</h3>
+  <p>Removed on 25 September 2026, once the pipeline had replaced them on live; all remain in git history
+  (<code>cd69945</code> and <code>e0aa3a3</code>):</p>
+  <ul>
+    <li><strong><code>ingest_anomalies.py</code></strong> and the sample CSVs it read. A destructive
+    first-load tool: it dropped <code>feedback</code>, <code>anomalies</code> and <code>projects</code>
+    and rebuilt them. The database holds all of the CSVs' data.</li>
+    <li><strong>The hand-run <code>sql/</code> migrations</strong> that brought in the Köln targets.</li>
+    <li><strong><code>POST /api/points/import</code>, <code>POST /api/seed</code> and
+    <code>ImportExport.tsx</code></strong>, the panel that called them. No UI path reached any of the
+    three, and <code>/api/seed</code> deleted every anomaly and feedback record on one call.</li>
+  </ul>
+  <p>Design, every rule and its reason: <code>docs/ETL_DESIGN.md</code>. Operating it:
+  <code>etl/README.md</code>.</p>
 </div>
 
 <!-- ============================ 11 ============================ -->
@@ -768,8 +795,9 @@
     document stated that “authentication is demo-grade only: any username/password is accepted… There is
     no server-side auth at all.” <strong>That is no longer true.</strong></p>
   </div>
-  <p>A full-screen landing page styled after ArcGIS Field Maps: company logo, project description, and a
-  Sign-in modal with login and sign-up views. Authentication is now real:</p>
+  <p>A public landing page with the company brand, a description of the platform, an “Ask AI Assistant”
+  box (§8.5), and a Sign-in dialog with login and sign-up views. Signing in leads to an Overview page
+  that offers a guided tour of each surface the account can open. Authentication is real:</p>
   <ul>
     <li>Credentials are checked <strong>server-side</strong> against a PBKDF2 hash, and a signed token is
     returned. <code>auth.ts</code> attaches it as a bearer token on every API call via
@@ -794,11 +822,12 @@
 
   <h3>11.2 Field App surface</h3>
   <ul>
-    <li><strong>Target list panel:</strong> search box, filters by VM number, instrument, project and
-    status, and a scrollable card list showing each target's VM number, instrument/layer, finding, and
-    evaluated depth.</li>
+    <li><strong>Target list panel:</strong> search box, filters by project, VM number, instrument,
+    category and status, and a scrollable card list showing each target's VM number, instrument/layer,
+    finding, and evaluated depth.</li>
     <li><strong>Map (<code>FieldMap.tsx</code>):</strong> a Leaflet map with three switchable basemaps
-    (dark CartoDB, streets OSM, satellite Esri), circle markers coloured by status, popups, an auto-zoom
+    (Esri grey canvas, light or dark with the theme; OpenStreetMap streets; Esri imagery), circle markers
+    coloured by status, popups with the crew's distance and bearing to the target, an auto-zoom
     controller that fits the filtered points, and a toolbar.</li>
     <li><strong>Feedback form (<code>FeedbackForm.tsx</code>):</strong> opened by selecting a target.
     Records opening length/width/depth, computed volume, Fundstück (from the standard German list), Sohle
@@ -806,8 +835,6 @@
     captured live with the device camera (<code>getUserMedia</code> + canvas snapshot). It also supports an
     edit-location mode where the marker becomes draggable; the new position is converted back to UTM and
     queued as a point update.</li>
-    <li><strong>Import tab (<code>ImportExport.tsx</code>):</strong> paste or upload CSV to import GPR
-    targets, plus a button to trigger the demo seed endpoint.</li>
     <li><strong>Report dialog:</strong> project and date range for the CSV export.</li>
   </ul>
 
@@ -920,16 +947,20 @@
   </ol>
 
   <h3>12.3 <span class="new">The service worker (app shell)</span></h3>
-  <p><code>frontend/public/sw.js</code>, cache <code>uxo-tracker-v2</code>. Registered from
+  <p><code>frontend/public/sw.js</code>, cache <code>uxo-tracker-v4</code>. Registered from
   <code>main.tsx</code> on window load.</p>
   <ul>
     <li><strong>Install</strong> precaches <code>/</code>, <code>/index.html</code>,
-    <code>/manifest.json</code>, <code>/favicon.svg</code> and the Google Fonts stylesheet.</li>
+    <code>/manifest.json</code> and <code>/favicon.svg</code>. The typeface is now self-hosted in the
+    bundle, so it is cached on first use like the rest of the build.</li>
     <li><strong>Activate</strong> deletes every cache whose name is not <code>CACHE_NAME</code>, and
     claims open clients. Renaming the cache is therefore how a bad one is evicted — bump it whenever the
     precache list changes.</li>
-    <li><strong>Fetch:</strong> <code>/api/</code> always goes to the network and is never cached.
-    Everything else is stale-while-revalidate — a cached response is served immediately and refreshed in
+    <li><strong>Fetch:</strong> <code>/api/</code> always goes to the network and is never cached. The
+    document itself (<code>/</code>, <code>/index.html</code>, any navigation) is network-first, falling
+    back to the cache offline: Vite names every asset by content hash, so a new build is only reachable
+    through the new <code>index.html</code>, and serving that from cache first pinned devices to an old
+    build. Everything else is stale-while-revalidate — a cached response is served immediately and refreshed in
     the background; a miss goes to the network and is cached if it is a basic 200, which is what captures
     Vite's hash-named JS and CSS. A failed navigation falls back to <code>/index.html</code>.</li>
   </ul>
@@ -948,7 +979,8 @@
     cross-origin, so a crew installing the app somewhere with no signal would otherwise end up with no
     offline shell at all — the exact situation this app exists for. The cache was renamed from
     <code>v1</code> to <code>v2</code> so the activate handler drops the empty cache already sitting on
-    installed devices.</p>
+    installed devices. (It has since moved to <code>v4</code>, when the font stylesheet left the
+    precache.)</p>
   </div>
   <p>Map tiles are third-party and are <strong>not</strong> precached: only tiles already fetched while
   online remain available. Target markers come from IndexedDB and work regardless.</p>
@@ -1007,16 +1039,14 @@ docker compose up -d
 
   <h3>Step 3 — Install Python dependencies and start the backend</h3>
 <pre>.venv\Scripts\pip install -r requirements.txt
-.venv\Scripts\pip install pandas          # needed only for the ingestion script
 .venv\Scripts\python server.py            # serves API + web app on http://localhost:8000</pre>
 
-  <h3>Step 4 — Load data (choose one; skip if the Docker volume already holds data)</h3>
-<pre># Option A: full survey ingestion (~1,583 targets after cleaning) — DESTRUCTIVE
-#   must be run from the repository root; see §10
-.venv\Scripts\python ingest_anomalies.py
-
-# Option B: small demo set (29 targets, 4 pre-investigated) — DESTRUCTIVE
-#   requires an admin bearer token, see §8.5</pre>
+  <h3>Step 4 — Load survey data with the ETL pipeline</h3>
+  <p>Survey data is imported into its project schema first, then loaded by the pipeline. The one-time
+  setup creates its two database logins and grants (see <code>etl/README.md</code>); after that:</p>
+<pre>docker compose --profile etl run --rm etl run     # one run, now
+docker compose --profile etl up -d etl            # the 15-minute schedule (ETL_INTERVAL_SECONDS)
+docker compose --profile etl run --rm etl-approve # anything waiting for a decision</pre>
 
   <h3>Step 5 — Open the app</h3>
   <p>Browse to <code>http://localhost:8000</code> and sign in. On a database seeded from empty, the
@@ -1048,11 +1078,15 @@ npm run build      # production build, written directly into ..\static</pre>
   here.</p>
   <table>
     <tr><th class="c2">Setting</th><th class="c3">Read by</th><th>Notes</th></tr>
-    <tr><td><code>DATABASE_URL</code></td><td>the app, <code>ingest_anomalies.py</code>, <code>doctor.py</code></td><td><strong>The password inside this URL is the one that actually connects.</strong> <code>postgresql://</code> and <code>postgresql+psycopg2://</code> prefixes are auto-rewritten to the psycopg 3 driver. Unreachable → the app stops (§7.1).</td></tr>
+    <tr><td><code>DATABASE_URL</code></td><td>the app, <code>doctor.py</code></td><td><strong>The password inside this URL is the one that actually connects.</strong> <code>postgresql://</code> and <code>postgresql+psycopg2://</code> prefixes are auto-rewritten to the psycopg 3 driver. Unreachable → the app stops (§7.1).</td></tr>
     <tr><td><code>AUTH_SECRET</code></td><td>the app</td><td>Signs session tokens. Unset → a random key per process, so every restart signs everyone out. Changing it does the same, once. Generate with <code>python -c "import secrets; print(secrets.token_hex(32))"</code>.</td></tr>
     <tr><td><code>SEED_PASSWORD</code></td><td>the app</td><td>Given to the default accounts, and <strong>only</strong> when the users table is seeded empty. No effect once any account exists.</td></tr>
     <tr><td><code>POSTGRES_USER</code> / <code>POSTGRES_PASSWORD</code> / <code>POSTGRES_DB</code></td><td>docker-compose → Postgres</td><td><code>POSTGRES_PASSWORD</code> is applied <strong>only when the <code>postgres_data</code> volume is first created</strong>. On an existing volume it is inert; rotate with <code>ALTER USER</code> and update <code>DATABASE_URL</code> to match.</td></tr>
     <tr><td><code>PGADMIN_DEFAULT_EMAIL</code> / <code>PGADMIN_DEFAULT_PASSWORD</code></td><td>docker-compose → pgAdmin</td><td>Applied only when the <code>pgadmin_data</code> volume is first created. On an existing volume, change it from inside pgAdmin.</td></tr>
+    <tr><td><code>ETL_DB_NAME</code> / <code>ETL_DB_USER</code> / <code>ETL_DB_PASSWORD</code></td><td>docker-compose → the <code>etl</code> service</td><td>The pipeline's own least-privilege login (<code>etl_pipeline</code>). Created by the one-time setup SQL.</td></tr>
+    <tr><td><code>ETL_APPROVER_USER</code> / <code>ETL_APPROVER_PASSWORD</code></td><td>docker-compose → <code>etl-approve</code></td><td>The separate login that approves or rejects staged changes.</td></tr>
+    <tr><td><code>ETL_INTERVAL_SECONDS</code></td><td>docker-compose → the <code>etl</code> service</td><td>The schedule. <code>0</code> (or unset) runs nothing on its own; live uses <code>900</code>.</td></tr>
+    <tr><td><code>MISTRAL_API_KEY</code></td><td><code>assistant.py</code>, <strong>process environment only</strong></td><td>The landing assistant's key. Unset → the page shows its predefined answers.</td></tr>
     <tr><td><code>ALLOW_SQLITE_FALLBACK</code></td><td><code>database.py</code>, <strong>process environment only</strong></td><td><code>1</code> permits the SQLite fallback for deliberate offline work. See the gotcha below.</td></tr>
     <tr><td><code>DB_CONNECT_RETRY_SECONDS</code></td><td><code>database.py</code>, <strong>process environment only</strong></td><td>How long to retry the first connection. Default 30; <code>0</code> fails on the first attempt.</td></tr>
     <tr><td>Host / port</td><td><code>config.py</code></td><td><code>0.0.0.0:8000</code>, also hard-coded in <code>server.py</code>'s <code>__main__</code> block.</td></tr>
@@ -1079,9 +1113,7 @@ npm run build      # production build, written directly into ..\static</pre>
     through pydantic-settings. Putting the variable in <code>.env</code> therefore has no effect
     whatsoever. Set it in the shell instead:</p>
 <pre>$env:ALLOW_SQLITE_FALLBACK = "1"</pre>
-    <p>The same is true of <code>DB_CONNECT_RETRY_SECONDS</code>. (<code>ingest_anomalies.py</code> is the
-    one exception in the repository: it has its own hand-rolled loader that <em>does</em> populate
-    <code>os.environ</code>.)</p>
+    <p>The same is true of <code>DB_CONNECT_RETRY_SECONDS</code> and <code>MISTRAL_API_KEY</code>.</p>
   </div>
 
   <h3>15.2 pg_hba and trust authentication</h3>
@@ -1155,14 +1187,22 @@ DETAIL: The data directory was initialized by PostgreSQL version 16,
 
   <h3>Sync fails with HTTP 400 “database has not been seeded with targets yet”</h3>
   <p><code>POST /api/sync</code> returns this when the commit fails — most commonly because feedback
-  references anomalies that do not exist in the current database (it was wiped, re-ingested, or you are on
-  the SQLite fallback). Load targets first, then sync again; queued items are preserved in the browser
-  until a sync succeeds. Check the server log for <code>Skipping sync of feedback log …</code> lines,
+  references anomalies that do not exist in the current database (you are on the SQLite fallback, or
+  the database is new and the pipeline has not loaded it yet). Load targets first, then sync again;
+  queued items are preserved in the browser until a sync succeeds. Check the server log for <code>Skipping sync of feedback log …</code> lines,
   which name the orphaned records.</p>
 
   <h3>Map shows no points after login</h3>
-  <p>Usual causes, in order: the backend is not running; the database is empty (seed or ingest); or active
-  filters exclude everything — reset them to “All”.</p>
+  <p>Usual causes, in order: the backend is not running; the database is empty (run the ETL pipeline,
+  §14 Step 4); or active filters exclude everything — reset them to “All”.</p>
+
+  <h3>New survey data does not appear</h3>
+  <p>Check that the <code>etl</code> container is running (<code>docker ps</code>). Docker restarts it
+  after a crash or a Docker restart, but not after a deliberate stop or <code>docker kill</code>, and
+  nothing comes back after a Windows reboot until Docker Desktop is opened. Restart it with
+  <code>docker compose --profile etl up -d etl</code>. If it is running, look for staged changes waiting
+  for the approver (<code>docker compose --profile etl run --rm etl-approve</code>) and for source rows
+  it left out for lack of a category.</p>
 
   <h3>Offline mode is not working</h3>
   <p>Open DevTools → Application → Service Workers; confirm the worker is activated and look for
@@ -1186,11 +1226,12 @@ DETAIL: The data directory was initialized by PostgreSQL version 16,
   <p class="lede">This section is deliberately blunt. It is a handover document; the candour is the
   point.</p>
 
-  <h3>17.1 Resolved since the previous revision (16 July 2026)</h3>
+  <h3>17.1 Resolved since earlier revisions</h3>
   <table>
     <tr><th class="c2">Was</th><th>Now</th></tr>
     <tr><td>“No real authentication. Login is client-side theatre: passwords are never checked, roles live in localStorage, and every API endpoint is unauthenticated.”</td><td>Server-side PBKDF2 auth, signed tokens, per-surface access flags, forced password change, an admin-decided permission-request flow, and a deliberate offline sign-in policy (§7.2, §11.1).</td></tr>
-    <tr><td>“Destructive endpoints are exposed: anyone who can reach the server can call <code>POST /api/seed</code> and wipe all data.”</td><td><strong>Partly resolved.</strong> <code>/api/seed</code> now requires <code>is_admin</code>. It is still destructive and still unguarded beyond that — see 17.2.</td></tr>
+    <tr><td>“Destructive endpoints are exposed: anyone who can reach the server can call <code>POST /api/seed</code> and wipe all data.”</td><td>Admin-gated in August 2026, then <strong>removed</strong> on 25 September 2026 with <code>POST /api/points/import</code> and the unreachable import panel (§10.3).</td></tr>
+    <tr><td>One hard-coded project, loaded by a destructive one-off CSV script that needed an unpinned pandas and CSVs at the repository root.</td><td>A configuration-driven ETL pipeline that never deletes, carries two projects and runs on a schedule (§10). The script, the CSVs and the <code>sql/</code> migrations are gone.</td></tr>
     <tr><td>“A <code>.gitignore</code> would help. The <code>node/</code> folder (two full Node distributions) makes the repo heavy.”</td><td>Both done. <code>.gitignore</code> covers <code>.env</code>, <code>*.db</code>, <code>__pycache__</code>, <code>backup-*.sql</code>, <code>scratch/</code> and a root-anchored <code>/node/</code>; the 181 MB of vendored Node was untracked and the superseded copy deleted. Note the blobs remain in <code>.git</code> history.</td></tr>
     <tr><td>Silent SQLite fallback masking an unreachable database.</td><td>Fatal by default, opt-in via <code>ALLOW_SQLITE_FALLBACK</code>, with a bounded connect retry, a masked URL in logs, a credential-mismatch warning, and <code>scripts/doctor.py</code> (§7.1, §16).</td></tr>
     <tr><td>Desktop-only layout.</td><td>Three responsive tiers across landing, field app and dashboard, plus the Leaflet <code>invalidateSize</code> handling and the <code>cssTarget</code> pin (§11.4).</td></tr>
@@ -1199,15 +1240,11 @@ DETAIL: The data directory was initialized by PostgreSQL version 16,
 
   <h3>17.2 Still live — worth fixing</h3>
   <ul>
-    <li><strong><code>POST /api/seed</code> wipes the database on one call.</strong> It is admin-gated now,
-    but that is the only thing between a careless click or a borrowed admin session and every excavation
-    record in the system. It deserves a confirmation token, or simply not being reachable in a production
-    build.</li>
     <li><strong>Open CORS.</strong> <code>allow_origins=["*"]</code> with <code>allow_credentials=True</code>
     — convenient in development, wrong anywhere else. Any page on any origin can call this API; the only
     thing standing in the way is possession of a bearer token.</li>
     <li><strong>N+1 query pattern.</strong> <code>GET /api/points</code> runs one feedback query per
-    anomaly — fine for hundreds of targets, slow for the full ~2,400-target magnetic dataset. Worse than it
+    anomaly — fine for hundreds of targets, slow at the 2,342 now loaded and growing. Worse than it
     first looks, because <code>/api/stats</code> and <code>/api/sync</code> both call it internally, so
     every sync round-trip pays the cost. A join or eager-load would fix it.</li>
     <li><strong>Photos as base64 in the database</strong> will bloat rows quickly; object storage with
@@ -1217,15 +1254,26 @@ DETAIL: The data directory was initialized by PostgreSQL version 16,
     note reading “nothing resembling a mine” classifies as UXO. An explicit status chosen by the
     investigator would be more reliable, and this is the one classification where a false negative is a
     safety matter.</li>
-    <li><strong>Single hard-coded project.</strong> <code>11-24-2736</code> is baked into the import and
-    seed paths and into <code>ingest_anomalies.py</code>. Multi-project support is scaffolded (the projects
-    table, the dropdown, the SQL migrations for <code>11-26-5151</code>) but not finished.</li>
-    <li><strong>Duplicated conversion math</strong> in Python, TypeScript (twice) and SQL — four
-    implementations to keep consistent. The Python/TS versions also ignore the small geoid differences a
-    library like pyproj/proj4js would handle.</li>
-    <li><strong>No automated tests and no CI.</strong> Only ad-hoc UTM conversion scripts exist
-    (<code>test_utm.py</code>, <code>scratch/</code>). <code>doctor.py</code> is CI-ready and would be a
-    reasonable first gate.</li>
+    <li><strong>Feedback for a target that no longer exists is silently lost.</strong>
+    <code>/api/sync</code> skips it with only a server log warning and still answers success, so the
+    device drops it from its queue. Concrete since the Wilhelmshaven migration removed 798 targets. The
+    server should reject it per record and the device keep it queued.</li>
+    <li><strong>An idle device never refreshes its target list.</strong> It downloads the list only at
+    sign-in, on the Sync button, or when records are queued, so new or removed targets reach an open,
+    online device only when someone presses Sync.</li>
+    <li><strong>Pending ETL approvals are invisible in the app.</strong> They wait for the
+    <code>etl_approver</code> login and show only in the runner's log and the command-line status view.
+    An admin screen, or at least a badge, would stop decisions from waiting unnoticed.</li>
+    <li><strong><code>feedback → anomalies</code> is <code>ON DELETE CASCADE</code>.</strong> Deleting a
+    target silently deletes its excavation record; <code>RESTRICT</code> would make an accidental delete
+    fail loudly.</li>
+    <li><strong>Duplicated conversion math</strong> in SQL, TypeScript and an unused Python copy. The
+    TS/Python versions also ignore the small geoid differences a library like pyproj/proj4js would
+    handle.</li>
+    <li><strong>No automated tests for the app and no CI.</strong> The ETL pipeline has
+    <code>dbt test</code> on every run and an acceptance suite; the application has only ad-hoc UTM
+    conversion scripts (<code>test_utm.py</code>, <code>scratch/</code>). <code>doctor.py</code> is
+    CI-ready and would be a reasonable first gate.</li>
     <li><strong>PostGIS extension errors are only logged.</strong> The enable step in
     <code>init_db()</code> catches and logs on failure, so a failed PostGIS setup continues silently into
     a broken trigger installation.</li>
@@ -1240,12 +1288,10 @@ DETAIL: The data directory was initialized by PostgreSQL version 16,
     third thing entirely.</li>
     <li><strong><code>ALLOW_SQLITE_FALLBACK</code> is read from the process environment, not
     <code>.env</code></strong> (§15.1). Putting it in <code>.env</code> does nothing at all.</li>
-    <li><strong>The sample CSVs must stay at the repository root</strong> (§10).
-    <code>ingest_anomalies.py</code> resolves them — and <code>.env</code> — as bare relative paths against
-    the working directory.</li>
-    <li><strong>pandas is not in <code>requirements.txt</code></strong> although
-    <code>ingest_anomalies.py</code> imports it. Install it separately, or the ingestion fails at import.
-    <em>Known gap; to be pinned.</em></li>
+    <li><strong>The pipeline stays down after a deliberate stop.</strong> The <code>etl</code> service's
+    <code>unless-stopped</code> policy restarts it after a crash, but not after <code>docker stop</code>
+    or <code>docker kill</code>, and nothing in Docker returns after a Windows reboot until Docker Desktop
+    is opened (§16).</li>
     <li><strong><code>install_node.py</code> hardcodes its target directory</strong> as
     <code>c:\Apps\feedbackapp\node</code>. On any other machine, edit <code>TARGET_DIR</code> or install
     Node yourself. <em>Known gap; to be made relative to the script.</em></li>
@@ -1256,10 +1302,10 @@ DETAIL: The data directory was initialized by PostgreSQL version 16,
   </ul>
 
   <div class="footer-note">
-    Nolte Geoservices UXO Target Sync Platform — Project Documentation — generated 21 August 2026 from the
-    source code at C:\Apps\feedbackapp (branch main).<br>
+    Nolte Geoservices UXO Target Sync Platform — Project Documentation — generated 25 September 2026 from
+    the source code at C:\Apps\feedbackapp (branch main).<br>
     Companion Markdown documentation: README.md, docs/ARCHITECTURE.md, docs/DATA_PIPELINE.md,
-    docs/OPERATIONS.md, docs/PROJECT_OVERVIEW.md
+    docs/ETL_DESIGN.md, etl/README.md, docs/OPERATIONS.md, docs/PROJECT_OVERVIEW.md
   </div>
 </div>
 

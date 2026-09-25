@@ -260,20 +260,24 @@ Two independent mechanisms. They are often confused; they solve different proble
 
 ### 1. Service worker — the app shell
 
-`frontend/public/sw.js`, cache `uxo-tracker-v2`.
+`frontend/public/sw.js`, cache `uxo-tracker-v4`.
 
-- **Install** precaches `/`, `/index.html`, `/manifest.json`, `/favicon.svg` and the
-  Google Fonts stylesheet — each with its own `cache.add()`, not `addAll()`. `addAll()`
-  is atomic, so one failed request rejects the whole install and the worker never
-  activates, leaving *nothing* cached while `register()` still resolves successfully.
-  That is exactly what a stale `/favicon.ico` entry used to do. Individual adds mean an
-  unreachable cross-origin font stylesheet costs only that stylesheet.
+- **Install** precaches `/`, `/index.html`, `/manifest.json` and `/favicon.svg` — each
+  with its own `cache.add()`, not `addAll()`. `addAll()` is atomic, so one failed request
+  rejects the whole install and the worker never activates, leaving *nothing* cached
+  while `register()` still resolves successfully. That is exactly what a stale
+  `/favicon.ico` entry used to do. Individual adds mean one unreachable URL costs only
+  that asset. The typeface is self-hosted in the bundle, so it is cached on first use.
 - **Activate** deletes every cache whose name is not `CACHE_NAME`. Renaming the cache is
   therefore how a bad cache is evicted — bump it whenever the precache list changes.
-- **Fetch**: `/api/` always goes to the network, never cached. Everything else is
-  stale-while-revalidate — a cached response is served immediately and refreshed in the
-  background; a miss goes to the network and is cached if it is a basic 200 (this is what
-  captures Vite's hash-named JS/CSS). A failed navigation falls back to `/index.html`.
+- **Fetch**: `/api/` always goes to the network, never cached. The document (`/`,
+  `/index.html`, any navigation) is network-first with the cache as the offline
+  fallback: assets are hash-named, so a new build is reachable only through a fresh
+  `index.html`, and serving it cache-first pinned devices to the previous build.
+  Everything else is stale-while-revalidate — a cached response is served immediately
+  and refreshed in the background; a miss goes to the network and is cached if it is a
+  basic 200 (this is what captures Vite's hash-named JS/CSS). A failed navigation falls
+  back to `/index.html`.
 
 Map tiles are third-party and not precached: only tiles fetched while online survive.
 
