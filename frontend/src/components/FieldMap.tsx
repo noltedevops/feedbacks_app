@@ -206,7 +206,7 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t 
           <div className="tp-section-title tp-feedback-title">{t('Field Log Feedback')}</div>
           <Row label={t('Actual Depth')} value={feedback.actual_depth ? `${feedback.actual_depth} m` : t('N/A')} />
           <Row
-            label={t('Volumen')}
+            label={t('Volume')}
             value={feedback.m_cube !== null && feedback.m_cube !== undefined ? `${feedback.m_cube} m³` : t('N/A')}
           />
           <Row label={t('Investigator')} value={feedback.investigator || t('N/A')} stack />
