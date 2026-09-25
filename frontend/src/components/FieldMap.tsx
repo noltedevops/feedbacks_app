@@ -259,11 +259,17 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t 
   );
 };
 
-const MapController: React.FC<{ 
-  points: LocalPoint[]; 
-  selectedPoint: LocalPoint | null; 
-}> = ({ points, selectedPoint }) => {
+const MapController: React.FC<{
+  points: LocalPoint[];
+  selectedPoint: LocalPoint | null;
+  // The deepest zoom the active basemap has real tiles for - see detailZoom().
+  maxDetailZoom: number;
+}> = ({ points, selectedPoint, maxDetailZoom }) => {
   const map = useMap();
+  // Read by the effects below without making a basemap switch re-centre the map.
+  // Declared first, so it is current before they run.
+  const maxDetailZoomRef = useRef(maxDetailZoom);
+  useEffect(() => { maxDetailZoomRef.current = maxDetailZoom; }, [maxDetailZoom]);
 
   // Track serialized points IDs to trigger bounds fitting only when the point set changes.
   // Memoized on the array identity: with ~1500 targets this join runs on every render
@@ -273,15 +279,23 @@ const MapController: React.FC<{
   useEffect(() => {
     if (points.length > 0) {
       const bounds = L.latLngBounds(points.map(p => [p.latitude, p.longitude]));
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 22 });
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: maxDetailZoomRef.current });
     }
   }, [pointsKey, map]);
 
+  // Selecting a target zooms in on it, but no further than the basemap has detail for:
+  // past that the tiles are stretched from the last real level, which on the grey
+  // canvas is a flat colour (it stops at z16).
   useEffect(() => {
     if (selectedPoint) {
-      map.setView([selectedPoint.latitude, selectedPoint.longitude], 21);
+      map.setView([selectedPoint.latitude, selectedPoint.longitude], maxDetailZoomRef.current);
     }
   }, [selectedPoint, map]);
+
+  // Switching to a basemap with less detail steps back out to its deepest level.
+  useEffect(() => {
+    if (map.getZoom() > maxDetailZoom) map.setZoom(maxDetailZoom);
+  }, [maxDetailZoom, map]);
   
   return null;
 }
@@ -402,6 +416,16 @@ const BASEMAPS = {
 
 type BasemapKey = keyof typeof BASEMAPS;
 
+/**
+ * The deepest zoom a basemap has real tiles for; the app never zooms in further on its
+ * own. Measured 2026-09-25 at the Wilhelmshaven, Köln and demo sites: the Esri canvas
+ * (light and dark) serves blank tiles from z17, OSM refuses z20 and above, and Esri
+ * imagery has detail to z19 everywhere (to z20-21 in some places, not all).
+ */
+function detailZoom(basemap: BasemapKey): number {
+  return BASEMAPS[basemap].maxNativeZoom;
+}
+
 // Order the switcher lists them in. Separate from BASEMAPS so the tile configuration
 // above stays about tiles, and so the labels sit next to each other for translation.
 const BASEMAP_OPTIONS: { key: BasemapKey; label: string }[] = [
@@ -472,7 +496,7 @@ const MapToolbar: React.FC<{
   const handleHome = () => {
     if (points.length > 0) {
       const bounds = L.latLngBounds(points.map(p => [p.latitude, p.longitude]));
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 22 });
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: detailZoom(activeBasemap) });
     }
   };
 
@@ -752,7 +776,7 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
         {markers}
 
         <MapInteractivity enabled={mapInteractive} />
-        <MapController points={points} selectedPoint={selectedPoint} />
+        <MapController points={points} selectedPoint={selectedPoint} maxDetailZoom={detailZoom(activeBasemap)} />
         <MapResizeHandler />
 
         {/* Keyed on the request rather than on the target: a repeat request for the
