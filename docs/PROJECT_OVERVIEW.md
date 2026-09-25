@@ -61,8 +61,10 @@ to the office database for analytics.
   unique; fast-forward or delete. It also only exists locally.
 - **Deployment** — currently runs locally (uvicorn + Docker). Needs a hosted
   environment, HTTPS, and backup strategy for the Postgres volume.
-- **Testing** — only ad-hoc UTM conversion scripts exist (`test_utm.py`,
-  `scratch/`); no automated test suite or CI yet.
+- **Testing** — the ETL pipeline is tested: `dbt test` on every run, and a full
+  acceptance suite (`etl/tests/acceptance.py`) run against a copy of the database. The
+  application itself has no automated tests, and there is no CI. `scripts/doctor.py`
+  exits 1 on any failure and would be a reasonable first gate.
 - **Multi-project workflow** — one project loaded today; the project dropdown
   exists but ingestion/management of additional projects should be exercised.
 - **Restricted logins for editing project schemas** — the QGIS session that built

@@ -102,8 +102,6 @@ application has to remember to do it.
 implementations. Both were removed on 2026-09-25: their only callers were
 `POST /api/points/import` and `POST /api/seed`. The one pure-series conversion left in the
 app is `latLonToUtm32nJS()` in `FeedbackForm.tsx`, for a marker dragged offline.
-`test_utm.py` and `scratch/` carry their own copies to check the math against known
-points.
 
 ### Startup behaviour (`database.py`)
 
