@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import { type LocalPoint } from './db/indexedDb';
-import { type Translator } from './i18n';
 
 /**
  * One view's target filters.
@@ -121,19 +120,6 @@ export function selectPoints(points: LocalPoint[], filters: FilterGroup): LocalP
     return matchesSearch && matchesVmNr && matchesStatus && matchesInstrument &&
       matchesProjectId && matchesCategory(p, category);
   });
-}
-
-/**
- * The value every CSV and import path writes when the source carries no category
- * (ingest_anomalies.py and both import endpoints in server.py). Only the SQL picks
- * migration carries a real classification through, and its source has no Kat-1, so
- * today every Kat-1 target is an unclassified one. The label says so rather than
- * letting Kat-1 read as a class the survey assigned.
- */
-export const INGEST_DEFAULT_CATEGORY = 'Kat-1';
-
-export function categoryLabel(value: string, t: Translator): string {
-  return value === INGEST_DEFAULT_CATEGORY ? `${value} (${t('ingest default')})` : value;
 }
 
 /**

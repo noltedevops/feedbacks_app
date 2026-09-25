@@ -313,10 +313,8 @@ The GIST index is created by SQLAlchemy/GeoAlchemy in `create_all`, so the app o
 
 | Column(s) | Written by | When |
 |---|---|---|
-| `status` | `POST /api/sync` (`server.py:858`) | set to `investigated` when feedback syncs. Nothing ever sets it back. |
-| `easting`, `northing`, `latitude`, `longitude` (+ `geom` via the trigger) | `POST /api/sync` `point_updates` (`server.py:895-902`) | when a crew drags the target's marker in the feedback form (`FieldMap.tsx:670`, `App.tsx:731-739`). **`target_id` and `id` are not changed**, so a moved target no longer satisfies `target_id = f(easting, northing)`. No live row has been moved yet: the rule holds for 1,710 / 1,710. |
-| all columns (insert) | `POST /api/points/import` | admin, no UI path |
-| **everything (delete)** | `POST /api/seed` | admin, no UI path. Deletes all feedback, anomalies and projects. Least privilege on the pipeline does not protect against this endpoint. |
+| `status` | `POST /api/sync` (`server.py:798`) | set to `investigated` when feedback syncs. Nothing ever sets it back. |
+| `easting`, `northing`, `latitude`, `longitude` (+ `geom` via the trigger) | `POST /api/sync` `point_updates` (`server.py:835-842`) | when a crew drags the target's marker in the feedback form (`FieldMap.tsx:670`, `App.tsx:729-737`). **`target_id` and `id` are not changed**, so a moved target no longer satisfies `target_id = f(easting, northing)`. No live row has been moved yet: the rule holds for 1,710 / 1,710. |
 
 ### Wilhelmshaven against the 1,583 live rows
 
@@ -694,7 +692,7 @@ must never have, so it runs once as an admin role and is then retired.
 The app does not delete anything from a device by itself; it **replaces** the device's
 whole target list whenever it downloads one. `fetchFromServer()` and `/api/sync` both
 `clear()` the local `points` table and rewrite it from the server's list in one Dexie
-transaction (`App.tsx:554`, `:631`). The service worker never caches `/api/`
+transaction (`App.tsx:552`, `:629`). The service worker never caches `/api/`
 (`sw.js:74`). So the 798 removed targets vanish from a device, and the 1,430 new ones
 appear, at its next download. That happens:
 
@@ -708,7 +706,7 @@ over all projects is **2,342** (2,215 Wilhelmshaven + 127 Köln).
 
 **Until a device has refreshed, nobody should log work on it.** It still shows the
 removed targets. Feedback logged on one of them would be **silently lost**: the server
-skips feedback whose target no longer exists (`server.py:837-842`, a log warning only),
+skips feedback whose target no longer exists (`server.py:777-782`, a log warning only),
 and the device then drops it from its queue as accepted. Work logged on kept targets
 syncs normally.
 

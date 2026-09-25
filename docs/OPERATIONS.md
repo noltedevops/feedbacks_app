@@ -195,7 +195,7 @@ The database holds the `users` table, so dumps are sensitive. `.gitignore` exclu
 docker exec feedback_postgres_db pg_dump -U postgres nolte_geoservices > backup-nolte_geoservices-$(Get-Date -Format yyyyMMdd-HHmmss).sql
 ```
 
-Take one before anything destructive — in particular before `POST /api/seed`.
+Take one before anything destructive, such as a manual edit or an ETL migration.
 
 There is no automated backup or retention policy yet; it is listed as an open item in
 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).

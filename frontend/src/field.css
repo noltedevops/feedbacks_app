@@ -114,7 +114,7 @@
 }
 
 /* The third control in the two-column filter grid takes a row of its own rather than
-   leaving a hole beside it; its values ("Kat-1 (ingest default)") want the width. */
+   leaving a hole beside it. */
 .collector-filter-grid .field-control--category {
   grid-column: 1 / -1;
 }

@@ -4,7 +4,7 @@ import { makeT, type AppLang } from '../i18n';
 import { FilterBar } from './FilterBar';
 import { Select } from './Select';
 import { useTokenColors } from '../useTokenColors';
-import { categoriesForProject, categoryLabel, matchesCategory } from '../useFilters';
+import { categoriesForProject, matchesCategory } from '../useFilters';
 import {
   CheckCircle2,
   Database,
@@ -77,7 +77,6 @@ interface DashboardProps {
   selectedPoint: LocalPoint | null;
   onSelectPoint: (point: LocalPoint | null) => void;
   isOnline: boolean;
-  onSeedRequest: () => Promise<void>;
   addDataOpen: boolean;
   setAddDataOpen: (open: boolean) => void;
   // The dashboard's own filter group, independent of the field app's. App holds one
@@ -115,7 +114,6 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   selectedPoint,
   onSelectPoint,
   isOnline: _isOnline,
-  onSeedRequest: _onSeedRequest,
   addDataOpen: _addDataOpen,
   setAddDataOpen: _setAddDataOpen,
   filterStatus,
@@ -417,7 +415,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
       ariaLabel={t('Category')}
       options={[
         { value: 'all', label: t('All Categories') },
-        ...dashCategories.map(c => ({ value: c, label: categoryLabel(c, t) }))
+        ...dashCategories.map(c => ({ value: c, label: c }))
       ]}
     />
   );
@@ -463,7 +461,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     const status = filterStatus === 'investigated' ? t('Investigated')
       : filterStatus === 'pending' ? t('Pending')
       : t('All Targets');
-    const category = filterCategory === 'all' ? t('All Categories') : categoryLabel(filterCategory, t);
+    const category = filterCategory === 'all' ? t('All Categories') : filterCategory;
     return [project, instrument, category, depth, status].join(' · ');
   }, [filterProjectId, filterInstrument, filterCategory, filterDepth, filterStatus, t]);
 
