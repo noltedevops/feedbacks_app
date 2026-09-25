@@ -183,9 +183,9 @@ async function openDashboard(page) {
  * the popup room above it. Selecting a target also opens its form, as in the app.
  */
 async function openPopup(page) {
-  // Selecting a target zooms right in on it (z21), past the grey canvas's last level of
-  // detail (z16), where that basemap is flat colour. Switching basemap or zooming closes
-  // the popup, so choose the satellite imagery a crew would use at that scale first.
+  // Selecting a target zooms in to the basemap's last level of detail: z19 on the
+  // satellite imagery, against z16 on the grey canvas. The imagery shows the ground the
+  // crew is standing on. Switch first: switching basemap closes an open popup.
   await page.getByRole('button', { name: /^(Basemap switcher|Kartenhintergrund wechseln)$/ }).first().click();
   await page.getByRole('button', { name: /Satellite Map/ }).first().click();
   // At the project's own zoom the markers overlap; two steps in spreads them apart.
