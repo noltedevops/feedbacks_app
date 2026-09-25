@@ -12,9 +12,8 @@ carries. FastAPI serves the API *and* the built bundle from `static/`, so everyt
 same-origin and the frontend calls `/api/...` with an empty base URL.
 
 ```
-  survey CSVs  ──► ingest_anomalies.py ──►  PostgreSQL 16 + PostGIS
-  sql/*.sql    ──────────────────────────►         ▲   │
-  (both to be replaced by etl/)                    │   │
+                                            PostgreSQL 16 + PostGIS
+                                                   ▲   │
   project schemas ──► etl/ (dbt + runner) ────────►│   │
                                                    │   │
                                         SQLAlchemy │   │ SELECT
@@ -397,6 +396,7 @@ next person does not spend the same hours on them. See also the open questions i
     future question of this kind.
 - **Whether the `sql/` migrations were run exactly as committed.** There is no record of
   which migrations have been applied. The assertion gates in
-  `append_anomalie_1_to_anomalies.sql` passed and the 127 rows are present and correct,
-  but a modified-then-run version would be indistinguishable from the committed one.
+  `append_anomalie_1_to_anomalies.sql` (removed 2026-09-25, last present in `cd69945`)
+  passed and the 127 rows are present and correct, but a modified-then-run version would
+  be indistinguishable from the committed one.
   A `schema_migrations` ledger is on the backlog.

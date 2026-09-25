@@ -65,9 +65,6 @@ python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
 ```
 
-`requirements.txt` covers the application. **`ingest_anomalies.py` additionally needs
-`pandas`**, which is not pinned there — install it separately if you run the ingestion.
-
 ### Environment
 
 Copy `.env.example` to `.env` and fill it in. **`.env.example` is the source of truth
@@ -153,7 +150,7 @@ These are the things that have actually cost time here.
 | Variable | Who consumes it | When it matters |
 |---|---|---|
 | `POSTGRES_PASSWORD` | docker-compose → Postgres `initdb` | **Only when the `postgres_data` volume is first created.** On an existing volume it is inert. |
-| the password inside `DATABASE_URL` | the app (and `ingest_anomalies.py`) | **Every connection.** This is the one that makes logins work. |
+| the password inside `DATABASE_URL` | the app | **Every connection.** This is the one that makes logins work. |
 | `PGADMIN_DEFAULT_PASSWORD` | docker-compose → pgAdmin | Only when the `pgadmin_data` volume is first created. Change it inside pgAdmin afterwards. |
 
 They are three different things that happen to look alike. Rotating the database
@@ -176,18 +173,12 @@ $env:ALLOW_SQLITE_FALLBACK = "1"
 
 The same is true of `DB_CONNECT_RETRY_SECONDS` (default `30`).
 
-### 3. The sample CSVs must stay at the repo root
+### 3. Survey data is loaded by `etl/`, not from CSVs
 
-`Magnetic_data.csv` and `Radar_data.csv` are resolved by `ingest_anomalies.py` as bare
-relative paths against the current working directory — as is `.env`. Run the ingestion
-**from the repo root**, and do not move or rename the CSVs:
-
-```powershell
-.venv\Scripts\python ingest_anomalies.py
-```
-
-Note that this script is destructive — it drops and rebuilds `projects`, `anomalies` and
-`feedback`. Read [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md) before running it.
+The sample CSVs, `ingest_anomalies.py` and the one-off `sql/` migrations were removed on
+2026-09-25 (last present in `cd69945`). The database holds all of their data, and the
+pipeline in [etl/](etl/README.md) loads survey data from the project schemas. See
+[docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md).
 
 ### 4. `scripts/doctor.py` diagnoses the database and credentials
 
@@ -270,14 +261,12 @@ database.py             Engine, retry/fallback, init_db, PostGIS trigger, UTM32N
 config.py               pydantic-settings; warns on password mismatch
 assistant.py            Landing-page assistant: POST /api/assistant, Mistral, limits
 report.py               CSV + PDF report generation (reportlab)
-ingest_anomalies.py     Survey CSV -> PostGIS ingestion (destructive rebuild)
 manage_access.py        CLI: list / grant / revoke / set-password
 install_node.py         Downloads and unpacks the Node toolchain
 scripts/doctor.py       Read-only database and pgAdmin diagnostics
+etl/                    Survey data pipeline: project schemas -> public.anomalies (dbt)
 docker-compose.yml      PostGIS + pgAdmin, loopback-bound
 frontend/               React + TypeScript + Vite source
 static/                 Committed build output, mounted at / by FastAPI
-sql/                    One-off migration SQL for additional projects
 docs/                   Architecture, data pipeline, operations, project overview
-*.csv                   Sample survey data — must stay at the repo root
 ```

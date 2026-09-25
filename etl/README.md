@@ -76,6 +76,5 @@ taken with the `etl-approve` service, which holds only the approver's login:
 
 ## Pre-existing tools
 
-`ingest_anomalies.py`, `sql/` and the CSVs are still in the repo, untouched, until the
-pipeline has replaced them on live. **Never run `ingest_anomalies.py` against the live
-database**: it drops `feedback`.
+`ingest_anomalies.py`, `sql/` and the CSVs were removed on 2026-09-25, after the
+pipeline replaced them on live (last present in `cd69945`).

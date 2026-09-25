@@ -133,8 +133,8 @@ Two things came up that are not decisions for the pipeline, but you should know 
 
 ### Köln: how `anomalie_1` is built from `picks`
 
-Source `sql/anomalie_1_from_picks.sql`. Values marked **[P]** are specific to Köln and
-must become parameters.
+Source `sql/anomalie_1_from_picks.sql` (removed 2026-09-25; last present in `cd69945`).
+Values marked **[P]** are specific to Köln and must become parameters.
 
 | Step | What it does | Köln value |
 |---|---|---|
@@ -162,7 +162,8 @@ all 127.
 
 ### Köln: the append and `id_map`
 
-Source `sql/append_anomalie_1_to_anomalies.sql`. In one transaction:
+Source `sql/append_anomalie_1_to_anomalies.sql` (removed 2026-09-25; last present in
+`cd69945`). In one transaction:
 
 1. Inserts the `projects` row `('11-26-5151', 'Koeln Deutzerfeld')` with `ON CONFLICT DO NOTHING`.
 2. Inserts the anomalies by joining `anomalie_1` to **`id_map`**, a `VALUES` list of 127
@@ -800,7 +801,7 @@ without `DROP IF EXISTS`.
   live identical to that backup; no `anomalie_1` or `archive` tables existed.
 - **Archive:** `archive.anomalies_11_24_2736_removed_20260923` (798) and
   `archive.feedback_11_24_2736_removed_20260923` (52), identical to the pre-migration
-  rows. JSON copy: `scratch/etl-migration/live/archive_removed_11_24_2736.json`
+  rows. JSON copy: `archive/archive_removed_11_24_2736.json`
   (gitignored; it holds investigator names). None of the 52 was a known-real submission.
 - **Migration:** inserted 1,430, deleted 798, re-pointed 0. All gates passed, **COMMITTED**.
 - **Verified from separate sessions:** feedback **16** (11-24-2736: 10, 11-26-5151: 6),
@@ -971,7 +972,7 @@ Reported each run and correct for the data: the two duplicate positions (`Nummer
   verification.
 
 Still yours to decide: the schedule (`ETL_INTERVAL_SECONDS`), and Phase 3 (retiring
-`ingest_anomalies.py`, `sql/` and the CSVs, which are still in place).
+`ingest_anomalies.py`, `sql/` and the CSVs; done 2026-09-25).
 
 ## Scheduler
 

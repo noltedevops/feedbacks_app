@@ -18,8 +18,9 @@ the same survey produces the same rows, and `feedback.anomaly_id` keeps resolvin
 is what makes the ingestion re-runnable at all.
 
 `models.py` declares `default=uuid4()` on `Anomaly.id`, but no insert path reaches it —
-`ingest_anomalies.py`, `POST /api/points/import`, `POST /api/seed` and the SQL migrations
-all pass an explicit uuid5. `sql/append_anomalie_1_to_anomalies.sql` documents a
+the ETL pipeline, `POST /api/points/import` and `POST /api/seed` all pass an explicit
+uuid5, as did the retired `ingest_anomalies.py` and SQL migrations. The removed
+`sql/append_anomalie_1_to_anomalies.sql` (`git show cd69945:sql/...`) documents a
 verification of this against the 1,583 rows that existed when it was written.
 
 **Re-verified 2026-09-22 against all 1,710 rows now in `public.anomalies`:**
@@ -36,7 +37,14 @@ verification of this against the 1,583 rows that existed when it was written.
 
 The rule holds perfectly across both projects.
 
-## Source CSVs
+## Source CSVs (removed)
+
+**Removed on 2026-09-25; last present in `cd69945`.** Nothing read them any more, and the
+database holds all of their data: `magnetic_data` matches `Magnetic_data.csv` in all
+1,522 records and 6 columns, and `radar_data` matches `Radar_data.csv` in all 45 records
+and 14 columns except two `East(°)` values that differ by about 4 × 10⁻¹¹ from float
+rounding at import (see [The project schemas](#the-project-schemas)). This section
+records what they were.
 
 Two files at the repo root, both semicolon- or comma-separated exports from the survey
 processing:
@@ -53,42 +61,25 @@ count overstates it — 2,431 lines, 1,522 records.
 Only `Rechtswert` → `easting`, `Hochwert` → `northing`, `Tiefe [m]` → `evaluated_depth`
 and `layer` are carried into the database. Coordinates are UTM 32N (EPSG:32632).
 
-**These files must stay at the repo root.** `ingest_anomalies.py` resolves them as bare
-relative paths against the current working directory, and does the same for `.env`. Run
-the script from the repo root or it will not find either.
-
-It looks for `georadar.csv` then `Radar_data.csv`, and `magnetic.csv` then
-`Magnetic_data.csv` — the unprefixed names take precedence if you drop in a newer export.
-
 ## The ETL pipeline (`etl/`)
 
-Built 2026-09-24 to replace `ingest_anomalies.py` and the hand-run `sql/` scripts:
+Built 2026-09-24 to replace `ingest_anomalies.py` and the hand-run `sql/` scripts (both
+removed 2026-09-25):
 configuration-driven, runs as the least-privilege `etl_pipeline` role, and never deletes
 from or rebuilds `public.anomalies`. Accepted on a copy; first supervised run on live
-2026-09-24 (it changed nothing but the Köln `anomalie_1` normalisation). Not yet
-scheduled.
+2026-09-24 (it changed nothing but the Köln `anomalie_1` normalisation). Scheduled
+since 2026-09-24: every 15 minutes (`ETL_INTERVAL_SECONDS=900`), skipping runs when
+nothing has changed.
 See [etl/README.md](../etl/README.md) and [ETL_DESIGN.md](ETL_DESIGN.md).
 
-## `ingest_anomalies.py`
+## `ingest_anomalies.py` (removed)
 
-```powershell
-.venv\Scripts\python ingest_anomalies.py
-```
+**Removed on 2026-09-25, replaced by the ETL pipeline; last present in `cd69945`.** It
+was the original first-load tool, and destructive: it dropped `feedback`, `anomalies`
+and `projects` with `CASCADE` and rebuilt them from the CSVs. It is recorded here
+because the investigation below depends on what it did.
 
-> **This script is destructive.** It drops `feedback`, `anomalies` and `projects` with
-> `CASCADE` and rebuilds them. Every excavation record already collected is deleted. It
-> is a first-load tool, not an incremental import — take a dump first
-> (see [OPERATIONS.md](OPERATIONS.md)) if the database holds real work.
-
-> **It would also lose 18 targets that are not in the committed CSV.** See
-> [The CSVs no longer reproduce the live data](#the-csvs-no-longer-reproduce-the-live-data)
-> below. Do not run this script against the live database until that is resolved.
-
-It also needs **pandas**, which is not in `requirements.txt`; install it separately. As
-of 2026-09-22 it is not installed in the repo `.venv` either, so the script cannot run
-as the repo currently stands.
-
-What it does, in order:
+What it did, in order:
 
 1. **Load `.env` by hand** into `os.environ` and read `DATABASE_URL`, rewriting the
    driver to `postgresql+psycopg`. (This is the script's own loader — the app itself
@@ -116,14 +107,15 @@ What it does, in order:
     drop the staging table. All in one transaction.
 11. **Report** the georadar / magnetic / total counts.
 
-Note that the project id and name are hardcoded to `11-24-2736` /
-*Wilhemshaven Rüstersieler Seedeich*. Loading a different project means editing the
-script or using one of the other two paths below.
+The project id and name were hardcoded to `11-24-2736` /
+*Wilhemshaven Rüstersieler Seedeich*.
 
-## The CSVs no longer reproduce the live data
+## The CSVs did not reproduce the live data
 
-**Re-running `ingest_anomalies.py` today would silently drop 18 targets**, on top of
-destroying every feedback row. This was found on 2026-09-22 and is not yet resolved.
+**Re-running `ingest_anomalies.py` would have silently dropped 18 targets**, on top of
+destroying every feedback row. This was found on 2026-09-22. It no longer blocks
+anything: the script and the CSVs have been removed, and the 18 rows were among those
+archived and removed by the `11-24-2736` migration.
 
 Replaying the script's transformations over the committed CSVs yields **1,565** rows for
 project `11-24-2736`. The database holds **1,583**. The gap is entirely in one layer:
@@ -139,8 +131,8 @@ project `11-24-2736`. The database holds **1,583**. The gap is entirely in one l
 ### What was ruled out
 
 - **A later edit to the CSV.** `Magnetic_data.csv` has exactly one commit in its whole
-  history — `a83177f`, 2026-07-16, the commit that added it. It has never been modified
-  since, and the working tree matches. There is no earlier version in git to compare.
+  history — `a83177f`, 2026-07-16, the commit that added it. It was never modified
+  before its removal on 2026-09-25. There is no earlier version in git to compare.
 - **`POST /api/points/import`.** That endpoint hardcodes `instrument='georadar'` and
   `layer='Stoerkoerper Georadar'` (`server.py:780`, `:790`). All 18 rows are
   `instrument='magnetic'`, `layer='Stoerkoerper Magnetik Sued 1'`. They cannot have come
@@ -156,9 +148,9 @@ project `11-24-2736`. The database holds **1,583**. The gap is entirely in one l
 Two things line up:
 
 1. **The 18 occupy the final contiguous `vm_nr` block**, `2736-1566` through `2736-1583`
-   — the last 18 of 1,583. `ingest_anomalies.py:118` assigns `vm_nr` by DataFrame
-   position, and the magnetic frame is concatenated last (`:84`), so these were the
-   trailing rows of the magnetic CSV at the time the script ran.
+   — the last 18 of 1,583. `ingest_anomalies.py:118` (at `cd69945`) assigned `vm_nr`
+   by DataFrame position, and the magnetic frame was concatenated last (`:84`), so these
+   were the trailing rows of the magnetic CSV at the time the script ran.
 2. **Their feedback was written in the same bulk insert as 43 other rows.** All 18 carry
    feedback timestamped `2026-07-15 11:42:02`, within 86 ms of each other, as
    `eric.musonera` — the day *before* the CSV was committed.
@@ -260,7 +252,7 @@ is below 0.1 mm. The full inventory, with column types and null rates, is in
 Two things to know:
 
 - **The `11-24-2736` tables are not the source of `public.anomalies`.**
-  `ingest_anomalies.py` reads the CSV files from disk, not these tables. They hold 1,522
+  `ingest_anomalies.py` read the CSV files from disk, not these tables. They hold 1,522
   magnetic rows where `public.anomalies` holds 1,538 — the same discrepancy discussed
   above, plus the rows dropped by dedup and the missing-coordinate filter.
 - **The `*_raw_data` pairs are unexplained**, and do not differ in content at all:
@@ -272,13 +264,16 @@ Two things to know:
   For the record, replaying the old script's logic over `magnetic_data` + `radar_data`
   reproduces 1,565 of the 1,583 live rows exactly, missing only the 18 DB-only rows.
 
-The `11-26-5151` tables *are* on a live path, but only through the hand-run `sql/`
-scripts below.
+The `11-26-5151` tables *are* on a live path, through the ETL pipeline (before it, the
+hand-run `sql/` scripts below).
 
 The `tiger` (35 tables) and `topology` (2 tables) schemas are artefacts of the
 `postgis_tiger_geocoder` and `postgis_topology` extensions. Nothing here touches them.
 
-## SQL migrations (`sql/`)
+## SQL migrations (`sql/`, removed)
+
+**Removed on 2026-09-25, replaced by the ETL pipeline; last present in `cd69945`.** This
+section records what they did.
 
 Hand-written, single-purpose SQL for bringing an additional project's data into
 `public.anomalies`. They are records of specific migrations that were run, not a
@@ -296,13 +291,13 @@ database can be verified against the committed SQL, is on the backlog.
 `ROW_NUMBER()` over the 127 filtered rows cannot produce a gap. Every other column
 reproduces exactly from `picks`.
 
-These scripts are to be replaced by the pipeline proposed in
+These scripts were replaced by the pipeline described in
 [ETL_DESIGN.md](ETL_DESIGN.md), which also explains what breaks in them when a new row
 appears.
 
-The second file is worth reading before writing any similar migration — its header
-documents the constraints it checked, the collision pre-flight it ran, and two things
-that are easy to get wrong:
+The second file (`git show cd69945:sql/append_anomalie_1_to_anomalies.sql`) is worth
+reading before writing any similar migration — its header documents the constraints it
+checked, the collision pre-flight it ran, and two things that are easy to get wrong:
 
 - **Postgres cannot compute UUIDv5 here.** It needs SHA-1, which core Postgres lacks, and
   neither `pgcrypto` nor `uuid-ossp` is installed. The 127 ids are precomputed in Python
@@ -376,9 +371,9 @@ Unresolved as of 2026-09-22. See also the open questions in
 
 - **Which version of `Magnetic_data.csv` was actually ingested.** 18 live targets are
   not in the committed file; the evidence says they were the trailing rows of an earlier
-  version that was never committed, but this cannot be proven. Until it is settled,
-  `ingest_anomalies.py` must not be run against the live database. The cleanest fix is
-  probably to export the 1,583 live rows back out to a CSV that *does* reproduce them.
+  version that was never committed, but this cannot be proven. It no longer blocks
+  anything: the script and the CSVs were removed on 2026-09-25, and the 18 rows were
+  archived and removed by the `11-24-2736` migration.
 - **What `*_raw_data` means**, and whether either table of each pair can be retired.
   Being followed up. Nothing should be deleted or reorganised in the meantime. As of
   2026-09-23 each pair is identical in content, not only in shape.

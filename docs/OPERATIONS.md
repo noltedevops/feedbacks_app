@@ -53,7 +53,7 @@ with whatever `.env` currently says.
 | Variable | Consumer | Effective when |
 |---|---|---|
 | `POSTGRES_PASSWORD` | Postgres `initdb`, via compose | first creation of `postgres_data` only |
-| password inside `DATABASE_URL` | the app, `ingest_anomalies.py`, `doctor.py` | every connection |
+| password inside `DATABASE_URL` | the app, `doctor.py` | every connection |
 | `PGADMIN_DEFAULT_PASSWORD` | pgAdmin, via compose | first creation of `pgadmin_data` only |
 
 `config.py` compares the first two on startup and prints a warning when they disagree —
@@ -195,9 +195,7 @@ The database holds the `users` table, so dumps are sensitive. `.gitignore` exclu
 docker exec feedback_postgres_db pg_dump -U postgres nolte_geoservices > backup-nolte_geoservices-$(Get-Date -Format yyyyMMdd-HHmmss).sql
 ```
 
-Take one before anything destructive — in particular before `ingest_anomalies.py`, which
-drops and rebuilds `projects`, `anomalies` and `feedback` (see
-[DATA_PIPELINE.md](DATA_PIPELINE.md)), and before `POST /api/seed`.
+Take one before anything destructive — in particular before `POST /api/seed`.
 
 There is no automated backup or retention policy yet; it is listed as an open item in
 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).
