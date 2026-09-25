@@ -350,7 +350,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         {/* Section 1: the survey's assessment of this target. Read-only - these are the
             facts the crew digs against, so they sit in a well rather than in inputs. */}
         <section className="ff-section">
-          <h3 className="ff-section-title">Bewertungsergebnis</h3>
+          <h3 className="ff-section-title">{t('Survey result')}</h3>
           <dl className="ff-facts">
             <div>
               <dt>{t('Project ID')}</dt>
@@ -361,7 +361,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
               <dd className="ff-upper">{point.instrument || 'georadar'}</dd>
             </div>
             <div className="ff-facts-wide">
-              <dt>{t('Bewertete Tiefe (m)')}</dt>
+              <dt>{t('Evaluated depth (m)')}</dt>
               <dd className="num">{point.evaluated_depth != null ? `${point.evaluated_depth} m` : t('N/A')}</dd>
             </div>
             <div className="ff-facts-wide">
@@ -446,7 +446,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
 
         {/* Section 2: Eröffnungsmaßnahmen - the excavation itself */}
         <section className="ff-section">
-          <h3 className="ff-section-title">Eröffnungsmaßnahmen</h3>
+          <h3 className="ff-section-title">{t('Excavation')}</h3>
 
           <div className="form-group">
             <label className="form-label" htmlFor="ff-investigator">{t('Investigator')}</label>
@@ -455,10 +455,10 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
 
           {/* Öffnungsmessungen */}
           <div className="ff-group">
-            <span className="ff-subtitle">Öffnungsmessungen</span>
+            <span className="ff-subtitle">{t('Opening measurements')}</span>
             <div className="form-grid-3">
               <label className="form-group">
-                <span className="form-label">Länge (m)</span>
+                <span className="form-label">{t('Length (m)')}</span>
                 <input
                   type="number"
                   step="0.01"
@@ -469,7 +469,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                 />
               </label>
               <label className="form-group">
-                <span className="form-label">Breite (m)</span>
+                <span className="form-label">{t('Width (m)')}</span>
                 <input
                   type="number"
                   step="0.01"
@@ -480,7 +480,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                 />
               </label>
               <label className="form-group">
-                <span className="form-label">Tiefe (m)</span>
+                <span className="form-label">{t('Depth (m)')}</span>
                 <input
                   type="number"
                   step="0.01"
@@ -514,7 +514,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           {/* Specify - only when Sonstige is chosen */}
           {fundstueck === 'Sonstige' && (
             <div className="form-group ff-reveal">
-              <label className="form-label" htmlFor="ff-other">{t('Schreibe (Specify) *')}</label>
+              <label className="form-label" htmlFor="ff-other">{t('Specify *')}</label>
               <input
                 id="ff-other"
                 type="text"
@@ -556,7 +556,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
 
           {/* Bemerkung */}
           <div className="form-group">
-            <label className="form-label" htmlFor="ff-notes">{t('Bemerkung (Remarks)')}</label>
+            <label className="form-label" htmlFor="ff-notes">{t('Remarks')}</label>
             <textarea
               id="ff-notes"
               rows={3}
@@ -571,7 +571,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           <div className="form-group">
             <div className="ff-photos-head">
               <span className="form-label">{t('Attached Photos (Multiple)')}</span>
-              <span className="ff-count num">{t('Bilder Number')}: {photos.length}</span>
+              <span className="ff-count num">{t('Photos')}: {photos.length}</span>
             </div>
 
             <div className="ff-group">
