@@ -32,6 +32,10 @@ DB_CONTAINER = "feedback_postgres_db"
 PGADMIN_CONTAINER = "nolte-pgadmin"
 PGADMIN_DB = "/var/lib/pgadmin/pgadmin4.db"
 PG_HBA = "/var/lib/postgresql/data/pg_hba.conf"
+# No container_name for the etl service, so this is compose's <project>-<service>-1.
+ETL_CONTAINER = "feedbackapp-etl-1"
+# A scheduled run this many intervals overdue means the pipeline has stopped.
+ETL_MISSED_RUNS = 4
 
 OK, WARN, FAIL, SKIP = "OK", "WARN", "FAIL", "SKIP"
 _results = []
@@ -55,7 +59,8 @@ def load_env():
             if line and not line.startswith("#") and "=" in line:
                 key, _, value = line.partition("=")
                 values[key.strip()] = value.strip()
-    for key in ("DATABASE_URL", "POSTGRES_PASSWORD", "POSTGRES_USER", "POSTGRES_DB"):
+    for key in ("DATABASE_URL", "POSTGRES_PASSWORD", "POSTGRES_USER", "POSTGRES_DB",
+                "ETL_INTERVAL_SECONDS"):
         if os.getenv(key) is not None:
             values[key] = os.environ[key]
     return values
@@ -251,6 +256,78 @@ def check_pgadmin():
         report(OK, "No pgAdmin account is locked or has failed attempts")
 
 
+def check_etl_freshness(env, postgres_ok):
+    """The scheduled ETL has run recently. A stopped pipeline says nothing on its own.
+
+    Skipped runs count: they prove the scheduler is alive and found nothing to do.
+    """
+    label = "ETL pipeline has run recently"
+    try:
+        interval = int(env.get("ETL_INTERVAL_SECONDS") or 0)
+    except ValueError:
+        interval = 0
+    if interval <= 0:
+        report(SKIP, label, "ETL_INTERVAL_SECONDS is not set above 0: scheduling is off.")
+        return
+    if not postgres_ok:
+        report(SKIP, label, "Postgres is not reachable with DATABASE_URL.")
+        return
+    import psycopg
+
+    url = urlparse(env["DATABASE_URL"])
+    try:
+        with psycopg.connect(
+            host=url.hostname or "localhost",
+            port=url.port or 5432,
+            user=url.username or env.get("POSTGRES_USER", "postgres"),
+            password=unquote(url.password) if url.password else None,
+            dbname=(url.path or "/").lstrip("/") or env.get("POSTGRES_DB", "postgres"),
+            connect_timeout=5,
+        ) as conn:
+            conn.read_only = True
+            if conn.execute("select to_regclass('etl.runs')").fetchone()[0] is None:
+                report(SKIP, label, "etl.runs does not exist: the pipeline is not set up here.")
+                return
+            last_done = conn.execute(
+                "select extract(epoch from now() - max(finished_at)) from etl.runs "
+                "where status in ('ok', 'skipped')"
+            ).fetchone()[0]
+            latest = conn.execute(
+                "select run_id, status from etl.runs order by run_id desc limit 1"
+            ).fetchone()
+    except Exception as exc:
+        report(SKIP, label, f"etl.runs could not be read: {type(exc).__name__}.")
+        return
+
+    limit = ETL_MISSED_RUNS * interval
+    running = container_running(ETL_CONTAINER)
+    state = f"{ETL_CONTAINER} is {'running' if running else 'NOT running'}."
+    if last_done is None:
+        report(WARN, "ETL pipeline has never completed a run", state)
+    elif last_done > limit:
+        report(
+            WARN,
+            f"Last completed ETL run was {_ago(last_done)} ago",
+            f"More than {ETL_MISSED_RUNS} runs overdue at a {interval // 60}-minute "
+            f"interval. {state} "
+            + ("It is not completing runs: see docker logs " + ETL_CONTAINER if running
+               else "Start it with: docker compose --profile etl up -d etl"),
+        )
+    elif latest and latest[1] == "failed":
+        report(
+            WARN,
+            f"Latest ETL run ({latest[0]}) FAILED",
+            "See the runner's log: docker logs feedbackapp-etl-1",
+        )
+    else:
+        report(OK, f"Last ETL run completed {_ago(last_done)} ago", state)
+
+
+def _ago(seconds):
+    minutes = int(seconds // 60)
+    return f"{minutes // 60} h {minutes % 60} min" if minutes >= 60 else f"{minutes} min"
+
+
 def main():
     print(f"Diagnosing {REPO_ROOT}\n")
     if not ENV_FILE.exists():
@@ -262,6 +339,7 @@ def main():
     check_startup_target(postgres_ok)
     check_pg_hba()
     check_pgadmin()
+    check_etl_freshness(env, postgres_ok)
 
     failures, warnings = _results.count(FAIL), _results.count(WARN)
     print(

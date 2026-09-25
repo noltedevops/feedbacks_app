@@ -68,7 +68,12 @@ services:
       # `docker compose up` on machines without it. The runner refuses to start without it.
       ETL_DB_PASSWORD: ${ETL_DB_PASSWORD:-}
       ETL_INTERVAL_SECONDS: ${ETL_INTERVAL_SECONDS:-0}
-    restart: unless-stopped
+    # The runner is PID 1 and has no SIGTERM handler, so without an init process a
+    # `docker stop` waits out the timeout and ends in SIGKILL (exit 137), possibly mid-run.
+    init: true
+    # always, not unless-stopped: a manual stop still holds until Docker restarts, but no
+    # longer outlasts it. On 2026-09-24 one did, and the schedule was down for 20 hours.
+    restart: always
     depends_on:
       db:
         condition: service_healthy
