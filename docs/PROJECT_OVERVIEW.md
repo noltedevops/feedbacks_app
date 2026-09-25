@@ -65,13 +65,6 @@ to the office database for analytics.
   `scratch/`); no automated test suite or CI yet.
 - **Multi-project workflow** — one project loaded today; the project dropdown
   exists but ingestion/management of additional projects should be exercised.
-- **`POST /api/points` is hardcoded to project `11-24-2736`** — `server.py`
-  fixes the project, the `vm_nr` prefix and the `target_id` prefix to that one
-  project, so targets added through it land in Wilhelmshaven whichever project
-  the crew meant. Self-consistent, so it does not violate the identity rule, but
-  a second project cannot be imported through that endpoint. `ingest_anomalies.py`
-  (removed 2026-09-25) had the same constant. Found while adding
-  `feedback.project_id`; deliberately left alone there.
 - **Restricted logins for editing project schemas** — the QGIS session that built
   the new Wilhelmshaven source tables on 2026-09-23 was connected as `postgres`, the
   superuser. People editing project schemas should use their own restricted logins
