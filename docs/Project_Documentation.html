@@ -401,7 +401,6 @@
 ├── assistant.py          ← The landing page's assistant: POST /api/assistant, Mistral, limits
 ├── manage_access.py      ← CLI: list / grant / revoke / set-password
 ├── install_node.py       ← Helper that downloads a portable Node.js into .\node
-├── test_utm.py           ← Standalone sanity check for the UTM conversion math
 ├── requirements.txt      ← Python dependencies (pinned)
 ├── docker-compose.yml    ← PostgreSQL/PostGIS + pgAdmin, both bound to 127.0.0.1
 ├── .env                  ← Live configuration (NOT committed)
@@ -709,8 +708,7 @@
     Transverse-Mercator series expansion on the WGS84 ellipsoid.</li>
     <li><strong>Python</strong> — none left in the app. <code>database.py</code>'s
     <code>utm32n_to_latlon()</code> and <code>latlon_to_utm32n()</code>, and a TypeScript copy of the
-    former, were removed on 25 September 2026 with the import panel they served.
-    <code>test_utm.py</code> is a small standalone script for sanity-checking the math.</li>
+    former, were removed on 25 September 2026 with the import panel they served.</li>
   </ul>
   <p>Duplicated conversion math is a known liability; see §17.</p>
 </div>
@@ -730,7 +728,9 @@
   <ul>
     <li><strong>Configuration only.</strong> <code>etl/config/projects.yml</code> names each project's
     schema, source tables, column mapping, SRID and VM prefix. Nothing project-specific is in the code;
-    adding a project means adding an entry there.</li>
+    adding a project means adding an entry there and re-running the setup SQL for its grants. Two
+    projects are loaded this way; a third, added by configuration alone, has not yet been tried end to
+    end (§17.2).</li>
     <li><strong>Never deletes or rebuilds.</strong> New targets are inserted as <code>pending</code> with
     the next VM number never issued before. The <code>etl_pipeline</code> role has no
     <code>UPDATE</code>, <code>DELETE</code> or <code>TRUNCATE</code> on <code>public.anomalies</code> at
@@ -1267,15 +1267,20 @@ DETAIL: The data directory was initialized by PostgreSQL version 16,
     <li><strong>Pending ETL approvals are invisible in the app.</strong> They wait for the
     <code>etl_approver</code> login and show only in the runner's log and the command-line status view.
     An admin screen, or at least a badge, would stop decisions from waiting unnoticed.</li>
+    <li><strong>Adding a project by configuration alone is untested.</strong> Wilhelmshaven and Köln
+    are both loaded through <code>etl/config/projects.yml</code>, but bringing in a third project purely
+    by configuration — a new project schema, a <code>projects.yml</code> entry, the setup SQL re-run for
+    its grants, then the first run, its targets in the app and a feedback round-trip — has not been
+    exercised end to end.</li>
     <li><strong><code>feedback → anomalies</code> is <code>ON DELETE CASCADE</code>.</strong> Deleting a
     target silently deletes its excavation record; <code>RESTRICT</code> would make an accidental delete
     fail loudly.</li>
     <li><strong>Duplicated conversion math</strong> in SQL and TypeScript. The TypeScript version also
     ignores the small geoid differences a library like proj4js would handle.</li>
     <li><strong>No automated tests for the app and no CI.</strong> The ETL pipeline has
-    <code>dbt test</code> on every run and an acceptance suite; the application has only ad-hoc UTM
-    conversion scripts (<code>test_utm.py</code>, <code>scratch/</code>). <code>doctor.py</code> is
-    CI-ready and would be a reasonable first gate.</li>
+    <code>dbt test</code> on every run and an acceptance suite run against a copy of the database; the
+    application itself has none. <code>doctor.py</code> is CI-ready and would be a reasonable first
+    gate.</li>
     <li><strong>PostGIS extension errors are only logged.</strong> The enable step in
     <code>init_db()</code> catches and logs on failure, so a failed PostGIS setup continues silently into
     a broken trigger installation.</li>
