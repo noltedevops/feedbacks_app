@@ -18,8 +18,8 @@ the same survey produces the same rows, and `feedback.anomaly_id` keeps resolvin
 is what makes the ingestion re-runnable at all.
 
 `models.py` declares `default=uuid4()` on `Anomaly.id`, but no insert path reaches it —
-the ETL pipeline, `POST /api/points/import` and `POST /api/seed` all pass an explicit
-uuid5, as did the retired `ingest_anomalies.py` and SQL migrations. The removed
+the ETL pipeline passes an explicit uuid5, as did the retired `ingest_anomalies.py`, SQL
+migrations, `POST /api/points/import` and `POST /api/seed`. The removed
 `sql/append_anomalie_1_to_anomalies.sql` (`git show cd69945:sql/...`) documents a
 verification of this against the 1,583 rows that existed when it was written.
 
@@ -133,9 +133,10 @@ project `11-24-2736`. The database holds **1,583**. The gap is entirely in one l
 - **A later edit to the CSV.** `Magnetic_data.csv` has exactly one commit in its whole
   history — `a83177f`, 2026-07-16, the commit that added it. It was never modified
   before its removal on 2026-09-25. There is no earlier version in git to compare.
-- **`POST /api/points/import`.** That endpoint hardcodes `instrument='georadar'` and
-  `layer='Stoerkoerper Georadar'` (`server.py:780`, `:790`). All 18 rows are
-  `instrument='magnetic'`, `layer='Stoerkoerper Magnetik Sued 1'`. They cannot have come
+- **`POST /api/points/import`.** That endpoint (removed 2026-09-25) hardcoded
+  `instrument='georadar'` and `layer='Stoerkoerper Georadar'` (`server.py:780`, `:790`
+  at `e0aa3a3`). All 18 rows are `instrument='magnetic'`,
+  `layer='Stoerkoerper Magnetik Sued 1'`. They cannot have come
   through it.
 - **Dating the rows directly.** `public.anomalies` has **no** `created_at` or `updated_at`
   column — only `projects` has those. The rows themselves cannot be dated.
@@ -195,35 +196,16 @@ excavation records" means:
 > use them to judge sensor performance until this is settled. Only 7 rows are known to be
 > real field submissions.
 >
-> One thing *is* established: the four demo rows `/api/seed` writes (`fb-uuid-161` and
+> One thing *is* established: the four demo rows `/api/seed` wrote (`fb-uuid-161` and
 > friends) are **not** present, so whatever wrote the 61, it was not that endpoint.
 
-## The other ingestion paths
+## The other ingestion paths (removed)
 
-### `POST /api/points/import` (admin)
-
-Paste or upload CSV, and each row becomes an anomaly. Non-destructive and additive. It
-converts UTM to lat/lon in Python (`utm32n_to_latlon`) rather than relying on the
-trigger, and hardcodes `project_id` `11-24-2736`, `instrument` `georadar`, `category`
-`Kat-1`, `layer` `Stoerkoerper Georadar`, `status` `pending`, numbering `vm_nr` from the
-existing row count for that project (`server.py:760-791`).
-
-It was written to back the Import/Export panel, but **no UI path reaches that panel** —
-see the endpoint notes in [ARCHITECTURE.md](ARCHITECTURE.md#endpoints). It is callable
-only against the API directly.
-
-Several fields in `PointCreate` are accepted and then silently ignored: `vm_nr` (it is
-recomputed), `opening_length`, `opening_width`, `opening_depth`, `opening_volume`,
-`find_description`, `image_id` and `remarks` (`server.py:92-103` vs `:778-792`). Only
-`easting`, `northing` and `evaluated_depth` survive the call.
-
-### `POST /api/seed` (admin)
-
-Demo data only: it deletes all feedback, anomalies and projects first, then writes 29
-hardcoded Wilhelmshaven targets and 4 feedback rows. Not part of any real workflow, and
-like the import panel it has **no reachable UI path**. Note the 4 feedback rows it writes
-do not set `project_id` (`server.py:1141-1229`) — they rely on the startup backfill in
-`database.py:174-178` to fill it in on the next boot.
+`POST /api/points/import` (admin: CSV rows into `11-24-2736` as georadar targets) and
+`POST /api/seed` (admin: deleted all feedback, anomalies and projects, then wrote 29 demo
+targets and 4 feedback rows) were removed on 2026-09-25, together with the
+`ImportExport.tsx` panel that called them. No UI path reached any of them. They are in
+git at `e0aa3a3`. The ETL pipeline is now the only way survey data enters the database.
 
 ## The project schemas
 
@@ -354,11 +336,13 @@ Anomalies by project and instrument:
 | 11-26-5151 | georadar | Kat-2 | 62 | 5 |
 | 11-26-5151 | georadar | Kat-3 | 59 | 1 |
 
-`category` is the survey's classification, known before anyone digs. `Kat-1` is a
-hardcoded default in every CSV, import and seed path; the real values (`Kat-2`, `Kat-3`)
-come only from the `sql/` migration, which derives them from `picks.field_3`. It is
-**not** the Fundstück — that is what was found on excavation, and lives on the feedback
-row.
+`category` is the survey's classification, known before anyone digs. `Kat-1` was the
+hardcoded default in the retired CSV, import and seed paths. The ETL pipeline carries each
+source's own category instead: Köln derives it from `picks.field_3`, and the Wilhelmshaven
+`Magnetic` source has `Kat-1` on every row. The app therefore shows every category as
+stored, `Kat-1` included, in both languages; it no longer marks `Kat-1` as an ingest
+default. It is **not** the Fundstück — that is what was found on excavation, and lives
+on the feedback row.
 
 Photos are small so far: 6 feedback rows carry any, 139 kB in total, largest row 35 kB.
 The base64-in-a-text-column design has not yet cost anything, which is worth knowing

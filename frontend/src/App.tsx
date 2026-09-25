@@ -3,7 +3,6 @@ import { db, type LocalPoint, type PendingFeedback, type TeamsTools } from './db
 import { FieldMap } from './components/FieldMap';
 import { Dashboard, matchesDepthBucket } from './components/Dashboard';
 import { FeedbackForm } from './components/FeedbackForm';
-import { ImportExport } from './components/ImportExport';
 import { ReportDialog, type ProjectOption } from './components/ReportDialog';
 import { FilterBar } from './components/FilterBar';
 import { Select } from './components/Select';
@@ -14,7 +13,7 @@ import { LangSwitch } from './components/LangSwitch';
 import { TourHost } from './tour/TourHost';
 import { TourLaunchers } from './tour/TourLaunchers';
 import type { TourId } from './tour/steps';
-import { useFilters, selectPoints, categoriesForProject, vmNumbersForProject, categoryLabel, INGEST_DEFAULT_CATEGORY } from './useFilters';
+import { useFilters, selectPoints, categoriesForProject, vmNumbersForProject } from './useFilters';
 import { makeT, type AppLang } from './i18n';
 import { useIsMobile } from './useIsMobile';
 import { 
@@ -379,7 +378,6 @@ export default function App() {
       .sort((a, b) => (b.feedback!.logged_at || '').localeCompare(a.feedback!.logged_at || ''))[0]
       ?.feedback?.teams_tools ?? null;
   }, [points, selectedPoint?.project_id]);
-  const [activeTab, setActiveTab] = useState<'map' | 'import'>('map');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
@@ -793,63 +791,6 @@ export default function App() {
     }
   };
 
-  const handleImportPoints = async (importedPoints: any[]) => {
-    try {
-      if (isOnline) {
-        const res = await authFetch(`${API_BASE}/api/points/import`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(importedPoints)
-        });
-        if (!res.ok) throw new Error('Failed import');
-        await fetchFromServer();
-      } else {
-        await db.transaction('rw', db.points, async () => {
-          for (const p of importedPoints) {
-            const tempId = newId();
-            const target_id_val = `11-24-2736-${p.easting.toFixed(3)}-${p.northing.toFixed(3)}`;
-            await db.points.put({
-              id: tempId,
-              project_id: '11-24-2736',
-              target_id: target_id_val,
-              vm_nr: String(p.vm_nr),
-              easting: p.easting,
-              northing: p.northing,
-              latitude: p.latitude,
-              longitude: p.longitude,
-              evaluated_depth: p.evaluated_depth,
-              opening_length: p.opening_length,
-              opening_width: p.opening_width,
-              opening_depth: p.opening_depth,
-              opening_volume: p.opening_volume,
-              find_description: p.find_description,
-              image_id: p.image_id,
-              remarks: p.remarks,
-              created_at: new Date().toISOString(),
-              local_status: 'unvisited',
-              feedback: null,
-              instrument: p.instrument || 'georadar',
-              // What the server's import endpoint writes too, so an offline import
-              // does not show up uncategorised until the next sync corrects it.
-              category: INGEST_DEFAULT_CATEGORY
-            });
-          }
-        });
-        await loadLocalData();
-      }
-      showToast('success', `Imported ${importedPoints.length} GPR targets.`);
-    } catch (err) {
-      console.error(err);
-      showToast('error', t('Failed to import GPR points.'));
-    }
-  };
-
-  const handleSeedRequest = async () => {
-    const res = await authFetch(`${API_BASE}/api/seed`, { method: 'POST' });
-    if (!res.ok) throw new Error('Seeding failed');
-    await fetchFromServer();
-  };
-
   // Auth Submit Handlers
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1025,7 +966,6 @@ export default function App() {
     }
     if (surface === 'field') {
       changeView('field');
-      setActiveTab('map');
     } else {
       changeView('dashboard');
     }
@@ -1410,7 +1350,7 @@ export default function App() {
       : t('All Targets');
     const category = fieldFilters.category === 'all'
       ? t('All Categories')
-      : categoryLabel(fieldFilters.category, t);
+      : fieldFilters.category;
     return [project, vm, instrument, category, status].join(' · ');
   }, [fieldFilters.projectId, fieldFilters.vmNr, fieldFilters.instrument, fieldFilters.category, fieldFilters.status, t]);
 
@@ -1480,7 +1420,7 @@ export default function App() {
       ariaLabel={t('Category')}
       options={[
         { value: 'all', label: t('All Categories') },
-        ...fieldCategories.map(c => ({ value: c, label: categoryLabel(c, t) }))
+        ...fieldCategories.map(c => ({ value: c, label: c }))
       ]}
     />
   );
@@ -1594,7 +1534,7 @@ export default function App() {
               <nav className="sidebar-menu">
                 <button
                   type="button"
-                  className={`sidebar-item${view === 'field' && activeTab === 'map' ? ' active' : ''}${access.can_field ? '' : ' locked'}`}
+                  className={`sidebar-item${view === 'field' ? ' active' : ''}${access.can_field ? '' : ' locked'}`}
                   onClick={() => openSurface('field')}
                   aria-current={view === 'field' ? 'page' : undefined}
                 >
@@ -1805,115 +1745,104 @@ export default function App() {
                       {!isMobile && exportCsvButton}
                     </div>
 
-                    {activeTab === 'map' ? (
-                      <>
-                        <div className="collector-filters" data-tour="field.filters">
-                          <div className="select-with-icon">
-                            <Search size={14} className="select-with-icon-glyph" aria-hidden="true" />
-                            <input
-                              type="text"
-                              className="form-input field-control"
-                              value={fieldFilters.searchQuery}
-                              onChange={(e) => fieldFilters.setSearchQuery(e.target.value)}
-                              placeholder={t('Search targets...')}
-                              aria-label={t('Search targets...')}
-                            />
-                          </div>
+                    <div className="collector-filters" data-tour="field.filters">
+                      <div className="select-with-icon">
+                        <Search size={14} className="select-with-icon-glyph" aria-hidden="true" />
+                        <input
+                          type="text"
+                          className="form-input field-control"
+                          value={fieldFilters.searchQuery}
+                          onChange={(e) => fieldFilters.setSearchQuery(e.target.value)}
+                          placeholder={t('Search targets...')}
+                          aria-label={t('Search targets...')}
+                        />
+                      </div>
 
-                          {/* A phone folds the secondary filters (project, VM Nr., instrument,
-                              status) and the CSV export behind a one-line bar; the search box
-                              above stays visible because it is the primary control here. */}
-                          {isMobile ? (
-                            <FilterBar label={t('Filter')} summary={fieldFilterSummary} toggleLabel={t('Show filters')}>
-                              <label className="collector-field">
-                                <span className="collector-field-label">{t('Project ID')}</span>
-                                {projectIdSelect}
-                              </label>
-                              {vmNrSelect}
-                              {instrumentSelect}
-                              {categorySelect}
-                              {statusSelect}
-                              {exportCsvButton}
-                            </FilterBar>
-                          ) : (
-                            <div className="collector-filter-grid">
-                              {vmNrSelect}
-                              {instrumentSelect}
-                              {categorySelect}
-                            </div>
-                          )}
+                      {/* A phone folds the secondary filters (project, VM Nr., instrument,
+                          status) and the CSV export behind a one-line bar; the search box
+                          above stays visible because it is the primary control here. */}
+                      {isMobile ? (
+                        <FilterBar label={t('Filter')} summary={fieldFilterSummary} toggleLabel={t('Show filters')}>
+                          <label className="collector-field">
+                            <span className="collector-field-label">{t('Project ID')}</span>
+                            {projectIdSelect}
+                          </label>
+                          {vmNrSelect}
+                          {instrumentSelect}
+                          {categorySelect}
+                          {statusSelect}
+                          {exportCsvButton}
+                        </FilterBar>
+                      ) : (
+                        <div className="collector-filter-grid">
+                          {vmNrSelect}
+                          {instrumentSelect}
+                          {categorySelect}
                         </div>
+                      )}
+                    </div>
 
-                        <div className="collector-list-wrap" data-tour="field.list">
-                          <div className="collector-list-head">
-                            <span className="collector-kicker collector-kicker--muted">
-                              {t('TARGET LISTING')} <span className="num">({filteredPoints.length})</span>
-                            </span>
-                            {/* On a phone the status filter lives in the folded bar with the rest. */}
-                            {!isMobile && statusSelect}
-                          </div>
-                          <div className="collector-list-scroll" onScroll={handleTargetListScroll}>
-                            {visibleTargetPoints.map((point) => {
-                              const isInvestigated = point.local_status === 'investigated';
-                              let statusText = t('PENDING');
-                              // The state, not the colour. Which colour that becomes is the
-                              // stylesheet's business.
-                              let status: 'pending' | 'empty' | 'found' = 'pending';
+                    <div className="collector-list-wrap" data-tour="field.list">
+                      <div className="collector-list-head">
+                        <span className="collector-kicker collector-kicker--muted">
+                          {t('TARGET LISTING')} <span className="num">({filteredPoints.length})</span>
+                        </span>
+                        {/* On a phone the status filter lives in the folded bar with the rest. */}
+                        {!isMobile && statusSelect}
+                      </div>
+                      <div className="collector-list-scroll" onScroll={handleTargetListScroll}>
+                        {visibleTargetPoints.map((point) => {
+                          const isInvestigated = point.local_status === 'investigated';
+                          let statusText = t('PENDING');
+                          // The state, not the colour. Which colour that becomes is the
+                          // stylesheet's business.
+                          let status: 'pending' | 'empty' | 'found' = 'pending';
 
-                              if (isInvestigated && point.feedback) {
-                                const fund = point.feedback.fundstueck;
-                                statusText = fund === 'Sonstige' ? (point.feedback.other || 'Sonstige') : fund;
-                                status = fund === 'ohne Fund' ? 'empty' : 'found';
-                              }
+                          if (isInvestigated && point.feedback) {
+                            const fund = point.feedback.fundstueck;
+                            statusText = fund === 'Sonstige' ? (point.feedback.other || 'Sonstige') : fund;
+                            status = fund === 'ohne Fund' ? 'empty' : 'found';
+                          }
 
-                              const isSelected = selectedPoint?.id === point.id;
-                              return (
-                                <button
-                                  type="button"
-                                  key={point.id}
-                                  className={`target-card${isSelected ? ' active' : ''}`}
-                                  aria-pressed={isSelected}
-                                  onClick={() => setSelectedPoint(point)}
-                                >
-                                  <span className="target-card-head">
-                                    <span className="target-card-vm num">VM {point.vm_nr}</span>
-                                    <span className="status-chip" data-status={status} title={statusText}>
-                                      {statusText}
-                                    </span>
-                                  </span>
-                                  <span className="target-card-meta">
-                                    {point.instrument?.toUpperCase()} · {point.layer?.replace('Stoerkoerper ', '') || t('Target Layer')}
-                                  </span>
-                                  <span className="target-card-depth">
-                                    <span className="target-card-depth-label">{t('EVALUATED DEPTH')}</span>
-                                    <span className="target-card-depth-value num">
-                                      {point.evaluated_depth != null ? `${point.evaluated_depth} m` : t('N/A')}
-                                    </span>
-                                  </span>
-                                </button>
-                              );
-                            })}
+                          const isSelected = selectedPoint?.id === point.id;
+                          return (
+                            <button
+                              type="button"
+                              key={point.id}
+                              className={`target-card${isSelected ? ' active' : ''}`}
+                              aria-pressed={isSelected}
+                              onClick={() => setSelectedPoint(point)}
+                            >
+                              <span className="target-card-head">
+                                <span className="target-card-vm num">VM {point.vm_nr}</span>
+                                <span className="status-chip" data-status={status} title={statusText}>
+                                  {statusText}
+                                </span>
+                              </span>
+                              <span className="target-card-meta">
+                                {point.instrument?.toUpperCase()} · {point.layer?.replace('Stoerkoerper ', '') || t('Target Layer')}
+                              </span>
+                              <span className="target-card-depth">
+                                <span className="target-card-depth-label">{t('EVALUATED DEPTH')}</span>
+                                <span className="target-card-depth-value num">
+                                  {point.evaluated_depth != null ? `${point.evaluated_depth} m` : t('N/A')}
+                                </span>
+                              </span>
+                            </button>
+                          );
+                        })}
 
-                            {visibleTargetPoints.length < filteredPoints.length && (
-                              <button
-                                type="button"
-                                className="btn-secondary list-more"
-                                onClick={() => setVisibleTargetCount(c => c + TARGET_PAGE_SIZE)}
-                              >
-                                {t('Show more')} <span className="num">({filteredPoints.length - visibleTargetPoints.length})</span>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <ImportExport
-                        lang={lang}
-                        onImportSuccess={handleImportPoints}
-                        onSeedRequest={handleSeedRequest}
-                        isOnline={isOnline}
-                      />
-                    )}
+                        {visibleTargetPoints.length < filteredPoints.length && (
+                          <button
+                            type="button"
+                            className="btn-secondary list-more"
+                            onClick={() => setVisibleTargetCount(c => c + TARGET_PAGE_SIZE)}
+                          >
+                            {t('Show more')} <span className="num">({filteredPoints.length - visibleTargetPoints.length})</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </section>
@@ -1985,7 +1914,6 @@ export default function App() {
                   selectedPoint={selectedPoint}
                   onSelectPoint={handleSelectPoint}
                   isOnline={isOnline}
-                  onSeedRequest={handleSeedRequest}
                   addDataOpen={addDataOpen}
                   setAddDataOpen={setAddDataOpen}
                   filterStatus={dashFilters.status}

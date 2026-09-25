@@ -19,7 +19,7 @@ to the office database for analytics.
 
 | Layer | Technology |
 |---|---|
-| Backend API | Python / FastAPI (`server.py`), endpoints: `/api/points`, `/api/sync`, `/api/points/import`, `/api/stats`, `/api/seed` |
+| Backend API | Python / FastAPI (`server.py`), endpoints: `/api/points`, `/api/sync`, `/api/stats` |
 | Database | PostgreSQL 16 + PostGIS (Docker), automatic SQLite fallback for offline/local use |
 | Frontend | React + TypeScript (Vite), served as a PWA from `static/` |
 | Offline store | IndexedDB (Dexie) with a pending-sync queue + service worker |
@@ -86,7 +86,7 @@ to the office database for analytics.
   after that migration, or have it delete those 18 feedback rows explicitly. See
   [ETL_DESIGN.md](ETL_DESIGN.md#foreign-keys-into-publicanomalies-and-the-feedback-split).
 - **Feedback for a target that no longer exists is silently lost** — `/api/sync` skips
-  it with only a server log warning (`server.py:837-842`), still answers success, and
+  it with only a server log warning (`server.py:777-782`), still answers success, and
   the device then drops it from its queue as if it had been sent (`App.tsx`,
   `handleSync`). The server should reject it explicitly (per record, in the response),
   and the device should keep that record queued and warn the user, so no field work can

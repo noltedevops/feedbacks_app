@@ -44,7 +44,7 @@ makes (`/api/projects`, `/api/reports/*`) rather than where its numbers come fro
 
 **The dashboard does not read analytics from the server.** Every total, chart and
 derived statistic on it is computed in the browser from the Dexie `points` array it is
-handed (`App.tsx:1981-1984`, `Dashboard.tsx:143-157`). `GET /api/stats` computes the
+handed (`App.tsx:1910-1913`, `Dashboard.tsx:141-155`). `GET /api/stats` computes the
 same figures server-side but **has no caller** — there is no reference to it anywhere in
 `frontend/src/` or in the built bundle. Treat it as dead code until something calls it.
 
@@ -98,9 +98,10 @@ On PostgreSQL, `database.py` installs a `BEFORE INSERT OR UPDATE` trigger,
 derives the other two via `ST_Transform` between EPSG:32632 and EPSG:4326. Nothing in the
 application has to remember to do it.
 
-`database.py` also carries pure-Python `utm32n_to_latlon()` / `latlon_to_utm32n()`
-implementations, used where PostGIS is not in the path — notably `POST /api/points/import`
-and the SQLite fallback. `test_utm.py` and `scratch/` check them against known points.
+`database.py` also carries a pure-Python `latlon_to_utm32n()`, which nothing in the app
+calls. Its inverse, `utm32n_to_latlon()`, was removed on 2026-09-25 with its only callers,
+`POST /api/points/import` and `POST /api/seed`. `test_utm.py` and `scratch/` check the
+conversions against known points.
 
 ### Startup behaviour (`database.py`)
 
@@ -146,7 +147,6 @@ the sidebar label. The dependencies in `server.py` are:
 | GET | `/api/auth/me` | authenticated |
 | GET | `/api/points` | authenticated (both surfaces) |
 | POST | `/api/sync` | field |
-| POST | `/api/points/import` | admin |
 | GET | `/api/projects` | authenticated |
 | GET | `/api/stats` | dashboard |
 | GET | `/api/reports/feedback.pdf` | dashboard |
@@ -159,20 +159,13 @@ the sidebar label. The dependencies in `server.py` are:
 | GET | `/api/admin/users` | admin |
 | PATCH | `/api/admin/users/{id}/access` | admin |
 | POST | `/api/admin/users/{id}/reset-password` | admin |
-| POST | `/api/seed` | admin — **wipes** feedback, anomalies and projects, then inserts demo data |
 
-Two of these have no reachable UI path, and are callable only against the API directly:
-
-- **`POST /api/points/import`** — `ImportExport.tsx` renders only on the
-  `activeTab !== 'map'` branch (`App.tsx:1808`), but `activeTab` initialises to `'map'`
-  (`:382`) and the one `setActiveTab` call sets it back to `'map'` (`:1028`). Nothing
-  ever selects `'import'`.
-- **`POST /api/seed`** — `handleSeedRequest` reaches `Dashboard` as `onSeedRequest`, which
-  destructures it unused as `_onSeedRequest` (`Dashboard.tsx:118`). Its only other
-  consumer is the unreachable `ImportExport`.
+`POST /api/points/import` and `POST /api/seed` were removed on 2026-09-25 together with
+`ImportExport.tsx`, the panel that called them. No UI path reached any of the three.
+They are in git at `e0aa3a3`.
 
 **`GET /api/reports/bilder/{feedback_id}` has no auth dependency whatsoever**
-(`server.py:995-996`). Anyone who can reach the server and has or guesses a feedback id
+(`server.py:935-936`). Anyone who can reach the server and has or guesses a feedback id
 gets that excavation's full photo gallery. That is deliberate — it is the link target
 from the PDF, and requiring a session would break reports opened outside a signed-in
 browser — but it is an unauthenticated read of operational site photos and should be
@@ -205,7 +198,7 @@ over the LAN keeps working. The CSV is written with a BOM so Excel renders umlau
 
 `POST /api/assistant` backs the "Ask AI Assistant" box on the landing page. It is
 registered as its own `APIRouter` and included *before* the static mount
-(`server.py:1236`), which answers every path that reaches it.
+(`server.py:995`), which answers every path that reaches it.
 
 **It touches no user data and no database.** It takes no `db` dependency, imports no
 models, and keeps no conversation history. Its only state is an in-process rate limiter
@@ -253,7 +246,6 @@ online/offline state, sync orchestration, admin dialogs and the EN/DE toggle. Co
 | `components/FeedbackForm.tsx` | The excavation form, including camera capture and the Trupp & Geräte block |
 | `components/Dashboard.tsx` | Recharts analytics |
 | `components/FilterBar.tsx` | VM-Nr. / instrument / status filtering |
-| `components/ImportExport.tsx` | CSV paste or file upload into `/api/points/import` — **no UI path reaches it**, see the endpoint notes above |
 | `components/ReportDialog.tsx` | Project and date range for the CSV/PDF exports |
 | `db/indexedDb.ts` | Dexie schema, types, and `getResolvedStatus()` |
 | `auth.ts` | Token storage, access flags, `authFetch`, offline login policy |
@@ -321,11 +313,11 @@ Server-side, `/api/sync` upserts each record by primary key (dialect-specific
 raising a foreign-key error, normalises the incoming ISO-8601 `Z` timestamp to naive UTC
 to match `TIMESTAMP WITHOUT TIME ZONE`, marks the anomaly `investigated`, and returns the
 refreshed point list. `project_id` is taken from the parent anomaly, never from the
-payload (`server.py:869`), so the stored project cannot disagree with the target.
+payload (`server.py:809`), so the stored project cannot disagree with the target.
 
 #### The `visit_date` guard
 
-This is the load-bearing line of the whole sync path (`server.py:820-824`):
+This is the load-bearing line of the whole sync path (`server.py:760-764`):
 
 ```python
 stmt = insert(table).values(**values).on_conflict_do_update(
@@ -346,11 +338,11 @@ still returns success and the client still drops the queued record, so
 That is intentional — a stale record has nothing to contribute — but it means the count
 is not a write count.
 
-Re-editing a target reuses the existing feedback id (`App.tsx:723`), which is what makes
+Re-editing a target reuses the existing feedback id (`App.tsx:721`), which is what makes
 the second submission an update rather than a second row. There is therefore **no
 history**: `feedback` holds one row per anomaly, and a correction overwrites the
 previous values. `GET /api/points` still orders by `visit_date DESC` and takes the first
-(`server.py:669-674`), so it would cope if that ever changed.
+(`server.py:656-661`), so it would cope if that ever changed.
 
 One field is accepted and then dropped on the floor: `FeedbackCreate.status`
 (`server.py:73`) is never written — it is absent from the values dict at `:862-888`. The
@@ -379,10 +371,11 @@ next person does not spend the same hours on them. See also the open questions i
   row for row. What distinguishes "raw" from the other is unknown and being followed up. **Do not delete or reorganise them on the assumption they are
   duplicates.**
 - **Why two anomalies are `investigated` with no feedback row** (`2736-1186`,
-  `2736-1040`). The only `DELETE` anywhere in the backend is `/api/seed`, which wipes
-  `feedback`, `anomalies` and `projects` together (`server.py:1059-1061`) and so cannot
-  produce this state. `anomalies.status` is never reset by anything, so these two rows
-  will stay out of step until someone corrects them.
+  `2736-1040`). The only `DELETE` the backend ever had was `/api/seed` (removed 2026-09-25;
+  `server.py` at `e0aa3a3`, lines 1059-1061), which wiped `feedback`, `anomalies` and
+  `projects` together and so could not have produced this state. `anomalies.status` is
+  never reset by anything, so these two rows will stay out of step until someone
+  corrects them.
 - **Who has been editing the database by hand, and with what authority.** Three `users`
   rows were deleted through pgAdmin's admin login (`admin@nolte-geoservices.com`) on
   2026-09-15, 06:26–06:43 UTC — established from pgAdmin's own query history. The two

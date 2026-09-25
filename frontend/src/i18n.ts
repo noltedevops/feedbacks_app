@@ -206,19 +206,6 @@ const de: Record<string, string> = {
   'Not synced yet - the app will retry automatically.':
     'Noch nicht synchronisiert – die App versucht es automatisch erneut.',
 
-  // --- Import / export panel ---
-  'Seed Wilhelmshaven Targets': 'Wilhelmshaven-Ziele laden',
-  'Seed Targets (Requires Online)': 'Ziele laden (Online erforderlich)',
-  'Paste CSV Coordinates': 'CSV-Koordinaten einfügen',
-  'Seedeich Seeding (Wilhelmshaven)': 'Seedeich-Datenimport (Wilhelmshaven)',
-  'Load the exact 29 survey target points transcribed from the Wilhelmshaven Excel table. Converts Germany UTM coordinates to coordinates mapped on the Seedeich dyke.':
-    'Lädt die 29 Messziele aus der Wilhelmshavener Excel-Tabelle. Die UTM-Koordinaten werden auf den Seedeich umgerechnet.',
-  'Upload GPR Coordinate File': 'GPR-Koordinatendatei hochladen',
-  'Choose a CSV file with coordinate columns X and Y (Germany UTM).':
-    'Wählen Sie eine CSV-Datei mit den Koordinatenspalten X und Y (UTM).',
-  'Choose CSV File': 'CSV-Datei wählen',
-  'Parse and Load Points': 'Punkte einlesen und laden',
-
   // --- Landing page ---
   'Menu': 'Menü',
   'Platform': 'Plattform',
@@ -327,7 +314,6 @@ const de: Record<string, string> = {
   'Sync aborted: Network is offline.': 'Sync abgebrochen: Netzwerk offline.',
   'Cloud database sync failed.': 'Sync mit der Cloud-Datenbank fehlgeschlagen.',
   'Failed to save feedback findings.': 'Speichern der Erfassung fehlgeschlagen.',
-  'Failed to import GPR points.': 'Import der GPR-Ziele fehlgeschlagen.',
 
   // --- Access & permissions ---
   // Soft hyphen: at the rail's 12px the word is wider than the item, and this is
@@ -473,8 +459,7 @@ const de: Record<string, string> = {
   // Category filter (anomalies.category)
   'Category': 'Kategorie',
   'CATEGORY:': 'KATEGORIE:',
-  'All Categories': 'Alle Kategorien',
-  'ingest default': 'Import-Standard'
+  'All Categories': 'Alle Kategorien'
 };
 
 export type Translator = (text: string) => string;
