@@ -261,8 +261,8 @@
   independent flags — <code>can_field</code>, <code>can_dashboard</code> and <code>is_admin</code> — and
   the server re-checks them on every request. A user who opens a surface they lack is offered a
   permission request, which an administrator approves or denies in the app. The older <code>role</code>
-  value survives only as the landing view and the label shown in the sidebar; it no longer decides
-  anything.</p>
+  value survives only as a label in the user menu; it no longer decides anything, and every account
+  lands on the Overview page after signing in.</p>
 </div>
 
 <!-- ============================ 2 ============================ -->
@@ -518,7 +518,7 @@
     <tr><td><code>id</code></td><td>VARCHAR(36), PK</td><td>UUID</td></tr>
     <tr><td><code>full_name</code> / <code>username</code> / <code>email</code></td><td>VARCHAR</td><td><code>username</code> is unique and indexed</td></tr>
     <tr><td><code>password_hash</code></td><td>VARCHAR(255)</td><td><code>pbkdf2_sha256$&lt;iterations&gt;$&lt;salt&gt;$&lt;hash&gt;</code> — an encoded value is ~110 characters</td></tr>
-    <tr><td><code>role</code></td><td>VARCHAR(50)</td><td><code>collector</code> or <code>dashboard</code>. Landing view and sidebar label only — it does <strong>not</strong> grant access.</td></tr>
+    <tr><td><code>role</code></td><td>VARCHAR(50)</td><td><code>collector</code> or <code>dashboard</code>. A label in the user menu only — it does <strong>not</strong> grant access or choose the landing view.</td></tr>
     <tr><td><code>can_field</code></td><td>BOOLEAN, default true</td><td>May open the Field App</td></tr>
     <tr><td><code>can_dashboard</code></td><td>BOOLEAN, default false</td><td>May open the Dashboard</td></tr>
     <tr><td><code>is_admin</code></td><td>BOOLEAN, default false</td><td>May administer users and decide permission requests</td></tr>
@@ -785,9 +785,11 @@
 <!-- ============================ 11 ============================ -->
 <div class="section">
   <h2>11. The Frontend Web Application (React)</h2>
-  <p>The UI is a single-page app with two surfaces, both sharing one collapsible sidebar (theme toggle,
-  EN/DE language toggle, navigation, sync button, online/offline indicator, user avatar, sign-out). Which
-  surfaces a user may open is decided by their access flags, not by a role picked at login.</p>
+  <p>The UI is a single-page app with two surfaces, both sharing one collapsible icon rail: the logo
+  (back to the Overview), the Field App and Dashboard, the admin screens for administrators, the sync
+  button with its queue badge, the online/offline indicator, and at the foot the user avatar (whose menu
+  holds the tours and sign-out), the EN/DE switch and the theme toggle. Which surfaces a user may open is
+  decided by their access flags, not by a role picked at login.</p>
 
   <h3>11.1 <span class="new">Login / landing page</span></h3>
   <div class="callout">
@@ -835,16 +837,24 @@
     captured live with the device camera (<code>getUserMedia</code> + canvas snapshot). It also supports an
     edit-location mode where the marker becomes draggable; the new position is converted back to UTM and
     queued as a point update.</li>
-    <li><strong>Report dialog:</strong> project and date range for the CSV export.</li>
+    <li><strong>Export CSV:</strong> opens the report dialog, with project and date range, for the
+    CSV export. Online only.</li>
+    <li><strong>Selecting a target</strong> — from the list or by clicking its marker — opens its
+    feedback form and zooms the map in on it. The marker's popup shows the VM number and status, the
+    crew's distance and bearing to it, its coordinates and evaluated depth, and, once investigated, its
+    field log.</li>
   </ul>
 
   <h3>11.3 Dashboard surface</h3>
-  <p>A full-screen map with floating translucent panels (<code>Dashboard.tsx</code>) showing KPI tiles
-  (total targets, investigated vs. pending, project count, excavated volume against a 250 m³ target
-  capacity), a Fundstück bar chart, a Sohle <em>Frei</em>/<em>Nicht Frei</em> split, and a predicted
-  (<code>evaluated_depth</code>) vs. actual (<code>tief</code>) depth comparison with a mean depth-error
-  KPI. The same status/instrument filters are wired to the shared map, and the report dialog here also
-  offers the PDF.</p>
+  <p>A full-screen map with floating panels (<code>Dashboard.tsx</code>, charts in
+  <code>DashboardCharts.tsx</code>). The header carries the project, instrument and category filters and
+  <em>Generate Report</em>, whose dialog offers the PDF and the CSV. The panels: KPI tiles (total targets,
+  investigated, pending, survey projects); findings by type; the Sohle <em>Frei</em>/<em>Nicht Frei</em>
+  split by finding; sensor accuracy, comparing evaluated (<code>evaluated_depth</code>) and excavated
+  (<code>tief</code>) depth per 0.2 m band with the mean error, estimation bias and empty-hole rate; mean
+  target dimensions by finding, with the volume in the tooltip; and a target log with its own depth and
+  status filters. Every chart panel has an expand button that opens it full size. The filters also drive
+  the map.</p>
 
   <h3>11.4 <span class="new">Responsive layout</span></h3>
   <p>Field crews bring whatever tablet or phone they own, so all three views — landing page, field app and
@@ -994,7 +1004,7 @@
   classifies its own records identically. Evaluated top-down on the latest feedback:</p>
   <table>
     <tr><th class="c3">Order</th><th>Rule</th><th class="c3">Status</th><th class="c2">Meaning / colour</th></tr>
-    <tr><td>0</td><td>No feedback, or not visited</td><td><code>unvisited</code></td><td>Red marker — still to do</td></tr>
+    <tr><td>0</td><td>No feedback, or not visited</td><td><code>unvisited</code></td><td>Red marker — still to do; shown as <em>Pending</em> everywhere in the app</td></tr>
     <tr><td>1</td><td>Fundstück = “ohne Fund” (nothing found)</td><td><code>false_alarm</code></td><td>The instrument signal had no physical cause</td></tr>
     <tr><td>2</td><td>Notes/other text contains “uxo”, “mine”, “bomb”, “munition”, or “pmn”</td><td><code>uxo</code></td><td>Live ordnance — highest priority</td></tr>
     <tr><td>3</td><td>Sohle status = “Nicht Frei”</td><td><code>scrap</code></td><td>Something found, pit not fully cleared</td></tr>

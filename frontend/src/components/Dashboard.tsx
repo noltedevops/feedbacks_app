@@ -27,15 +27,27 @@ import { useHeaderRow } from '../useHeaderRow';
 
 // Depth buckets for the dashboard depth filter. Edges are inclusive-low /
 // exclusive-high - [0,0.5), [0.5,1.0), [1.0,1.5), [1.5,inf) - so a target at exactly
-// 0.5 m lands in the second bucket and never in two at once. Labels stay German in
-// both language modes because the crew reads them as fixed depth classes.
+// 0.5 m lands in the second bucket and never in two at once. The range labels stay
+// German in both language modes because the crew reads them as fixed depth classes;
+// only the "all" entry is ordinary UI text, translated through depthBucketLabel().
 export const DEPTH_BUCKETS: { id: string; label: string; min: number; max: number | null }[] = [
-  { id: 'all', label: 'Alle Tiefen', min: 0, max: null },
+  { id: 'all', label: 'All depths', min: 0, max: null },
   { id: '0-0.5', label: '0 – 0,5 m', min: 0, max: 0.5 },
   { id: '0.5-1', label: '0,5 – 1,0 m', min: 0.5, max: 1.0 },
   { id: '1-1.5', label: '1,0 – 1,5 m', min: 1.0, max: 1.5 },
   { id: '1.5+', label: '> 1,5 m', min: 1.5, max: null }
 ];
+
+function depthBucketLabel(bucket: { id: string; label: string }, t: (s: string) => string): string {
+  return bucket.id === 'all' ? t(bucket.label) : bucket.label;
+}
+
+// toFixed keeps the sign of a value that rounds to zero ("-0.00"), which reads as a
+// measurement rather than as none.
+function fixed2(value: number): string {
+  const text = value.toFixed(2);
+  return text === '-0.00' ? '0.00' : text;
+}
 
 // Which depth column a bucket reads has to follow the status selection: `tief` (the
 // actual excavated depth) is null until a target is opened, so filtering pending
@@ -290,7 +302,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     return {
       meanDepthError: validDepthPairs > 0 ? (totalDiff / validDepthPairs).toFixed(2) : '0.00',
       biasText: validDepthPairs > 0
-        ? (rawBias > 0.02 ? `${t('Too Deep')} (+${rawBias.toFixed(2)}m)` : (rawBias < -0.02 ? `${t('Too Shallow')} (${rawBias.toFixed(2)}m)` : `${t('Balanced')} (${rawBias.toFixed(2)}m)`))
+        ? (rawBias > 0.02 ? `${t('Too Deep')} (+${fixed2(rawBias)}m)` : (rawBias < -0.02 ? `${t('Too Shallow')} (${fixed2(rawBias)}m)` : `${t('Balanced')} (${fixed2(rawBias)}m)`))
         : t('N/A'),
       falsePositiveRate: investigatedCount > 0 ? Math.round((ohneFundCount / investigatedCount) * 100) : 0
     };
@@ -429,7 +441,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
       value={filterDepth}
       onChange={setFilterDepth}
       ariaLabel={t('Depth filter')}
-      options={DEPTH_BUCKETS.map(bucket => ({ value: bucket.id, label: bucket.label }))}
+      options={DEPTH_BUCKETS.map(bucket => ({ value: bucket.id, label: depthBucketLabel(bucket, t) }))}
     />
   );
 
@@ -456,8 +468,8 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     const instrument = filterInstrument === 'all'
       ? t('All Instruments')
       : filterInstrument === 'georadar' ? t('Georadar Array') : t('Magnetics');
-    // Bucket labels are deliberately German in both language modes - see DEPTH_BUCKETS.
-    const depth = (DEPTH_BUCKETS.find(b => b.id === filterDepth) ?? DEPTH_BUCKETS[0]).label;
+    // Range labels are deliberately German in both language modes - see DEPTH_BUCKETS.
+    const depth = depthBucketLabel(DEPTH_BUCKETS.find(b => b.id === filterDepth) ?? DEPTH_BUCKETS[0], t);
     const status = filterStatus === 'investigated' ? t('Investigated')
       : filterStatus === 'pending' ? t('Pending')
       : t('All Targets');

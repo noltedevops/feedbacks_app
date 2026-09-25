@@ -16,7 +16,8 @@ database and puts it in front of the people who dig.
 - **Sync** — when a connection returns, queued feedback and moved point coordinates are
   posted to the backend, which upserts them and returns the authoritative point list.
 - **Dashboard** — progress, findings breakdown, Sohle split, evaluated-vs-excavated
-  depth accuracy, excavated volume; plus CSV export and a PDF report laid out after
+  depth accuracy, mean target dimensions per finding and a filterable target log, each
+  panel expandable; plus CSV export and a PDF report laid out after
   `reportTemplate.pdf`.
 
 Access is per surface, not per role: an account carries `can_field`, `can_dashboard`
@@ -35,10 +36,10 @@ For project status, live data volumes and the open-items list, see
 | Auth | PBKDF2-HMAC-SHA256 (stdlib `hashlib`), HMAC-signed bearer tokens |
 | Reports | reportlab — CSV + landscape A4 PDF (`report.py`) |
 | Frontend | React 19, TypeScript, Vite 8 |
-| Map | Leaflet / react-leaflet, three basemaps (CartoDB dark, OSM, Esri aerial) |
+| Map | Leaflet / react-leaflet, three basemaps (Esri grey canvas, light or dark with the theme; OSM streets; Esri imagery) |
 | Charts | Recharts |
 | Offline store | Dexie (IndexedDB) + a hand-written service worker (`frontend/public/sw.js`) |
-| Tooling | docker-compose (PostGIS + pgAdmin), pandas for CSV ingestion |
+| Tooling | docker-compose (PostGIS + pgAdmin), the dbt ETL pipeline (`etl/`), Playwright for the screenshots |
 
 Deeper detail lives in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
 [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md) and [docs/OPERATIONS.md](docs/OPERATIONS.md).
@@ -243,7 +244,7 @@ offline cache while `register()` still logged success. If offline mode misbehave
 - A hard reload with "Update on reload" checked is the fastest way to get a clean worker.
 
 **The map renders but the tiles are blank offline.**
-Basemap tiles come from CartoDB/OSM/Esri and are not precached — only tiles already
+Basemap tiles come from Esri and OSM and are not precached — only tiles already
 fetched while online remain available. Target markers come from IndexedDB and work
 regardless.
 

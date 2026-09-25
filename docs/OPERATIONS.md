@@ -224,6 +224,38 @@ Take one before anything destructive, such as a manual edit or an ETL migration.
 There is no automated backup or retention policy yet; it is listed as an open item in
 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md).
 
+## Screenshots
+
+The landing page's showcase images and the screenshots in `docs/` are generated, not
+taken by hand. Rerun the script after any UI change that shows in them:
+
+```powershell
+cd frontend
+npm install                       # once; brings in Playwright
+npx playwright install chromium   # once per machine
+npm run build                     # the shots show what static/ holds
+npm run screenshots               # all 11; or: npm run screenshots -- landing | docs
+npm run build                     # copies the new landing images into static/
+```
+
+`frontend/scripts/capture-screenshots.mjs` serves `static/` itself and mocks the whole
+API in the browser, so it needs no backend, database or account. It needs a network
+connection for the basemap tiles. What it writes:
+
+| File | Size | What |
+|---|---|---|
+| `frontend/public/landing/{collector,decision}-{light,dark}-{en,de}.jpg` | 1440×900, JPEG | The 8 showcase images on the landing page: Field App and Dashboard, per theme and language |
+| `docs/app_main.png` | 1440×900 | The landing page (dark, EN) |
+| `docs/shot_fieldapp.png` | 1440×900 | The Field App with a target's popup and form open (dark, EN, satellite basemap) |
+| `docs/shot_dashboard.png` | 1440×900 | The dashboard (dark, EN) |
+
+**Only fake demo data appears.** The script invents one project (`10-00-0001`, *Demo Site
+North*), 180 targets on a stretch of North Sea coast that is not a client site, and a
+crew called *Demo Crew*. Before saving each image it checks the page text against a
+list of real project names, ids and people, and refuses to save on a match. Add new
+projects and users to that list (`FORBIDDEN` in the script). Look through the images
+before committing them anyway: the check reads text, not pixels.
+
 ## Common failures
 
 **The app refuses to start with "Cannot reach the database at …".**
