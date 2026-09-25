@@ -292,8 +292,13 @@ const MapController: React.FC<{
     }
   }, [selectedPoint, map]);
 
-  // Switching to a basemap with less detail steps back out to its deepest level.
+  // Switching to a basemap with less detail steps back out to its deepest level. Only on
+  // a switch: on mount the map still reports its initial zoom while the fit above is
+  // animating out, and clamping then would cancel the fit.
+  const lastDetailZoomRef = useRef(maxDetailZoom);
   useEffect(() => {
+    if (lastDetailZoomRef.current === maxDetailZoom) return;
+    lastDetailZoomRef.current = maxDetailZoom;
     if (map.getZoom() > maxDetailZoom) map.setZoom(maxDetailZoom);
   }, [maxDetailZoom, map]);
   
