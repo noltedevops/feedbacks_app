@@ -85,6 +85,11 @@ to the office database for analytics.
   and the device should keep that record queued and warn the user, so no field work can
   disappear without anyone knowing. Became concrete with the 2026-09-24 Wilhelmshaven
   migration, which removed 798 targets.
+- **A failed sync tells the crew nothing useful** — the field app shows only a generic
+  "Cloud database sync failed" toast (`App.tsx`, `handleSync`) and throws away the
+  response body, so the server's reason never reaches the user. That includes the
+  2026-09-25 message that says targets come from the ETL pipeline. The app should show
+  the reason the server gives, at least for a sync the crew asked for.
 - **A device left open and online never refreshes its target list on its own** — the
   list is downloaded only at app start / sign-in, on the Sync button, or when records are
   queued. Removed or new targets reach an idle device only when someone presses Sync.

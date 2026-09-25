@@ -5,7 +5,8 @@ this project actually produces.
 
 ## Services
 
-`docker-compose.yml` defines two containers. Credentials come from `.env`; nothing secret
+`docker-compose.yml` defines two always-on containers, plus the ETL pipeline behind the
+`etl` profile (below). Credentials come from `.env`; nothing secret
 is in the compose file, and every variable uses the `${VAR:?message}` form so a missing
 value fails the command loudly instead of falling back to a well-known default.
 
@@ -27,6 +28,22 @@ the database to the rest of the network. Both use `restart: unless-stopped`, bec
 without it the database does not come back after a reboot and the app, which is not
 managed by compose, then starts against nothing. pgAdmin waits on the database's
 `pg_isready` healthcheck rather than merely on the container existing.
+
+The ETL pipeline runs as a third service, `etl` (container `feedbackapp-etl-1`), behind
+the `etl` profile so a plain `docker compose up` never starts it:
+
+```powershell
+docker compose --profile etl up -d etl      # the schedule (ETL_INTERVAL_SECONDS, 900 on live)
+docker logs --tail 20 feedbackapp-etl-1     # its recent runs
+```
+
+It uses `restart: always` rather than `unless-stopped`. A manual stop still holds, but only
+until Docker next starts: on 2026-09-24 a manual stop outlasted a reboot and the schedule
+was down for 20 hours without anyone noticing. `init: true` puts an init process in front
+of the runner, which has no SIGTERM handler of its own, so `docker stop` ends it in under
+a second instead of waiting out the timeout and killing it, possibly mid-run. None of the
+three containers comes back after a Windows reboot until Docker Desktop is running, so
+keep *Start Docker Desktop when you sign in* switched on.
 
 The application itself is **not** in compose. Start it separately:
 
@@ -132,11 +149,18 @@ Checks performed:
 | App startup target | **silently running on the SQLite fallback** instead of Postgres |
 | `pg_hba` trust rules | a volume still authenticating without a password |
 | pgAdmin account state | locked accounts and accumulated failed attempts |
+| Last completed ETL run | **a stopped pipeline**: WARN when the last `ok` or `skipped` run in `etl.runs` is more than 4 intervals old (1 hour at `ETL_INTERVAL_SECONDS=900`), or when the latest run failed |
 
 It resolves `.env` the same way pydantic-settings does — real environment variables take
 precedence — so it reports on the values the app would actually use, not merely on what
 is written to disk. Exit status is 1 if any check FAILs, so it can gate a deploy or run
 in CI.
+
+The ETL check counts skipped runs as healthy: they prove the scheduler is alive and found
+nothing to change. It says whether the container is running, and so whether to start it
+or read its log. It is skipped when `ETL_INTERVAL_SECONDS` is 0 (scheduling off) or
+`etl.runs` does not exist. A stopped pipeline makes no noise of its own, so run
+`doctor.py` after a reboot, or on a schedule, to catch one.
 
 ## `manage_access.py`
 
@@ -231,6 +255,13 @@ count. Reset with `setup.py update-user` inside the container, then clear
 
 **"Database synchronization failed" on sync.**
 `/api/sync` returns this when the commit fails, most often because the anomalies the
-device is reporting against do not exist server-side — an un-ingested or re-ingested
-database. Feedback whose parent anomaly is missing is skipped with a warning rather than
+device is reporting against do not exist server-side, for example on a new database the
+ETL pipeline has not loaded yet. Feedback whose parent anomaly is missing is skipped with a warning rather than
 failing the whole request, so check the server log for `Skipping sync of feedback log …`.
+
+**New survey data does not appear.**
+Run `doctor.py`: its ETL check says how long ago the last run completed and whether
+`feedbackapp-etl-1` is running. If it is stopped, start it with
+`docker compose --profile etl up -d etl`. If it is running, look for changes waiting for
+the approver (`docker compose --profile etl run --rm etl-approve`) and for source rows
+left out for lack of a category (see [etl/README.md](../etl/README.md)).

@@ -1149,6 +1149,7 @@ npm run build      # production build, written directly into ..\static</pre>
     <tr><td>App startup target</td><td>Silently running on the SQLite fallback instead of PostgreSQL.</td></tr>
     <tr><td><code>pg_hba</code> trust rules</td><td>A volume still authenticating without a password.</td></tr>
     <tr><td>pgAdmin account state</td><td>Locked accounts and accumulated failed attempts.</td></tr>
+    <tr><td>Last completed ETL run</td><td>A stopped pipeline: a warning when the last completed run is more than four intervals old (1 hour at the live 15 minutes), or when the latest run failed.</td></tr>
   </table>
 
   <h3>Logins fail, or the accounts are gone</h3>
@@ -1198,9 +1199,10 @@ DETAIL: The data directory was initialized by PostgreSQL version 16,
   §14 Step 4); or active filters exclude everything — reset them to “All”.</p>
 
   <h3>New survey data does not appear</h3>
-  <p>Check that the <code>etl</code> container is running (<code>docker ps</code>). Docker restarts it
-  after a crash or a Docker restart, but not after a deliberate stop or <code>docker kill</code>, and
-  nothing comes back after a Windows reboot until Docker Desktop is opened. Restart it with
+  <p>Run <code>doctor.py</code>: it reports how long ago the last run completed and whether the
+  <code>etl</code> container is running. Its <code>restart: always</code> policy brings it back after a
+  crash or whenever Docker starts, but a manual stop holds until then, and nothing comes back after a
+  Windows reboot until Docker Desktop is running. Start it with
   <code>docker compose --profile etl up -d etl</code>. If it is running, look for staged changes waiting
   for the approver (<code>docker compose --profile etl run --rm etl-approve</code>) and for source rows
   it left out for lack of a category.</p>
@@ -1288,10 +1290,11 @@ DETAIL: The data directory was initialized by PostgreSQL version 16,
     third thing entirely.</li>
     <li><strong><code>ALLOW_SQLITE_FALLBACK</code> is read from the process environment, not
     <code>.env</code></strong> (§15.1). Putting it in <code>.env</code> does nothing at all.</li>
-    <li><strong>The pipeline stays down after a deliberate stop.</strong> The <code>etl</code> service's
-    <code>unless-stopped</code> policy restarts it after a crash, but not after <code>docker stop</code>
-    or <code>docker kill</code>, and nothing in Docker returns after a Windows reboot until Docker Desktop
-    is opened (§16).</li>
+    <li><strong>A stopped pipeline makes no noise.</strong> On 24 September 2026 a manual stop of the
+    <code>etl</code> container outlasted a reboot and the schedule was down for 20 hours. The service now
+    uses <code>restart: always</code> and <code>init: true</code>, and <code>doctor.py</code> warns when
+    the last completed run is over an hour old; nothing returns after a Windows reboot until Docker
+    Desktop is running (§16).</li>
     <li><strong><code>install_node.py</code> hardcodes its target directory</strong> as
     <code>c:\Apps\feedbackapp\node</code>. On any other machine, edit <code>TARGET_DIR</code> or install
     Node yourself. <em>Known gap; to be made relative to the script.</em></li>
