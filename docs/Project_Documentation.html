@@ -707,10 +707,10 @@
     <li><strong>TypeScript</strong> — <code>latLonToUtm32nJS()</code> in <code>FeedbackForm.tsx</code>
     converts a dragged marker's new lat/lon back to easting/northing while offline, using the standard
     Transverse-Mercator series expansion on the WGS84 ellipsoid.</li>
-    <li><strong>Python</strong> — <code>database.py</code> still carries the same formula as
-    <code>latlon_to_utm32n()</code>, which nothing in the app calls. Its inverse and the TypeScript copy
-    of it went with the import panel on 25 September 2026. <code>test_utm.py</code> is a small standalone
-    script for sanity-checking the math.</li>
+    <li><strong>Python</strong> — none left in the app. <code>database.py</code>'s
+    <code>utm32n_to_latlon()</code> and <code>latlon_to_utm32n()</code>, and a TypeScript copy of the
+    former, were removed on 25 September 2026 with the import panel they served.
+    <code>test_utm.py</code> is a small standalone script for sanity-checking the math.</li>
   </ul>
   <p>Duplicated conversion math is a known liability; see §17.</p>
 </div>
@@ -1185,12 +1185,13 @@ DETAIL: The data directory was initialized by PostgreSQL version 16,
   <p><strong>Fix (destructive):</strong> if the data is disposable, <code>docker compose down -v</code>
   and let the pinned image re-initialize — this erases both the database and pgAdmin volumes.</p>
 
-  <h3>Sync fails with HTTP 400 “database has not been seeded with targets yet”</h3>
+  <h3>Sync fails with HTTP 400 “Database synchronization failed”</h3>
   <p><code>POST /api/sync</code> returns this when the commit fails — most commonly because feedback
   references anomalies that do not exist in the current database (you are on the SQLite fallback, or
   the database is new and the pipeline has not loaded it yet). Load targets first, then sync again;
-  queued items are preserved in the browser until a sync succeeds. Check the server log for <code>Skipping sync of feedback log …</code> lines,
-  which name the orphaned records.</p>
+  queued items are preserved in the browser until a sync succeeds. The field app shows only “Cloud
+  database sync failed”; the full reason is in the response and the server log. Check that log for
+  <code>Skipping sync of feedback log …</code> lines, which name the orphaned records.</p>
 
   <h3>Map shows no points after login</h3>
   <p>Usual causes, in order: the backend is not running; the database is empty (run the ETL pipeline,
@@ -1267,9 +1268,8 @@ DETAIL: The data directory was initialized by PostgreSQL version 16,
     <li><strong><code>feedback → anomalies</code> is <code>ON DELETE CASCADE</code>.</strong> Deleting a
     target silently deletes its excavation record; <code>RESTRICT</code> would make an accidental delete
     fail loudly.</li>
-    <li><strong>Duplicated conversion math</strong> in SQL, TypeScript and an unused Python copy. The
-    TS/Python versions also ignore the small geoid differences a library like pyproj/proj4js would
-    handle.</li>
+    <li><strong>Duplicated conversion math</strong> in SQL and TypeScript. The TypeScript version also
+    ignores the small geoid differences a library like proj4js would handle.</li>
     <li><strong>No automated tests for the app and no CI.</strong> The ETL pipeline has
     <code>dbt test</code> on every run and an acceptance suite; the application has only ad-hoc UTM
     conversion scripts (<code>test_utm.py</code>, <code>scratch/</code>). <code>doctor.py</code> is

@@ -98,10 +98,12 @@ On PostgreSQL, `database.py` installs a `BEFORE INSERT OR UPDATE` trigger,
 derives the other two via `ST_Transform` between EPSG:32632 and EPSG:4326. Nothing in the
 application has to remember to do it.
 
-`database.py` also carries a pure-Python `latlon_to_utm32n()`, which nothing in the app
-calls. Its inverse, `utm32n_to_latlon()`, was removed on 2026-09-25 with its only callers,
-`POST /api/points/import` and `POST /api/seed`. `test_utm.py` and `scratch/` check the
-conversions against known points.
+`database.py` used to carry pure-Python `utm32n_to_latlon()` / `latlon_to_utm32n()`
+implementations. Both were removed on 2026-09-25: their only callers were
+`POST /api/points/import` and `POST /api/seed`. The one pure-series conversion left in the
+app is `latLonToUtm32nJS()` in `FeedbackForm.tsx`, for a marker dragged offline.
+`test_utm.py` and `scratch/` carry their own copies to check the math against known
+points.
 
 ### Startup behaviour (`database.py`)
 

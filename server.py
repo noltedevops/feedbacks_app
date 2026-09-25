@@ -851,7 +851,7 @@ def sync_data(
         logger.error(f"Sync commit failed: {e}")
         raise HTTPException(
             status_code=400,
-            detail=f"Database synchronization failed. This usually happens if the backend database has not been seeded with targets yet. Please seed the database and try again. Error: {str(e)}"
+            detail=f"Database synchronization failed. This usually means the records refer to targets this database does not hold. Targets are loaded by the ETL pipeline (etl/), not by the app: check that it has run against this database, then sync again. Error: {str(e)}"
         )
         
     return {
