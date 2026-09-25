@@ -65,8 +65,12 @@ to the office database for analytics.
   acceptance suite (`etl/tests/acceptance.py`) run against a copy of the database. The
   application itself has no automated tests, and there is no CI. `scripts/doctor.py`
   exits 1 on any failure and would be a reasonable first gate.
-- **Multi-project workflow** — one project loaded today; the project dropdown
-  exists but ingestion/management of additional projects should be exercised.
+- **Adding a project by configuration alone is untested** — two projects
+  (`11-24-2736` Wilhelmshaven, `11-26-5151` Köln) are loaded through the ETL config
+  (`etl/config/projects.yml`). What has not been exercised is bringing in a third one
+  purely by configuration, end to end: a new project schema, an entry in
+  `projects.yml`, a re-run of `setup-sql` for its grants, then the first run, the
+  targets in the app and a feedback round-trip.
 - **Restricted logins for editing project schemas** — the QGIS session that built
   the new Wilhelmshaven source tables on 2026-09-23 was connected as `postgres`, the
   superuser. People editing project schemas should use their own restricted logins
