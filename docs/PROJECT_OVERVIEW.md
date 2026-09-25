@@ -1,7 +1,7 @@
 # Nolte Geoservices — UXO Target Sync Platform
 
-**Project status overview — 20 July 2026**
-Prepared for the sync meeting with Uwe.
+**Project status overview — last updated 25 September 2026**
+First written for the 20 July 2026 sync meeting with Uwe.
 
 ## What the application does
 
@@ -12,18 +12,19 @@ result for each point — status (clear / scrap / UXO / false alarm), actual dep
 Sohle status, Fundstück details, dimensions, photos, and notes. Results sync back
 to the office database for analytics.
 
-**Current live data:** project *11-24-2736 — Wilhelmshaven Seedeich*,
-1,583 targets loaded (1,538 magnetic, 45 georadar), 61 investigated so far (~4%).
+**Current live data (25 September 2026):** two projects, 2,342 targets —
+*11-24-2736 Wilhelmshaven Seedeich* 2,215 (740 magnetic, 1,475 georadar) and
+*11-26-5151 Köln Deutzerfeld* 127 (georadar) — and 16 feedback records.
 
 ## Architecture
 
 | Layer | Technology |
 |---|---|
 | Backend API | Python / FastAPI (`server.py`), endpoints: `/api/points`, `/api/sync`, `/api/stats` |
-| Database | PostgreSQL 16 + PostGIS (Docker), automatic SQLite fallback for offline/local use |
+| Database | PostgreSQL 16 + PostGIS (Docker); an opt-in SQLite fallback for deliberate offline work |
 | Frontend | React + TypeScript (Vite), served as a PWA from `static/` |
 | Offline store | IndexedDB (Dexie) with a pending-sync queue + service worker |
-| Mapping | Leaflet (CartoDB tiles), UTM 32N ↔ WGS84 conversion server-side |
+| Mapping | Leaflet (Esri and OSM tiles), UTM 32N ↔ WGS84 conversion in PostGIS |
 | Tooling | docker-compose (PostGIS + pgAdmin), survey data pipeline (`etl/`, dbt) |
 
 ## What is done
@@ -31,34 +32,37 @@ to the office database for analytics.
 - **Backend API** with full point/feedback data model, including the German field
   vocabulary (Sohle-Status, Fundstück, Länge/Breite, m³, Bilder-N).
 - **PostgreSQL/PostGIS integration** with PL/pgSQL triggers for bidirectional
-  coordinate/geometry sync, plus SQLite fallback when Postgres is unreachable.
-- **Stable UUID5 target IDs** so re-ingesting CSV data never breaks references or
+  coordinate/geometry sync. An unreachable database stops the app; the SQLite
+  fallback is opt-in.
+- **Stable UUID5 target IDs** so loading a target again never breaks references or
   duplicates feedback (commit `b39c85b`).
-- **CSV ingestion** of magnetic and radar survey data with UTM→lat/lon conversion.
+- **Survey data pipeline** (`etl/`): configuration-driven, scheduled every 15
+  minutes, never deletes, and changes to existing targets wait for an approver.
+- **Real authentication**: PBKDF2 password hashes, signed tokens, per-surface access
+  flags, admin-decided permission requests, and an offline sign-in policy.
 - **Offline-first field app (PWA)**: targets cached in IndexedDB, feedback queued
   offline and synced when back online; installable with service worker.
-- **Field app UI**: searchable/filterable target list (VM-Nr., instrument, status),
-  interactive map with investigated/pending markers, feedback form with camera
-  snapshot preview.
-- **Analytics dashboard**: totals and progress, grouped findings chart, Sohle
-  status split, evaluated-vs-excavated depth accuracy (mean error ±0.13 m,
-  bias −0.01 m, empty-hole FPR 16%), target dimension profiling, excavated
-  volume tracking (42.2 m³), instrument filter, project dropdown.
+- **Field app UI**: searchable target list filtered by project, VM-Nr.,
+  instrument, category and status; a map with investigated/pending markers, three
+  basemaps and a popup giving the crew's distance and bearing to the target and its
+  field log; feedback form with camera snapshot preview.
+- **Analytics dashboard**: totals and progress, findings by type, Sohle status split,
+  evaluated-vs-excavated depth accuracy (mean error, estimation bias, empty-hole
+  rate), mean target dimensions by finding and a target log, filtered by project,
+  instrument and category, each panel expandable to full size.
+- **Landing page and onboarding**: a public landing page with an AI assistant, and a
+  post-login Overview with guided tours of each surface. EN/DE and light/dark
+  throughout.
 - **Docker environment** for PostGIS + pgAdmin; repo cleaned up (.gitignore,
   docker-compose committed) and pushed to GitHub (`noltedevops/feedbacks_app`).
 
 ## What remains / open items
 
-- **Real authentication** — sign-in is currently client-side only (role derived
-  from username in localStorage, no password verification). Needs a proper
-  backend auth (users table, hashed passwords, tokens/sessions).
 - **Photo storage** — photos travel as base64 strings in the feedback payload;
   should move to proper file/object storage with thumbnails.
 - **PostGIS extension error handling** — the extension-enable step in
   `database.py` only logs on failure; wants investigation/hardening so a failed
   PostGIS setup is surfaced clearly instead of silently continuing.
-- **Branch cleanup** — `backendtest` is one commit behind `main` with nothing
-  unique; fast-forward or delete. It also only exists locally.
 - **Deployment** — currently runs locally (uvicorn + Docker). Needs a hosted
   environment, HTTPS, and backup strategy for the Postgres volume.
 - **Testing** — the ETL pipeline is tested: `dbt test` on every run, and a full
@@ -111,8 +115,10 @@ to the office database for analytics.
 
 ## Screenshots
 
-Current running application (also in this `docs/` folder):
+In this `docs/` folder, captured from the current app with fake demo data (a
+fictitious project, *Demo Site North*, and crew). Regenerate them after a UI change
+with `npm run screenshots`; see [OPERATIONS.md](OPERATIONS.md#screenshots).
 
-- `shot_dashboard.png` — Clearance Analytics Dashboard with live data
-- `shot_fieldapp.png` — Field app: target listing + map (Wilhelmshaven Seedeich)
-- `app_main.png` — Landing / sign-in page
+- `app_main.png` — the landing page, with the Collector / Decision Maker showcase
+- `shot_fieldapp.png` — Field app: a target's map popup and its feedback form
+- `shot_dashboard.png` — Clearance Analytics Dashboard

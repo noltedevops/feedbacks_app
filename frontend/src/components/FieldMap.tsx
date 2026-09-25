@@ -160,7 +160,8 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t 
       <header className="tp-head">
         <span className="tp-vm">VM {point.vm_nr}</span>
         <span className="tp-status status-chip" data-status={chipStatus}>
-          {t(status).toUpperCase()}
+          {/* "unvisited" is the resolved status; everywhere else the app calls it Pending. */}
+          {t(status === 'unvisited' ? 'Pending' : status).toUpperCase()}
         </span>
       </header>
 

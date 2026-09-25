@@ -79,7 +79,6 @@ const de: Record<string, string> = {
   'Print PDF': 'PDF drucken',
 
   // Resolved target status badge (values come from getResolvedStatus)
-  'unvisited': 'nicht besucht',
   'clear': 'frei',
   'uxo': 'kampfmittel',
   'scrap': 'schrott',
@@ -459,7 +458,8 @@ const de: Record<string, string> = {
   // Category filter (anomalies.category)
   'Category': 'Kategorie',
   'CATEGORY:': 'KATEGORIE:',
-  'All Categories': 'Alle Kategorien'
+  'All Categories': 'Alle Kategorien',
+  'All depths': 'Alle Tiefen'
 };
 
 export type Translator = (text: string) => string;

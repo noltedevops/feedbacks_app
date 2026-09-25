@@ -126,8 +126,9 @@ Passwords are PBKDF2-HMAC-SHA256 via `hashlib`, encoded as
 a field laptop. Tokens are HMAC-signed with `AUTH_SECRET`; unset means a random key per
 process, so every restart invalidates every session.
 
-Authorisation is by **surface**, not by role. `role` only decides the landing view and
-the sidebar label. The dependencies in `server.py` are:
+Authorisation is by **surface**, not by role. `role` is only a label in the user menu;
+every account lands on the Overview page after signing in. The dependencies in
+`server.py` are:
 
 - `current_user` — valid token required
 - `require_surface("field")` / `require_surface("dashboard")` — the matching flag; a 403
@@ -237,15 +238,20 @@ machine.
 
 ## Frontend
 
-`frontend/src/App.tsx` is the shell: landing page, sign-in, sidebar, surface switching,
-online/offline state, sync orchestration, admin dialogs and the EN/DE toggle. Components:
+`frontend/src/App.tsx` is the shell: routing between the landing page, the Overview and
+the two surfaces, the icon rail, online/offline state, sync orchestration, admin dialogs
+and the EN/DE toggle. Components:
 
 | File | Role |
 |---|---|
-| `components/FieldMap.tsx` | Leaflet map, marker colouring by resolved status, three basemaps, marker drag |
+| `components/Landing.tsx` | Public landing page: the Collector / Decision Maker showcase and the assistant box (`AskAssistant.tsx`, `AssistantDialog.tsx`) |
+| `components/AuthDialog.tsx` | Sign-in and sign-up |
+| `components/Overview.tsx` | Post-login home: a short introduction and the guided tours (`tour/`) |
+| `components/FieldMap.tsx` | Leaflet map, marker colouring by resolved status, three basemaps, the target popup (distance and bearing, field log), marker drag |
 | `components/FeedbackForm.tsx` | The excavation form, including camera capture and the Trupp & Geräte block |
-| `components/Dashboard.tsx` | Recharts analytics |
-| `components/FilterBar.tsx` | VM-Nr. / instrument / status filtering |
+| `components/Dashboard.tsx` | KPI tiles, filters and the target log; charts in `DashboardCharts.tsx` (Recharts); `PanelExpand.tsx` opens any panel full size |
+| `components/FilterBar.tsx` | Phones only: folds a stack of filters behind a one-line summary bar |
+| `components/Select.tsx` | The dropdown used by every filter (a native `<select>` on phones) |
 | `components/ReportDialog.tsx` | Project and date range for the CSV/PDF exports |
 | `db/indexedDb.ts` | Dexie schema, types, and `getResolvedStatus()` |
 | `auth.ts` | Token storage, access flags, `authFetch`, offline login policy |
