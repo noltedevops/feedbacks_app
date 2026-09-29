@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 import re
@@ -8,7 +8,7 @@ from typing import Any
 
 import yaml
 
-VALID_IDENTIFIER = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
+VALID_IDENTIFIER = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_ ]*$")
 COMMON_SRIDS = {25832, 25833, 31466, 31467, 31468, 31469, 4326, 3857, 4258, 3034, 3035}
 
 

@@ -66,3 +66,22 @@ projects:
           depth: { column: "Tiefe [m]" }
           category: { column: category, fallback: { column: "Target Pic", rule: trailing_number } }
           layer: layer
+
+  - project_id: "11_24_2704"
+    project_name: "Giessen Oberhof"
+    schema: p_11_24_2704 Giessen_Oberhof
+    srid: 25832
+    vm_prefix: "2704"
+    sources:
+      - table: Picks
+        instrument: georadar
+        key: id
+        where: "field_3 not in (0, 4)"
+        coord_round: 2
+        id_decimals: 3
+        columns:
+          easting: field_1
+          northing: field_2
+          depth: { column: field_4, round: 2 }
+          category: { expr: "'Kat-' || field_3" }
+          layer: null
