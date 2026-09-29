@@ -14,7 +14,9 @@ This guide covers operational procedures, configuration validation, Web UI appro
 | :--- | :--- | :--- |
 | **Trigger Full Run** | Web UI: `Database` icon &rarr; `Run Sync Now`<br>CLI: `docker compose --profile etl run --rm etl run --force` | Admin user (UI) / `etl_pipeline` (CLI) |
 | **Trigger Single Project** | Web UI: Select project &rarr; `Run Sync Now`<br>CLI: `docker compose --profile etl run --rm etl run --force --project 11-26-5151` | Admin user (UI) / `etl_pipeline` (CLI) |
+| **Start Cron Orchestrator** | CLI: `docker compose --profile etl run --rm etl cron --schedule "*/15 * * * *"`<br>Daemon: Container running with `ETL_CRON_SCHEDULE` | `etl_pipeline` |
 | **Validate Configuration** | `docker compose --profile etl run --rm etl validate-config` | Read-only |
+| **Check Pipeline Health** | Web UI: Top KPI Ribbon<br>API: `GET /api/etl/health` | Read-only |
 | **Review Approvals (Web)** | Web UI: Click `Database` icon in navigation rail | Admin user (`etl_approver`) |
 | **Review Approvals (CLI)** | `docker compose --profile etl run --rm etl-approve status --approver` | `etl_approver` |
 | **Approve / Reject Staged** | `docker compose --profile etl run --rm etl-approve approve-change <ids...>`<br>`docker compose --profile etl run --rm etl-approve reject-change <ids...>` | `etl_approver` |
@@ -47,7 +49,7 @@ The linter validates:
 Admins can manage the entire ETL lifecycle from the web application without using command-line tools:
 
 1. **Access**: Click the `Database` icon in the left-hand navigation rail. A badge shows pending approvals in real-time.
-2. **Top Ribbon**: Displays the status of the last run, duration, and counts of pending staged changes and coordinate shifts.
+2. **Top Health Ribbon**: Displays real-time **Pipeline Health** (Healthy/Degraded/Unhealthy), database connection ping latency (ms), freshness SLA status, and counts of pending staged changes and coordinate shifts.
 3. **Execution Bar**:
    - **Project Selector**: Run across all projects or select a specific project (`11-26-5151`, `11-24-2736`).
    - **Force Sync Toggle**: Bypasses the fingerprint cache to immediately apply decisions.
@@ -59,7 +61,7 @@ Admins can manage the entire ETL lifecycle from the web application without usin
    - Compares existing coordinates with new source coordinates.
    - Displays spatial shift distance in meters and rule match rationale (`source_key` vs spatial proximity).
 6. **Runs & Health Tab**:
-   - Inspect the last 10 pipeline executions with duration, exit status, and detailed metrics (rows written, rows staged).
+   - Inspect the last 25 pipeline executions with interactive SVG charts for duration trends (latency), ingestion volume vs staged changes, outcome distribution, and run status filters (`All`, `Successful`, `Skipped`, `Failed`).
 7. **Audit History (SCD Type 2) Tab**:
    - Inspect full historical timeline of all changes made to targets.
    - Search by Target ID, VM Number, Project, or Change Reason.
@@ -180,4 +182,23 @@ SELECT cron.schedule('etl_merge_tick', '*/15 * * * *',
     );$$
 );
 ```
+
+---
+
+## 12. Environment Variables Reference
+
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `ETL_CRON_SCHEDULE` | `*/15 * * * *` | 5-field cron expression for wall-clock aligned container scheduling. |
+| `ETL_INTERVAL_SECONDS` | `0` (off) | Fallback fixed sleep interval in seconds for legacy loop mode. |
+| `ETL_ALERT_WEBHOOK_URL` | *(unset)* | Webhook endpoint for automated Teams / Slack / Discord alert notifications. |
+| `ETL_MAX_STALENESS_HOURS` | `24` | SLA threshold in hours before `/api/etl/health` flags the pipeline as stale. |
+| `ETL_DB_HOST` | `localhost` | PostgreSQL server hostname or container service name. |
+| `ETL_DB_PORT` | `5432` | PostgreSQL listening port. |
+| `ETL_DB_NAME` | `nolte_geoservices` | Target database name. |
+| `ETL_DB_USER` | `etl_pipeline` | Least-privilege pipeline role credentials (cannot modify `feedback` or UPDATE targets directly). |
+| `ETL_DB_PASSWORD` | *(required)* | Password for the `etl_pipeline` role. |
+| `ETL_APPROVER_USER` | `etl_approver` | Least-privilege approver role credentials used by the review UI. |
+| `ETL_APPROVER_PASSWORD` | *(required)* | Password for the `etl_approver` role. |
+
 
