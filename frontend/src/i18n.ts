@@ -522,7 +522,16 @@ const de: Record<string, string> = {
   'Degraded': 'Beeinträchtigt',
   'Unhealthy': 'Fehlerhaft',
   'Fresh': 'Aktuell',
-  'Stale': 'Veraltet'
+  'Stale': 'Veraltet',
+  'Execution Trends & Metrics': 'Ausführungstrends & Metriken',
+  'Duration Trend (Seconds)': 'Laufzeittrend (Sekunden)',
+  'Ingestion Volume & Staged Changes': 'Importvolumen & Ausstehende Änderungen',
+  'Outcome Distribution': 'Ergebnisverteilung',
+  'Avg Duration': 'Durchschn. Laufzeit',
+  'Success Rate': 'Erfolgsquote',
+  'Total Merged': 'Insgesamt übernommen',
+  'Successful': 'Erfolgreich',
+  'Run History': 'Ausführungshistorie'
 };
 
 export type Translator = (text: string) => string;

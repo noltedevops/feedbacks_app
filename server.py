@@ -1123,7 +1123,7 @@ def get_etl_pipeline_status(admin: models.User = Depends(require_admin)):
                 }
                 for r in conn.execute(
                     "select run_id, started_at, finished_at, status, forced, summary "
-                    "from etl.runs order by run_id desc limit 10"
+                    "from etl.runs order by run_id desc limit 25"
                 ).fetchall()
             ]
             staged_changes = [

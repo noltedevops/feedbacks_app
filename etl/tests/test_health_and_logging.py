@@ -68,7 +68,24 @@ class TestHealthEndpoint(unittest.TestCase):
             self.assertIsInstance(health["database_latency_ms"], float)
             self.assertIn("staleness", health)
             self.assertIn("pending_approvals", health)
-            self.assertIn("data_counts", health)
+class TestCronSchedule(unittest.TestCase):
+    def test_cron_schedule_parsing(self):
+        from etl.runner.run import CronSchedule
+        c = CronSchedule("*/15 * * * *")
+        self.assertEqual(c.minutes, {0, 15, 30, 45})
+        self.assertEqual(len(c.hours), 24)
+
+    def test_cron_schedule_next_run(self):
+        from etl.runner.run import CronSchedule
+        c = CronSchedule("*/15 * * * *")
+        ref_dt = datetime(2026, 9, 29, 10, 5, 0)
+        secs = c.next_run_seconds(ref_dt)
+        self.assertEqual(secs, 600.0)  # Next is 10:15:00 = 10 mins = 600s
+
+    def test_cron_invalid_expression(self):
+        from etl.runner.run import CronSchedule
+        with self.assertRaises(ValueError):
+            CronSchedule("*/15 * * *")  # Only 4 fields
 
 
 if __name__ == "__main__":

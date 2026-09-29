@@ -29,7 +29,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import datetime
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -933,11 +935,129 @@ def setup_sql() -> str:
     return "\n".join(out) + "\n" + APPROVAL_SQL
 
 
+def parse_cron_field(field_str: str, min_val: int, max_val: int) -> set[int]:
+    """Parse a single cron field expression into a set of matching integers."""
+    result = set()
+    for part in field_str.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if part == "*":
+            result.update(range(min_val, max_val + 1))
+        elif "/" in part:
+            subparts = part.split("/", 1)
+            step = int(subparts[1])
+            if subparts[0] == "*":
+                start = min_val
+                end = max_val
+            elif "-" in subparts[0]:
+                start_s, end_s = subparts[0].split("-", 1)
+                start, end = int(start_s), int(end_s)
+            else:
+                start = int(subparts[0])
+                end = max_val
+            result.update(range(start, end + 1, step))
+        elif "-" in part:
+            start_s, end_s = part.split("-", 1)
+            result.update(range(int(start_s), int(end_s) + 1))
+        else:
+            val = int(part)
+            if min_val <= val <= max_val:
+                result.add(val)
+    return result
+
+
+class CronSchedule:
+    def __init__(self, expr: str):
+        fields = expr.strip().split()
+        if len(fields) != 5:
+            raise ValueError(f"Invalid cron expression '{expr}': expected 5 fields, got {len(fields)}")
+        self.expr = expr
+        self.minutes = parse_cron_field(fields[0], 0, 59)
+        self.hours = parse_cron_field(fields[1], 0, 23)
+        self.days = parse_cron_field(fields[2], 1, 31)
+        self.months = parse_cron_field(fields[3], 1, 12)
+        raw_dow = parse_cron_field(fields[4], 0, 7)
+        self.dows = {0 if d == 7 else d for d in raw_dow}
+
+    def matches(self, dt: datetime.datetime) -> bool:
+        dow = int(dt.strftime("%w"))
+        return (
+            dt.minute in self.minutes
+            and dt.hour in self.hours
+            and dt.day in self.days
+            and dt.month in self.months
+            and dow in self.dows
+        )
+
+    def next_run_seconds(self, from_dt: datetime.datetime | None = None) -> float:
+        """Find seconds until next matching minute boundary (scans minute by minute)."""
+        if from_dt is None:
+            from_dt = datetime.datetime.now()
+        cur = from_dt.replace(second=0, microsecond=0) + datetime.timedelta(minutes=1)
+        max_scan = 60 * 24 * 366  # 1 year
+        for _ in range(max_scan):
+            if self.matches(cur):
+                diff = (cur - from_dt).total_seconds()
+                return max(1.0, diff)
+            cur += datetime.timedelta(minutes=1)
+        return 3600.0
+
+
+def cron_orchestrator(schedule_expr: str, project_id: str | None = None) -> int:
+    """Structured cron orchestrator supporting 5-field cron syntax, exact tick alignment, and graceful signal handling."""
+    cron = CronSchedule(schedule_expr)
+    log.info(f"Starting structured cron orchestrator with schedule '{schedule_expr}'...")
+    print(f"[ETL CRON] Scheduled with expression: '{schedule_expr}'")
+
+    stop_requested = False
+
+    def handle_signal(sig, frame):
+        nonlocal stop_requested
+        log.info(f"Received termination signal ({sig}), initiating graceful shutdown...")
+        print("\n[ETL CRON] Termination requested. Shutting down gracefully...")
+        stop_requested = True
+
+    signal.signal(signal.SIGINT, handle_signal)
+    if hasattr(signal, "SIGTERM"):
+        signal.signal(signal.SIGTERM, handle_signal)
+
+    while not stop_requested:
+        now = datetime.datetime.now()
+        secs = cron.next_run_seconds(now)
+        next_dt = now + datetime.timedelta(seconds=secs)
+        log.info(f"Next pipeline run scheduled for {next_dt.strftime('%Y-%m-%d %H:%M:%S')} (in {secs:.1f}s)")
+        print(f"[ETL CRON] Next run scheduled for {next_dt.strftime('%Y-%m-%d %H:%M:%S')} ({secs:.0f}s from now)")
+
+        slept = 0.0
+        while slept < secs and not stop_requested:
+            step = min(1.0, secs - slept)
+            time.sleep(step)
+            slept += step
+
+        if stop_requested:
+            break
+
+        try:
+            log.info("Triggering scheduled pipeline run...")
+            run(project_id=project_id)
+        except Exception as e:
+            log.error(f"Error during scheduled pipeline run: {e}", exc_info=True)
+            print(f"[ETL CRON ERROR] Pipeline run failed: {e}", file=sys.stderr)
+
+    log.info("Cron orchestrator stopped cleanly.")
+    print("[ETL CRON] Orchestrator stopped cleanly.")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run"); r.add_argument("--force", action="store_true"); r.add_argument("--project", help="run selectively for a single project ID")
     sub.add_parser("loop"); sub.add_parser("setup-sql"); sub.add_parser("validate-config")
+    cr = sub.add_parser("cron")
+    cr.add_argument("--schedule", default=os.environ.get("ETL_CRON_SCHEDULE", "*/15 * * * *"), help="5-field cron expression (default: '*/15 * * * *')")
+    cr.add_argument("--project", help="run selectively for a single project ID")
     st = sub.add_parser("status"); st.add_argument("--approver", action="store_true", help="connect as etl_approver")
     for name in ("approve-change", "reject-change"):
         c = sub.add_parser(name); c.add_argument("ids", nargs="*", type=int); c.add_argument("--run", type=int)
@@ -953,7 +1073,13 @@ def main() -> int:
         return 0
     if a.cmd == "run":
         return run(force=a.force, project_id=a.project)
+    if a.cmd == "cron":
+        return cron_orchestrator(a.schedule, project_id=a.project)
     if a.cmd == "loop":
+        # Prefer structured cron if ETL_CRON_SCHEDULE is set
+        cron_expr = os.environ.get("ETL_CRON_SCHEDULE")
+        if cron_expr:
+            return cron_orchestrator(cron_expr)
         interval = int(os.environ.get("ETL_INTERVAL_SECONDS", "0"))
         if interval <= 0:
             print("ETL_INTERVAL_SECONDS is not set: scheduling is off. Nothing runs.")

@@ -67,6 +67,7 @@ services:
       # Not ":?": compose interpolates every service, so that form would break a plain
       # `docker compose up` on machines without it. The runner refuses to start without it.
       ETL_DB_PASSWORD: ${ETL_DB_PASSWORD:-}
+      ETL_CRON_SCHEDULE: ${ETL_CRON_SCHEDULE:-*/15 * * * *}
       ETL_INTERVAL_SECONDS: ${ETL_INTERVAL_SECONDS:-0}
     # The runner is PID 1 and has no SIGTERM handler, so without an init process a
     # `docker stop` waits out the timeout and ends in SIGKILL (exit 137), possibly mid-run.

@@ -128,3 +128,56 @@ An operational health endpoint is available at `GET /api/etl/health` for monitor
   - `unhealthy`: Database connection failed or last execution resulted in a gate failure.
 - **Approval Metrics**: Reports real-time counts of staged changes and correction pairs awaiting human action.
 
+---
+
+## 10. Execution Metrics Dashboard & Visual Trend Charts
+
+The Web UI **ETL Pipeline Panel** (`Runs & Health` tab) provides real-time visual observability over execution performance:
+- **KPI Summary Strip**:
+  - **Avg Duration**: Mean execution latency across runs.
+  - **Success Rate**: Percentage of successful vs failed runs.
+  - **Total Merged**: Cumulative rows inserted/updated into `public.anomalies`.
+  - **Total Runs**: Evaluated run window with skipped count.
+- **Interactive SVG Charts**:
+  - **Duration Trend (Latency)**: Chronological run durations (seconds) color-coded by status (Green = OK, Amber = Skipped, Red = Failed) with interactive hover tooltips.
+  - **Ingestion Volume & Staged Changes**: Dual bars displaying anomalies written vs. attribute changes held in staging.
+  - **Outcome Distribution**: Segmented progress bar illustrating proportion of Successful, Skipped, and Failed executions.
+- **Run Filtering**: Filter historical runs dynamically by `All`, `Successful`, `Skipped`, or `Failed` to isolate and diagnose anomalies or execution errors.
+
+---
+
+## 11. Pipeline Orchestrator & Scheduling Architecture
+
+The pipeline can be scheduled using multiple deployment strategies depending on infrastructure requirements:
+
+### Option A: Built-in Structured Cron Orchestrator (Recommended for Containers)
+The runner includes a native 5-part cron evaluator with tick alignment (firing precisely on clock boundaries without drift) and graceful signal handling (`SIGTERM`/`SIGINT`):
+```bash
+# Run on standard cron schedule (e.g., every 15 minutes)
+python runner/run.py cron --schedule "*/15 * * * *"
+
+# Or via Docker Compose environment variable:
+ETL_CRON_SCHEDULE="*/15 * * * *"
+```
+
+### Option B: Linux Host Crontab / Systemd Timer
+Run isolated ephemeral containers on host cron without running continuous daemon containers:
+```crontab
+# /etc/cron.d/etl-pipeline: run every hour at minute 0
+0 * * * * root cd /opt/feedbackapp && docker compose run --rm etl run >> /var/log/etl.log 2>&1
+```
+
+### Option C: Native PostgreSQL `pg_cron`
+For managed PostgreSQL environments with the `pg_cron` extension pre-loaded (`shared_preload_libraries = 'pg_cron'`):
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- Trigger ETL runner container or webhook via pg_cron:
+SELECT cron.schedule('etl_merge_tick', '*/15 * * * *',
+  $$SELECT net.http_post(
+      url:='http://app:8000/api/etl/run-now',
+      headers:='{"Authorization": "Bearer ...", "Content-Type": "application/json"}'::jsonb
+    );$$
+);
+```
+

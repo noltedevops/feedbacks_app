@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Database, 
   X, 
@@ -14,7 +14,9 @@ import {
   Play,
   History,
   Search,
-  ShieldCheck
+  ShieldCheck,
+  TrendingUp,
+  BarChart2
 } from 'lucide-react';
 import { authFetch } from '../auth';
 import type { Translator } from '../i18n';
@@ -38,6 +40,12 @@ export interface EtlRun {
   status: 'ok' | 'failed' | 'skipped' | string;
   forced: boolean;
   summary: Record<string, unknown> | null;
+}
+
+export interface ParsedEtlRun extends EtlRun {
+  durationSec: number;
+  written: number;
+  staged: number;
 }
 
 export interface EtlStagedChange {
@@ -124,6 +132,94 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
   const [historySearch, setHistorySearch] = useState<string>('');
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
   const [health, setHealth] = useState<EtlHealth | null>(null);
+
+  // Runs analytics & filter state
+  const [runFilter, setRunFilter] = useState<'all' | 'ok' | 'skipped' | 'failed'>('all');
+  const [hoveredRun, setHoveredRun] = useState<ParsedEtlRun | null>(null);
+
+  const runAnalytics = useMemo(() => {
+    if (!runs || runs.length === 0) return null;
+
+    let totalDuration = 0;
+    let durationCount = 0;
+    let okCount = 0;
+    let skippedCount = 0;
+    let failedCount = 0;
+    let totalWritten = 0;
+    let totalStaged = 0;
+
+    const parsedRuns: ParsedEtlRun[] = runs.map(run => {
+      let durationSec = 0;
+      if (run.started_at && run.finished_at) {
+        durationSec = Math.max(0, (new Date(run.finished_at).getTime() - new Date(run.started_at).getTime()) / 1000);
+      }
+      if (durationSec > 0 && run.status !== 'skipped') {
+        totalDuration += durationSec;
+        durationCount += 1;
+      }
+
+      if (run.status === 'ok') okCount++;
+      else if (run.status === 'skipped') skippedCount++;
+      else if (run.status === 'failed') failedCount++;
+
+      const summary = (run.summary || {}) as Record<string, unknown>;
+      const projects = (summary.projects || {}) as Record<string, Record<string, unknown>>;
+      const written = Object.values(projects).reduce((acc: number, p) => {
+        const a1 = p?.anomalie_1 as Record<string, unknown> | undefined;
+        const w = typeof a1?.rows_written === 'number' ? a1.rows_written : 0;
+        return acc + w;
+      }, 0);
+      const staged = Object.values(projects).reduce((acc: number, p) => {
+        const s = typeof p?.changes_staged === 'number' ? p.changes_staged : 0;
+        return acc + s;
+      }, 0);
+
+      totalWritten += written;
+      totalStaged += staged;
+
+      return {
+        ...run,
+        durationSec,
+        written,
+        staged
+      };
+    });
+
+    const avgDuration = durationCount > 0 ? (totalDuration / durationCount).toFixed(1) : '0.0';
+    const totalRuns = runs.length;
+    const okRate = totalRuns > 0 ? Math.round((okCount / totalRuns) * 100) : 0;
+    const skippedRate = totalRuns > 0 ? Math.round((skippedCount / totalRuns) * 100) : 0;
+    const failedRate = totalRuns > 0 ? Math.max(0, 100 - okRate - skippedRate) : 0;
+    const successRate = totalRuns > 0 ? Math.round(((okCount + skippedCount) / totalRuns) * 100) : 100;
+
+    const chronologicalRuns = [...parsedRuns].reverse();
+    const maxDuration = Math.max(...parsedRuns.map(r => r.durationSec), 1.0);
+    const maxVolume = Math.max(...parsedRuns.map(r => Math.max(r.written, r.staged)), 10);
+
+    return {
+      parsedRuns,
+      chronologicalRuns,
+      totalRuns,
+      okCount,
+      skippedCount,
+      failedCount,
+      avgDuration,
+      maxDuration,
+      maxVolume,
+      totalWritten,
+      totalStaged,
+      successRate,
+      okRate,
+      skippedRate,
+      failedRate
+    };
+  }, [runs]);
+
+  const filteredRuns = useMemo(() => {
+    if (!runAnalytics) return [];
+    if (runFilter === 'all') return runAnalytics.parsedRuns;
+    return runAnalytics.parsedRuns.filter(r => r.status === runFilter);
+  }, [runAnalytics, runFilter]);
 
   const fetchStatus = useCallback(async (isInitial = false) => {
     try {
@@ -776,71 +872,318 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
         {/* Tab 3: Runs & Execution Health */}
         {activeTab === 'runs' && (
           <div className="etl-tab-content">
-            {runs.length === 0 ? (
+            {!runAnalytics || runAnalytics.totalRuns === 0 ? (
               <div className="etl-empty-state">
                 <AlertTriangle size={32} className="etl-empty-icon" />
                 <p>{t('No pipeline runs recorded.')}</p>
               </div>
             ) : (
-              <div className="etl-table-wrap">
-                <table className="etl-table">
-                  <thead>
-                    <tr>
-                      <th>{t('Run ID')}</th>
-                      <th>{t('Status')}</th>
-                      <th>{t('Started')}</th>
-                      <th>{t('Duration')}</th>
-                      <th>{t('Execution Metrics')} / Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {runs.map(run => {
-                      const summary = (run.summary || {}) as Record<string, unknown>;
-                      const isOk = run.status === 'ok';
-                      const isSkipped = run.status === 'skipped';
-                      const isFailed = run.status === 'failed';
-                      
-                      let details = '-';
-                      if (isSkipped) {
-                        details = typeof summary.reason === 'string' ? summary.reason : t('Skipped');
-                      } else if (isFailed) {
-                        details = typeof summary.error === 'string' ? summary.error : t('Failed');
-                      } else if (isOk) {
-                        const projects = (summary.projects || {}) as Record<string, Record<string, unknown>>;
-                        const written = Object.values(projects).reduce((acc: number, p) => {
-                          const a1 = p?.anomalie_1 as Record<string, unknown> | undefined;
-                          const w = typeof a1?.rows_written === 'number' ? a1.rows_written : 0;
-                          return acc + w;
-                        }, 0);
-                        const staged = Object.values(projects).reduce((acc: number, p) => {
-                          const s = typeof p?.changes_staged === 'number' ? p.changes_staged : 0;
-                          return acc + s;
-                        }, 0);
-                        details = `${t('Rows Written')}: ${written} | ${t('Pending Changes')}: ${staged}`;
-                      }
+              <>
+                {/* 1. Execution Summary Cards */}
+                <div className="etl-metrics-grid" style={{ marginBottom: 'var(--space-3)' }}>
+                  <div className="etl-metric-card">
+                    <div className="etl-metric-title">
+                      <Clock size={14} />
+                      <span>{t('Avg Duration')}</span>
+                    </div>
+                    <div className="etl-metric-val">
+                      <span className="etl-num">{runAnalytics.avgDuration}s</span>
+                      <span className="etl-metric-sub">max {runAnalytics.maxDuration.toFixed(1)}s</span>
+                    </div>
+                  </div>
 
-                      return (
-                        <tr key={run.run_id}>
-                          <td><strong>#{run.run_id}</strong></td>
-                          <td>
-                            <span className={`etl-status-pill etl-status-${run.status}`}>
-                              {run.status.toUpperCase()}
-                            </span>
-                            {run.forced && (
-                              <span className="etl-tag-forced">forced</span>
-                            )}
-                          </td>
-                          <td className="etl-timestamp">{formatTime(run.started_at)}</td>
-                          <td className="etl-duration">{formatDuration(run.started_at, run.finished_at)}</td>
-                          <td className="etl-run-details">
-                            <code>{details}</code>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                  <div className="etl-metric-card">
+                    <div className="etl-metric-title">
+                      <TrendingUp size={14} />
+                      <span>{t('Success Rate')}</span>
+                    </div>
+                    <div className="etl-metric-val">
+                      <span className="etl-num" style={{ color: runAnalytics.successRate >= 90 ? 'var(--color-primary, #16a34a)' : '#eab308' }}>
+                        {runAnalytics.successRate}%
+                      </span>
+                      <span className="etl-metric-sub">{runAnalytics.okCount} ok, {runAnalytics.failedCount} fail</span>
+                    </div>
+                  </div>
+
+                  <div className="etl-metric-card">
+                    <div className="etl-metric-title">
+                      <Database size={14} />
+                      <span>{t('Total Merged')}</span>
+                    </div>
+                    <div className="etl-metric-val">
+                      <span className="etl-num">{runAnalytics.totalWritten}</span>
+                      <span className="etl-metric-sub">{runAnalytics.totalStaged} staged</span>
+                    </div>
+                  </div>
+
+                  <div className="etl-metric-card">
+                    <div className="etl-metric-title">
+                      <Activity size={14} />
+                      <span>{t('Total Runs')}</span>
+                    </div>
+                    <div className="etl-metric-val">
+                      <span className="etl-num">{runAnalytics.totalRuns}</span>
+                      <span className="etl-metric-sub">{runAnalytics.skippedCount} skipped</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Visual Charts Container */}
+                <div className="etl-charts-container">
+                  {/* Chart 1: Execution Duration Trend */}
+                  <div className="etl-chart-card">
+                    <div className="etl-chart-header">
+                      <div>
+                        <div className="etl-chart-title">
+                          <BarChart2 size={13} style={{ marginRight: '6px', verticalAlign: '-1px' }} />
+                          {t('Duration Trend (Seconds)')}
+                        </div>
+                        <div className="etl-chart-subtitle">
+                          {t('Last')} {runAnalytics.chronologicalRuns.length} {t('Runs')}
+                        </div>
+                      </div>
+                      <div className="etl-chart-legend">
+                        <span className="etl-legend-dot ok"></span> OK
+                        <span className="etl-legend-dot skipped"></span> {t('Skipped')}
+                        <span className="etl-legend-dot failed"></span> {t('Failed')}
+                      </div>
+                    </div>
+
+                    <div className="etl-svg-chart-wrap">
+                      <svg viewBox="0 0 540 120" className="etl-trend-svg" preserveAspectRatio="none">
+                        {/* Grid lines */}
+                        <line x1="40" y1="20" x2="530" y2="20" stroke="var(--surface-border)" strokeDasharray="3 3" />
+                        <text x="35" y="23" textAnchor="end" className="etl-svg-label">{runAnalytics.maxDuration.toFixed(1)}s</text>
+
+                        <line x1="40" y1="65" x2="530" y2="65" stroke="var(--surface-border)" strokeDasharray="3 3" />
+                        <text x="35" y="68" textAnchor="end" className="etl-svg-label">{(runAnalytics.maxDuration / 2).toFixed(1)}s</text>
+
+                        <line x1="40" y1="105" x2="530" y2="105" stroke="var(--surface-border)" />
+                        <text x="35" y="108" textAnchor="end" className="etl-svg-label">0s</text>
+
+                        {/* Bars & Points */}
+                        {runAnalytics.chronologicalRuns.map((r, i) => {
+                          const n = Math.max(1, runAnalytics.chronologicalRuns.length - 1);
+                          const x = 50 + (i / n) * 460;
+                          const barH = Math.max(4, (r.durationSec / runAnalytics.maxDuration) * 85);
+                          const y = 105 - barH;
+                          const isHovered = hoveredRun?.run_id === r.run_id;
+                          const color = r.status === 'ok' ? '#10b981' : (r.status === 'skipped' ? '#f59e0b' : '#ef4444');
+
+                          return (
+                            <g
+                              key={r.run_id}
+                              className="etl-svg-bar-group"
+                              onMouseEnter={() => setHoveredRun(r)}
+                              onMouseLeave={() => setHoveredRun(null)}
+                            >
+                              <rect
+                                x={x - 6}
+                                y={y}
+                                width={12}
+                                height={barH}
+                                rx={3}
+                                fill={color}
+                                opacity={isHovered ? 1 : 0.8}
+                                className="etl-svg-bar"
+                              />
+                              {isHovered && (
+                                <circle cx={x} cy={y} r={4} fill="#ffffff" stroke={color} strokeWidth={2} />
+                              )}
+                            </g>
+                          );
+                        })}
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Chart 2: Ingestion Volume & Staged Changes */}
+                  <div className="etl-chart-card">
+                    <div className="etl-chart-header">
+                      <div>
+                        <div className="etl-chart-title">{t('Ingestion Volume & Staged Changes')}</div>
+                        <div className="etl-chart-subtitle">
+                          {t('Rows Written')} vs. {t('Pending Changes')}
+                        </div>
+                      </div>
+                      <div className="etl-chart-legend">
+                        <span className="etl-legend-dot written"></span> {t('Rows Written')}
+                        <span className="etl-legend-dot staged"></span> {t('Pending Changes')}
+                      </div>
+                    </div>
+
+                    <div className="etl-svg-chart-wrap">
+                      <svg viewBox="0 0 540 120" className="etl-trend-svg" preserveAspectRatio="none">
+                        {/* Grid lines */}
+                        <line x1="40" y1="20" x2="530" y2="20" stroke="var(--surface-border)" strokeDasharray="3 3" />
+                        <text x="35" y="23" textAnchor="end" className="etl-svg-label">{runAnalytics.maxVolume}</text>
+
+                        <line x1="40" y1="65" x2="530" y2="65" stroke="var(--surface-border)" strokeDasharray="3 3" />
+                        <text x="35" y="68" textAnchor="end" className="etl-svg-label">{Math.round(runAnalytics.maxVolume / 2)}</text>
+
+                        <line x1="40" y1="105" x2="530" y2="105" stroke="var(--surface-border)" />
+                        <text x="35" y="108" textAnchor="end" className="etl-svg-label">0</text>
+
+                        {/* Dual Bars */}
+                        {runAnalytics.chronologicalRuns.map((r, i) => {
+                          const n = Math.max(1, runAnalytics.chronologicalRuns.length - 1);
+                          const x = 50 + (i / n) * 460;
+                          const writtenH = Math.max(r.written > 0 ? 4 : 0, (r.written / runAnalytics.maxVolume) * 85);
+                          const stagedH = Math.max(r.staged > 0 ? 4 : 0, (r.staged / runAnalytics.maxVolume) * 85);
+                          const isHovered = hoveredRun?.run_id === r.run_id;
+
+                          return (
+                            <g
+                              key={r.run_id}
+                              className="etl-svg-bar-group"
+                              onMouseEnter={() => setHoveredRun(r)}
+                              onMouseLeave={() => setHoveredRun(null)}
+                            >
+                              {/* Written bar */}
+                              <rect
+                                x={x - 6}
+                                y={105 - writtenH}
+                                width={5}
+                                height={writtenH}
+                                rx={2}
+                                fill="#3b82f6"
+                                opacity={isHovered ? 1 : 0.85}
+                              />
+                              {/* Staged bar */}
+                              <rect
+                                x={x}
+                                y={105 - stagedH}
+                                width={5}
+                                height={stagedH}
+                                rx={2}
+                                fill="#f97316"
+                                opacity={isHovered ? 1 : 0.85}
+                              />
+                            </g>
+                          );
+                        })}
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Outcome Distribution Bar & Active Hover Tooltip */}
+                <div className="etl-distribution-container">
+                  <div className="etl-distribution-bar-wrap">
+                    <div className="etl-distribution-label">{t('Outcome Distribution')}</div>
+                    <div className="etl-distribution-bar">
+                      <div className="etl-dist-segment ok" style={{ width: `${runAnalytics.okRate}%` }} title={`OK: ${runAnalytics.okCount}`} />
+                      <div className="etl-dist-segment skipped" style={{ width: `${runAnalytics.skippedRate}%` }} title={`Skipped: ${runAnalytics.skippedCount}`} />
+                      <div className="etl-dist-segment failed" style={{ width: `${runAnalytics.failedRate}%` }} title={`Failed: ${runAnalytics.failedCount}`} />
+                    </div>
+                    <div className="etl-distribution-stats">
+                      <span><strong>{runAnalytics.okCount}</strong> {t('Successful')} ({runAnalytics.okRate}%)</span>
+                      <span><strong>{runAnalytics.skippedCount}</strong> {t('Skipped')} ({runAnalytics.skippedRate}%)</span>
+                      <span><strong>{runAnalytics.failedCount}</strong> {t('Failed')} ({runAnalytics.failedRate}%)</span>
+                    </div>
+                  </div>
+
+                  {hoveredRun && (
+                    <div className="etl-hover-card">
+                      <div className="etl-hover-header">
+                        <strong>Run #{hoveredRun.run_id}</strong>
+                        <span className={`etl-status-pill etl-status-${hoveredRun.status}`}>
+                          {hoveredRun.status.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="etl-hover-meta">
+                        <div>{formatTime(hoveredRun.started_at)} • <strong>{hoveredRun.durationSec.toFixed(2)}s</strong></div>
+                        <div>{t('Rows Written')}: {hoveredRun.written} | {t('Pending Changes')}: {hoveredRun.staged}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Filter Buttons & Runs Table */}
+                <div className="etl-run-filter-bar">
+                  <div className="etl-run-filter-title">{t('Run History')}</div>
+                  <div className="etl-run-filter-buttons">
+                    <button
+                      type="button"
+                      className={`etl-filter-btn ${runFilter === 'all' ? 'active' : ''}`}
+                      onClick={() => setRunFilter('all')}
+                    >
+                      {t('All')} ({runAnalytics.totalRuns})
+                    </button>
+                    <button
+                      type="button"
+                      className={`etl-filter-btn ok ${runFilter === 'ok' ? 'active' : ''}`}
+                      onClick={() => setRunFilter('ok')}
+                    >
+                      {t('Successful')} ({runAnalytics.okCount})
+                    </button>
+                    <button
+                      type="button"
+                      className={`etl-filter-btn skipped ${runFilter === 'skipped' ? 'active' : ''}`}
+                      onClick={() => setRunFilter('skipped')}
+                    >
+                      {t('Skipped')} ({runAnalytics.skippedCount})
+                    </button>
+                    <button
+                      type="button"
+                      className={`etl-filter-btn failed ${runFilter === 'failed' ? 'active' : ''}`}
+                      onClick={() => setRunFilter('failed')}
+                    >
+                      {t('Failed')} ({runAnalytics.failedCount})
+                    </button>
+                  </div>
+                </div>
+
+                <div className="etl-table-wrap">
+                  <table className="etl-table">
+                    <thead>
+                      <tr>
+                        <th>{t('Run ID')}</th>
+                        <th>{t('Status')}</th>
+                        <th>{t('Started')}</th>
+                        <th>{t('Duration')}</th>
+                        <th>{t('Execution Metrics')} / Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRuns.map(run => {
+                        const summary = (run.summary || {}) as Record<string, unknown>;
+                        const isOk = run.status === 'ok';
+                        const isSkipped = run.status === 'skipped';
+                        const isFailed = run.status === 'failed';
+                        
+                        let details = '-';
+                        if (isSkipped) {
+                          details = typeof summary.reason === 'string' ? summary.reason : t('Skipped');
+                        } else if (isFailed) {
+                          details = typeof summary.error === 'string' ? summary.error : t('Failed');
+                        } else if (isOk) {
+                          details = `${t('Rows Written')}: ${run.written} | ${t('Pending Changes')}: ${run.staged}`;
+                        }
+
+                        return (
+                          <tr key={run.run_id} className={hoveredRun?.run_id === run.run_id ? 'selected' : ''}>
+                            <td><strong>#{run.run_id}</strong></td>
+                            <td>
+                              <span className={`etl-status-pill etl-status-${run.status}`}>
+                                {run.status.toUpperCase()}
+                              </span>
+                              {run.forced && (
+                                <span className="etl-tag-forced">forced</span>
+                              )}
+                            </td>
+                            <td className="etl-timestamp">{formatTime(run.started_at)}</td>
+                            <td className="etl-duration">{formatDuration(run.started_at, run.finished_at)}</td>
+                            <td className="etl-run-details">
+                              <code>{details}</code>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         )}
