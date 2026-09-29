@@ -40,6 +40,13 @@ import psycopg
 import yaml
 from psycopg import sql
 
+try:
+    from .validate_config import validate_config_file
+    from .notifier import notify_run_failed, notify_pending_approvals, notify_run_success
+except ImportError:
+    from validate_config import validate_config_file
+    from notifier import notify_run_failed, notify_pending_approvals, notify_run_success
+
 HERE = Path(__file__).resolve().parent
 ETL_DIR = HERE.parent
 CONFIG_PATH = Path(os.environ.get("ETL_CONFIG", ETL_DIR / "config" / "projects.yml"))
@@ -142,6 +149,9 @@ create table if not exists etl.db_only_state (
 
 # ----------------------------------------------------------------------------- helpers
 def load_config() -> dict:
+    errs = validate_config_file(CONFIG_PATH)
+    if errs:
+        raise SystemExit(f"Configuration validation failed for {CONFIG_PATH}:\n  " + "\n  ".join(errs))
     cfg = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
     ids = [p["project_id"] for p in cfg["projects"]]
     if len(ids) != len(set(ids)):
@@ -194,11 +204,14 @@ def referenced_columns(source: dict) -> set[str]:
     return cols
 
 
-def validate_sources(conn, cfg) -> list[str]:
-    """Every configured table and column must exist; returns tables nobody configured.
-    Reads pg_catalog: PUBLIC's access to information_schema is revoked on live."""
+def validate_sources(conn, cfg, project_id: str | None = None) -> list[str]:
+    """Every configured table and column must exist with correct types and plausible coordinates;
+    returns tables nobody configured. Reads pg_catalog: PUBLIC's access to information_schema is revoked on live."""
     problems, unconfigured = [], []
-    for p in cfg["projects"]:
+    NUMERIC_TYPES = {"numeric", "float4", "float8", "int2", "int4", "int8", "double precision"}
+    projects = [p for p in cfg["projects"] if p["project_id"] == project_id] if project_id else cfg["projects"]
+
+    for p in projects:
         tables = {r[0] for r in conn.execute(
             "select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace "
             "where n.nspname = %s and c.relkind in ('r', 'p', 'v', 'm', 'f')", (p["schema"],))}
@@ -208,22 +221,48 @@ def validate_sources(conn, cfg) -> list[str]:
             if s["table"] not in tables:
                 problems.append(f"{p['schema']}.{s['table']}: table not found")
                 continue
-            have = {r[0] for r in conn.execute(
-                "select a.attname from pg_attribute a join pg_class c on c.oid = a.attrelid "
-                "join pg_namespace n on n.oid = c.relnamespace "
+            attrs = {r[0]: r[1] for r in conn.execute(
+                "select a.attname, t.typname from pg_attribute a join pg_class c on c.oid = a.attrelid "
+                "join pg_namespace n on n.oid = c.relnamespace join pg_type t on t.oid = a.atttypid "
                 "where n.nspname = %s and c.relname = %s and a.attnum > 0 and not a.attisdropped",
                 (p["schema"], s["table"]))}
-            for c in sorted(referenced_columns(s) - have):
+            for c in sorted(referenced_columns(s) - set(attrs.keys())):
                 problems.append(f"{p['schema']}.{s['table']}: column {c!r} not found")
+
+            # Check coordinate column data types
+            for coord_key in ("easting", "northing"):
+                col_spec = s["columns"].get(coord_key)
+                col_name = col_spec if isinstance(col_spec, str) else (col_spec.get("column") if isinstance(col_spec, dict) else None)
+                if col_name and col_name in attrs and attrs[col_name] not in NUMERIC_TYPES:
+                    problems.append(f"{p['schema']}.{s['table']}: coordinate column '{col_name}' has type '{attrs[col_name]}', expected numeric/float")
+
+            # Spatial boundary check on coordinate samples (if direct column names available)
+            e_spec = s["columns"].get("easting")
+            n_spec = s["columns"].get("northing")
+            e_col = e_spec if isinstance(e_spec, str) else (e_spec.get("column") if isinstance(e_spec, dict) else None)
+            n_col = n_spec if isinstance(n_spec, str) else (n_spec.get("column") if isinstance(n_spec, dict) else None)
+            if e_col and n_col and e_col in attrs and n_col in attrs:
+                q_coords = sql.SQL("select min({}), max({}), min({}), max({}) from {} where {} is not null and {} is not null").format(
+                    ident(e_col), ident(e_col), ident(n_col), ident(n_col),
+                    ident(p["schema"], s["table"]), ident(e_col), ident(n_col)
+                )
+                min_e, max_e, min_n, max_n = conn.execute(q_coords).fetchone()
+                if min_e is not None and min_n is not None:
+                    # For German UTM zones (EPSG 25832 / 25833): plausible bounds:
+                    # Easting ~ 100,000 to 1,200,000; Northing ~ 4,500,000 to 7,000,000
+                    if p.get("srid") in (25832, 25833):
+                        if (min_e < 50000 or max_e > 1200000) or (min_n < 4500000 or max_n > 7000000):
+                            problems.append(f"{p['schema']}.{s['table']}: coordinates (E: [{min_e}, {max_e}], N: [{min_n}, {max_n}]) fall outside plausible UTM bounds for SRID {p['srid']}")
     if problems:
         raise SystemExit("config does not match the database:\n  " + "\n  ".join(problems))
     return unconfigured
 
 
-def fingerprint(conn, cfg) -> dict:
+def fingerprint(conn, cfg, project_id: str | None = None) -> dict:
     """What a run depends on. Unchanged since the last successful run = nothing to do."""
     fp = {"config": hashlib.sha256(CONFIG_PATH.read_bytes()).hexdigest(), "sources": {}, "public": {}}
-    for p in cfg["projects"]:
+    projects = [p for p in cfg["projects"] if p["project_id"] == project_id] if project_id else cfg["projects"]
+    for p in projects:
         for s in p["sources"]:
             q = sql.SQL("select count(*)::text || ':' || md5(coalesce(string_agg(t::text, '|' order by t::text), '')) "
                         "from {} t").format(ident(p["schema"], s["table"]))
@@ -233,12 +272,17 @@ def fingerprint(conn, cfg) -> dict:
             "from public.anomalies where project_id = %s", (p["project_id"],)).fetchone()[0]
     # decisions the approver has taken that no run has processed yet
     fp["decisions"] = conn.execute("select count(*) from etl_approval.decisions where outcome is null").fetchone()[0]
+    if project_id:
+        fp["target_project"] = project_id
     return fp
 
 
-def dbt(*args: str, cfg: dict) -> None:
+def dbt(*args: str, cfg: dict, target_project: str | None = None) -> None:
+    dbt_vars = {"etl": cfg}
+    if target_project:
+        dbt_vars["target_project"] = target_project
     cmd = ["dbt", *args, "--project-dir", str(DBT_DIR), "--profiles-dir", str(DBT_DIR),
-           "--vars", json.dumps({"etl": cfg}), "--no-use-colors"]
+           "--vars", json.dumps(dbt_vars), "--no-use-colors"]
     print("  $", " ".join(cmd[:3]), "...", flush=True)
     res = subprocess.run(cmd, cwd=DBT_DIR, capture_output=True, text=True)
     out = res.stdout + res.stderr
@@ -249,8 +293,14 @@ def dbt(*args: str, cfg: dict) -> None:
 
 
 # ----------------------------------------------------------------------------- the run
-def run(force: bool = False) -> int:
+def run(force: bool = False, project_id: str | None = None) -> int:
     cfg = load_config()
+    if project_id:
+        valid_ids = {p["project_id"] for p in cfg["projects"]}
+        if project_id not in valid_ids:
+            print(f"Error: Project '{project_id}' not found in configuration ({CONFIG_PATH}). Valid IDs: {sorted(valid_ids)}", file=sys.stderr)
+            return 1
+
     conn = connect()
     if not conn.execute("select pg_try_advisory_lock(hashtext(%s))", (LOCK_KEY,)).fetchone()[0]:
         print("another run holds the lock; nothing done")
@@ -258,44 +308,58 @@ def run(force: bool = False) -> int:
     conn.execute(BOOTSTRAP_SQL)
     conn.commit()
 
-    unconfigured = validate_sources(conn, cfg)
-    fp = fingerprint(conn, cfg)
-    last = conn.execute("select fingerprint from etl.runs where status = 'ok' order by run_id desc limit 1").fetchone()
+    unconfigured = validate_sources(conn, cfg, project_id=project_id)
+    fp = fingerprint(conn, cfg, project_id=project_id)
+    last = conn.execute("select fingerprint from etl.runs where status = 'ok' and (summary->>'target_project' is not distinct from %s) order by run_id desc limit 1",
+                        (project_id,)).fetchone()
     run_id = conn.execute("insert into etl.runs (forced, fingerprint) values (%s, %s) returning run_id",
                           (force, json.dumps(fp))).fetchone()[0]
     conn.commit()
-    print(f"run {run_id} ({'forced' if force else 'scheduled'})")
+    target_str = f" [project: {project_id}]" if project_id else ""
+    print(f"run {run_id} ({'forced' if force else 'scheduled'}){target_str}")
 
     if last and last[0] == fp and not force:
         conn.execute("update etl.runs set status = 'skipped', finished_at = now(), summary = %s where run_id = %s",
-                     (json.dumps({"reason": "no source, config or decision change since the last successful run"}), run_id))
+                     (json.dumps({"reason": "no source, config or decision change since the last successful run", "target_project": project_id}), run_id))
         conn.commit()
         print("  no change since the last successful run: skipped")
         return 0
 
     try:
-        dbt("run", "--select", "stg_candidates", "excluded_rows", "dup_report", cfg=cfg)
+        dbt("run", "--select", "stg_candidates", "excluded_rows", "dup_report", cfg=cfg, target_project=project_id)
         register_ids(conn)
-        dbt("run", "--select", "int_candidates", cfg=cfg)
-        summary = merge(conn, cfg, run_id)
+        dbt("run", "--select", "int_candidates", cfg=cfg, target_project=project_id)
+        summary = merge(conn, cfg, run_id, project_id=project_id)
+        summary["target_project"] = project_id
         summary["unconfigured_tables"] = unconfigured
+        excl_q = ("select project_id, source_table, source_key, layer from etl.excluded_rows "
+                  + ("where project_id = %s " if project_id else "") + "order by 1, 2, 3")
         summary["excluded_rows"] = [dict(zip(("project_id", "source_table", "source_key", "layer"), r)) for r in
-                                    conn.execute("select project_id, source_table, source_key, layer from etl.excluded_rows order by 1, 2, 3")]
+                                    conn.execute(excl_q, (project_id,) if project_id else ())]
+        dup_q = ("select project_id, target_id, rows from etl.dup_report "
+                 + ("where project_id = %s " if project_id else "") + "order by 1, 2")
         summary["duplicates"] = [dict(zip(("project_id", "target_id", "rows"), r)) for r in
-                                 conn.execute("select project_id, target_id, rows from etl.dup_report order by 1, 2")]
+                                 conn.execute(dup_q, (project_id,) if project_id else ())]
         conn.commit()
-        dbt("test", cfg=cfg)
+        dbt("test", cfg=cfg, target_project=project_id)
         # The fingerprint is re-taken after the merge: the merge itself changes public.
         conn.execute("update etl.runs set status = 'ok', finished_at = now(), fingerprint = %s, summary = %s where run_id = %s",
-                     (json.dumps(fingerprint(conn, cfg)), json.dumps(summary, default=str), run_id))
+                     (json.dumps(fingerprint(conn, cfg, project_id=project_id)), json.dumps(summary, default=str), run_id))
         conn.commit()
         report(summary)
+        for pid, pdata in summary.get("projects", {}).items():
+            staged = pdata.get("changes_staged", 0)
+            pairs = pdata.get("correction_pairs_new", 0)
+            if staged > 0 or pairs > 0:
+                notify_pending_approvals(run_id, pid, staged, pairs)
+        notify_run_success(run_id, summary)
         return 0
     except Exception as exc:  # noqa: BLE001 - every failure is recorded and re-raised
         conn.rollback()
         conn.execute("update etl.runs set status = 'failed', finished_at = now(), summary = %s where run_id = %s",
-                     (json.dumps({"error": str(exc)[:4000]}), run_id))
+                     (json.dumps({"error": str(exc)[:4000], "target_project": project_id}), run_id))
         conn.commit()
+        notify_run_failed(run_id, str(exc))
         print(f"RUN {run_id} FAILED: {exc}", file=sys.stderr)
         return 1
     finally:
@@ -314,11 +378,12 @@ def register_ids(conn) -> None:
     print(f"  id registry: +{len(missing)}")
 
 
-def merge(conn, cfg, run_id: int) -> dict:
+def merge(conn, cfg, run_id: int, project_id: str | None = None) -> dict:
     s: dict = {"run_id": run_id, "projects": {}}
     conn.commit()  # the merge must be a top-level transaction, never a savepoint
     assert conn.info.transaction_status == psycopg.pq.TransactionStatus.IDLE
     radius = float(cfg.get("correction_radius_m", 1.0))
+    projects_to_run = [p for p in cfg["projects"] if p["project_id"] == project_id] if project_id else cfg["projects"]
     with conn.transaction():
         # No table lock: blocking other writers needs table-wide UPDATE/DELETE/TRUNCATE,
         # which this role deliberately lacks. Nothing requires it. Runs cannot overlap (the
@@ -334,7 +399,7 @@ def merge(conn, cfg, run_id: int) -> dict:
             "select project_id, count(*), count(*) filter (where status = 'investigated') from public.anomalies group by 1")}
 
         # 1. projects the FK needs
-        for p in cfg["projects"]:
+        for p in projects_to_run:
             conn.execute("insert into public.projects (project_id, project_name, created_at, updated_at) "
                          "values (%s, %s, now(), now()) on conflict (project_id) do nothing",
                          (p["project_id"], p["project_name"]))
@@ -354,7 +419,7 @@ def merge(conn, cfg, run_id: int) -> dict:
                              where d.kind = 'correction' and d.decision = 'approve' and d.outcome = 'applied'
                                and d.new_target_id = c.source_target_id and c.id is distinct from d.anomaly_id""")
 
-        for p in cfg["projects"]:
+        for p in projects_to_run:
             pid = p["project_id"]
             ps: dict = {}
             conn.execute("create temp table cand on commit drop as select * from etl.int_candidates where project_id = %s", (pid,))
@@ -420,7 +485,7 @@ def merge(conn, cfg, run_id: int) -> dict:
             "anomalie_1_id_mismatches": sum(conn.execute(sql.SQL(
                 "select count(*) from {} x left join public.anomalies a on a.target_id = x.target_id "
                 "where x.id is null or (a.id is not null and a.id is distinct from x.id)").format(
-                    ident(p["schema"], "anomalie_1"))).fetchone()[0] for p in cfg["projects"]),
+                    ident(p["schema"], "anomalie_1"))).fetchone()[0] for p in projects_to_run),
         }
         now_proj = {r[0]: (r[1], r[2]) for r in conn.execute(
             "select project_id, count(*), count(*) filter (where status = 'investigated') from public.anomalies group by 1")}
@@ -437,7 +502,10 @@ def merge(conn, cfg, run_id: int) -> dict:
             failed.append(f"{g['id_rule_mismatches']} ids are not uuid5(target_id)")
         if g["anomalie_1_id_mismatches"]:
             failed.append(f"{g['anomalie_1_id_mismatches']} anomalie_1 ids differ from public.anomalies")
+        target_pids = {p["project_id"] for p in projects_to_run}
         for pid, (n, inv) in base_proj.items():
+            if pid not in target_pids:
+                continue
             n2, inv2 = now_proj.get(pid, (0, 0))
             if n2 < n:
                 failed.append(f"{pid}: rows {n} -> {n2}")
@@ -759,6 +827,8 @@ begin
     update etl_approval.decisions set outcome = 'stale', outcome_at = now() where decision_id = p_decision_id;
     return 'stale';
   end if;
+  perform set_config('etl.change_reason', 'etl_change', true);
+  perform set_config('etl.current_decision_id', p_decision_id::text, true);
   execute format('update public.anomalies set %I = $1::%s where id = $2', d.column_name,
                  case when d.column_name = 'evaluated_depth' then 'double precision' else 'varchar' end)
     using d.new_value, d.anomaly_id;
@@ -774,6 +844,8 @@ begin
   select * into d from etl_approval.decisions
    where decision_id = p_decision_id and kind = 'correction' and decision = 'approve' and outcome is null for update;
   if not found then raise exception 'decision % is not an approved, open correction', p_decision_id; end if;
+  perform set_config('etl.change_reason', 'etl_correction', true);
+  perform set_config('etl.current_decision_id', p_decision_id::text, true);
   update public.anomalies set easting = d.new_easting, northing = d.new_northing where id = d.anomaly_id;
   if not found then raise exception 'anomaly % not found', d.anomaly_id; end if;
   update etl_approval.decisions set outcome = 'applied', outcome_at = now() where decision_id = p_decision_id;
@@ -800,7 +872,8 @@ grant usage on schema etl to etl_approver;
 alter default privileges for role etl_pipeline in schema etl grant select on tables to etl_approver;
 grant select on all tables in schema etl to etl_approver;
 grant usage on schema public to etl_approver;
-grant select on public.anomalies to etl_approver;
+grant select on public.anomalies, public.anomaly_history to etl_approver;
+grant select on public.anomaly_history to etl_pipeline;
 """
 
 
@@ -825,7 +898,7 @@ def setup_sql() -> str:
            "select format('grant temporary on database %I to etl_pipeline', current_database()) \\gexec",
            "create schema if not exists etl authorization etl_pipeline;",
            "grant usage on schema public to etl_pipeline;",
-           "grant select on public.anomalies, public.projects, public.feedback to etl_pipeline;",
+           "grant select on public.anomalies, public.projects, public.feedback, public.anomaly_history to etl_pipeline;",
            "-- coordinate transforms, in the models and in the app's trigger on insert",
            "grant select on public.spatial_ref_sys to etl_pipeline;",
            "grant insert on public.anomalies, public.projects to etl_pipeline;",
@@ -852,16 +925,23 @@ def setup_sql() -> str:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    r = sub.add_parser("run"); r.add_argument("--force", action="store_true")
-    sub.add_parser("loop"); sub.add_parser("setup-sql")
+    r = sub.add_parser("run"); r.add_argument("--force", action="store_true"); r.add_argument("--project", help="run selectively for a single project ID")
+    sub.add_parser("loop"); sub.add_parser("setup-sql"); sub.add_parser("validate-config")
     st = sub.add_parser("status"); st.add_argument("--approver", action="store_true", help="connect as etl_approver")
     for name in ("approve-change", "reject-change"):
         c = sub.add_parser(name); c.add_argument("ids", nargs="*", type=int); c.add_argument("--run", type=int)
     for name in ("approve-correction", "reject-correction"):
         c = sub.add_parser(name); c.add_argument("pair_id", type=int)
     a = ap.parse_args()
+    if a.cmd == "validate-config":
+        errs = validate_config_file(CONFIG_PATH)
+        if errs:
+            print(f"Validation FAILED for {CONFIG_PATH}:\n  " + "\n  ".join(errs), file=sys.stderr)
+            return 1
+        print(f"Validation SUCCESS: {CONFIG_PATH} is valid.")
+        return 0
     if a.cmd == "run":
-        return run(force=a.force)
+        return run(force=a.force, project_id=a.project)
     if a.cmd == "loop":
         interval = int(os.environ.get("ETL_INTERVAL_SECONDS", "0"))
         if interval <= 0:

@@ -1,0 +1,342 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Nolte Geoservices UXO Target Platform — ETL Operator & Maintenance Guide</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 14mm 12mm 14mm 12mm;
+    @bottom-right {
+      content: counter(page) " / " counter(pages);
+      font-size: 8pt;
+      color: #6c757d;
+    }
+  }
+
+  :root {
+    --ink: #1a1f2b;
+    --muted: #555e6d;
+    --border: #d0d7de;
+    --accent: #0f3b6b;
+    --accent-light: #f0f4f9;
+    --code-bg: #f6f8fa;
+    --warn-bg: #fff8e6;
+    --warn-border: #d4a72c;
+    --note-bg: #f1f7fc;
+    --note-border: #3b82f6;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 9pt;
+    line-height: 1.45;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  .header {
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+  }
+
+  .header-tag {
+    font-size: 7.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--accent);
+    margin-bottom: 3px;
+  }
+
+  h1 {
+    color: var(--accent);
+    font-size: 16pt;
+    margin: 0 0 4px;
+    font-weight: 700;
+  }
+
+  .subtitle {
+    font-size: 8.8pt;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  h2 {
+    color: var(--accent);
+    font-size: 11pt;
+    margin: 14px 0 6px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid var(--border);
+    break-after: avoid;
+  }
+
+  h3 {
+    font-size: 9.5pt;
+    color: var(--ink);
+    margin: 10px 0 4px;
+    font-weight: 600;
+    break-after: avoid;
+  }
+
+  p { margin: 0 0 6px; }
+
+  ul, ol {
+    margin: 0 0 8px;
+    padding-left: 18px;
+  }
+
+  li { margin-bottom: 3px; }
+
+  code {
+    font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+    font-size: 8pt;
+    background: var(--code-bg);
+    padding: 1px 3px;
+    border-radius: 3px;
+    border: 1px solid #e1e4e8;
+  }
+
+  pre {
+    font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+    font-size: 7.6pt;
+    line-height: 1.32;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    padding: 7px 9px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 5px 0 8px;
+    break-inside: avoid;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 6px 0 10px;
+    font-size: 8.2pt;
+    break-inside: avoid;
+  }
+
+  th, td {
+    border: 1px solid var(--border);
+    padding: 4px 7px;
+    text-align: left;
+  }
+
+  th {
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  tr:nth-child(even) { background-color: #fafbfc; }
+
+  .callout {
+    padding: 7px 10px;
+    border-radius: 4px;
+    margin: 8px 0;
+    font-size: 8.2pt;
+    break-inside: avoid;
+  }
+
+  .callout-note {
+    background: var(--note-bg);
+    border-left: 3px solid var(--note-border);
+  }
+
+  .callout-warn {
+    background: var(--warn-bg);
+    border-left: 3px solid var(--warn-border);
+  }
+
+  .callout-title {
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .page-break {
+    page-break-before: always;
+    break-before: page;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-tag">Standard Operating Procedure & Engineering Manual</div>
+  <h1>ETL Pipeline: Architecture & Operations Guide</h1>
+  <div class="subtitle">Complete handbook for running, updating, and extending project ingestion without AI assistance</div>
+</div>
+
+<h2>1. ETL Directory Structure & File Map</h2>
+<p>The ETL pipeline lives completely in the root <code>etl/</code> directory. Everything project-specific is configuration-driven; code and business logic are decoupled.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 28%;">File / Directory</th>
+      <th>Role & Responsibility</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>config/projects.yml</code></td>
+      <td><strong>The single source of configuration.</strong> Defines project schemas, source tables, column mappings, SRID coordinates, and target ID formatting.</td>
+    </tr>
+    <tr>
+      <td><code>dbt/models/</code></td>
+      <td>SQL transformation models that standardize raw schema data into clean anomaly candidates (<code>stg_candidates.sql</code>, <code>int_candidates.sql</code>).</td>
+    </tr>
+    <tr>
+      <td><code>dbt/macros/etl_columns.sql</code></td>
+      <td>Jinja SQL macros converting coordinate roundings, category regex fallback, and target ID generation.</td>
+    </tr>
+    <tr>
+      <td><code>dbt/tests/</code></td>
+      <td>Automated data contracts ensuring zero orphaned feedback, UUID5 consistency, and spatial index existence.</td>
+    </tr>
+    <tr>
+      <td><code>runner/run.py</code></td>
+      <td>Python orchestrator handling database connections, advisory locks, UUID generation, sequential VM numbers, and atomic transactional merges.</td>
+    </tr>
+    <tr>
+      <td><code>Dockerfile</code></td>
+      <td>Lightweight Python container with <code>dbt-postgres</code> and <code>psycopg</code>.</td>
+    </tr>
+    <tr>
+      <td><code>docker-compose.yml</code></td>
+      <td>Defines the <code>etl</code> runner and <code>etl-approve</code> CLI containers under the <code>--profile etl</code> flag.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>2. How the Pipeline Works (Architectural Flow)</h2>
+<p>The pipeline synchronizes raw geophysical inspection tables (e.g. Köln picks, Wilhelmshaven Magnetic & Georadar) into <code>public.anomalies</code> and per-project <code>&lt;schema&gt;.anomalie_1</code>.</p>
+
+<pre>
+┌─────────────────────────────────┐
+│ Project Schemas (e.g. Postgres) │  (Defined in etl/config/projects.yml)
+└────────────────┬────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────┐
+│ dbt: stg_candidates (View)      │  Extracts coords, reprojects to EPSG:4326, cleans categories
+└────────────────┬────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────┐
+│ Runner: register_ids (Python)   │  Computes deterministic uuid5(NAMESPACE_DNS, target_id)
+└────────────────┬────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────┐
+│ dbt: int_candidates (Table)     │  Deduplicates coordinates, applies approved alias mappings
+└────────────────┬────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────┐
+│ Runner: merge (Single Tx)       │  1. Inserts new targets (status='pending', sequential VM nr)
+│                                 │  2. Stages attribute changes into etl.change_log
+│                                 │  3. Stages coordinate shifts into etl.correction_candidates
+│                                 │  4. Runs safety verification gates (abort on rollback)
+└────────────────┬────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────┐
+│ public.anomalies & anomalie_1   │  Application database updated safely
+└─────────────────────────────────┘
+</pre>
+
+<h3>Core Principles & Protection Mechanisms</h3>
+<ul>
+  <li><strong>Least Privilege & Immutability:</strong> The <code>etl_pipeline</code> database user has NO <code>DELETE</code>, <code>TRUNCATE</code>, or direct <code>UPDATE</code> rights on <code>public.anomalies</code>. Data can never be deleted accidentally.</li>
+  <li><strong>Human-in-the-Loop Decisions:</strong> If a source row changes (category, depth, layer, or position), it is staged in <code>etl.change_log</code>. An approver must explicitly approve it before the change writes to production.</li>
+  <li><strong>Sequential VM Numbers:</strong> Existing targets keep their VM numbers. New targets receive the next unused sequence number per project from <code>etl.vm_registry</code>.</li>
+  <li><strong>Safety Gates:</strong> Before committing the database transaction, the runner verifies that zero feedback rows were disconnected, no VM numbers collided, and no IDs drifted. If any gate fails, the transaction rolls back cleanly.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>3. Command Reference & Daily Operations</h2>
+<p>All commands run from the repository root via Docker Compose.</p>
+
+<h3>Triggering Ingestion Runs</h3>
+<pre><code># 1. Standard run (checks fingerprint; skips if no data or config changed)
+docker compose --profile etl run --rm etl run
+
+# 2. Forced run (forces execution regardless of change detection)
+docker compose --profile etl run --rm etl run --force
+
+# 3. Scheduled continuous loop (runs every N seconds configured in .env)
+docker compose --profile etl up -d etl</code></pre>
+
+<h3>Reviewing and Approving Staged Changes</h3>
+<pre><code># Check current pipeline status, unconfigured tables, and pending changes
+docker compose --profile etl run --rm etl-approve
+
+# Approve specific attribute changes (e.g. Category or Depth update)
+docker compose --profile etl run --rm etl-approve approve-change 12 13
+
+# Reject specific attribute changes
+docker compose --profile etl run --rm etl-approve reject-change 12
+
+# Approve a coordinate correction pair (keeps existing target ID & feedback, updates coords)
+docker compose --profile etl run --rm etl-approve approve-correction 5
+
+# Reject a coordinate correction (treats the point as a brand-new anomaly instead)
+docker compose --profile etl run --rm etl-approve reject-correction 5</code></pre>
+
+<div class="callout callout-note">
+  <div class="callout-title">Applying Approved Decisions</div>
+  When you approve changes using <code>etl-approve</code>, they are recorded as approved in the approval ledger. To actually execute and merge them into <code>public.anomalies</code>, simply run <code>docker compose --profile etl run --rm etl run</code>.
+</div>
+
+<h2>4. How to Update & Add New Projects or Tables</h2>
+<p>Because the pipeline is completely configuration-driven, you do not write Python code to add data. Follow these 4 standard steps:</p>
+
+<h3>Step 1: Edit <code>etl/config/projects.yml</code></h3>
+<p>Open <code>etl/config/projects.yml</code> and add your project configuration under <code>projects:</code></p>
+
+<pre><code>  - project_id: "11-25-3333"              # Unique project code
+    project_name: "Duesseldorf Hafen"     # Human-readable title
+    schema: p_11_25_3333_duesseldorf     # Postgres schema name
+    srid: 25832                          # Spatial Reference System Identifier (e.g. UTM 32N)
+    vm_prefix: "3333"                    # Prefix for sequential VM numbers (e.g. 3333-1)
+    sources:
+      - table: anomalies_raw             # Source table inside the schema
+        instrument: georadar             # "georadar" or "magnetic"
+        key: id                          # (Optional) Primary key column in source table
+        id_decimals: 3                   # Precision for target_id string
+        columns:
+          easting: x_coord               # Column name for Easting / X
+          northing: y_coord              # Column name for Northing / Y
+          depth: { column: depth_m, round: 2 } # Depth column (or null)
+          category: { column: category } # Category column (e.g. Kat-1)
+          layer: layer                   # Layer column (or null)</code></pre>
+
+<h3>Step 2: Grant Permissions to <code>etl_pipeline</code></h3>
+<p>The pipeline role needs PostgreSQL read access to the new schema. Run:</p>
+<pre><code># Generate grants based on the updated projects.yml
+docker compose --profile etl run --rm --no-deps etl setup-sql > setup.sql
+
+# Execute grants against PostgreSQL as superuser
+docker exec -i feedback_postgres_db psql -U postgres -d nolte_geoservices -v ON_ERROR_STOP=1 < setup.sql</code></pre>
+
+<h3>Step 3: Test and Verify the Ingestion</h3>
+<pre><code># Run forced ingestion
+docker compose --profile etl run --rm etl run --force
+
+# Inspect status summary
+docker compose --profile etl run --rm etl-approve</code></pre>
+
+<div class="callout callout-warn">
+  <div class="callout-title">Important: Adding New Instruments</div>
+  If your new table introduces an instrument other than <code>georadar</code> or <code>magnetic</code> (e.g., <code>tdem</code>), add that value to the accepted list in <code>etl/dbt/models/schema.yml</code> under <code>stg_candidates -> instrument -> accepted_values</code> so that dbt tests will pass.
+</div>
+
+</body>
+</html>

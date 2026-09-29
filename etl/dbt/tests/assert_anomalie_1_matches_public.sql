@@ -1,6 +1,13 @@
 -- Every project's anomalie_1: each row carries an id, and where the target exists in
 -- public.anomalies, the same id and VM number.
-{% for p in var('etl')['projects'] %}
+{%- set target_proj = var('target_project', none) -%}
+{%- set all_projects = var('etl')['projects'] -%}
+{%- if target_proj -%}
+  {%- set projects = all_projects | selectattr('project_id', 'equalto', target_proj) | list -%}
+{%- else -%}
+  {%- set projects = all_projects -%}
+{%- endif -%}
+{% for p in projects %}
 select '{{ p['project_id'] }}' as project_id, x.target_id, x.id, p.id as public_id, x.vm_nr, p.vm_nr as public_vm_nr
 from {{ adapter.quote(p['schema']) }}.anomalie_1 x
 left join {{ source('app', 'anomalies') }} p on p.target_id = x.target_id

@@ -274,6 +274,149 @@ def init_db():
                 conn.execute(text(anomalies_trigger_sql))
                 conn.commit()
                 logger.info("Successfully created/updated PL/pgSQL database triggers for spatial synchronization.")
+
+                # 2. SCD Type 2 audit table & trigger for anomalies
+                scd_audit_sql = """
+                CREATE TABLE IF NOT EXISTS public.anomaly_history (
+                    history_id BIGSERIAL PRIMARY KEY,
+                    anomaly_id VARCHAR(36) NOT NULL REFERENCES public.anomalies(id) ON DELETE CASCADE,
+                    project_id VARCHAR(50),
+                    target_id VARCHAR(100),
+                    vm_nr VARCHAR(50),
+                    instrument VARCHAR(50),
+                    category VARCHAR(50),
+                    layer VARCHAR(255),
+                    evaluated_depth DOUBLE PRECISION,
+                    easting DOUBLE PRECISION,
+                    northing DOUBLE PRECISION,
+                    latitude DOUBLE PRECISION,
+                    longitude DOUBLE PRECISION,
+                    status VARCHAR(50),
+                    valid_from TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    valid_to TIMESTAMPTZ,
+                    is_current BOOLEAN NOT NULL DEFAULT TRUE,
+                    change_reason TEXT NOT NULL DEFAULT 'initial',
+                    decision_id BIGINT,
+                    changed_by TEXT
+                );
+
+                CREATE INDEX IF NOT EXISTS ix_anomaly_history_anomaly_id ON public.anomaly_history (anomaly_id);
+                CREATE INDEX IF NOT EXISTS ix_anomaly_history_project_id ON public.anomaly_history (project_id);
+                CREATE INDEX IF NOT EXISTS ix_anomaly_history_target_id ON public.anomaly_history (target_id);
+                CREATE INDEX IF NOT EXISTS ix_anomaly_history_vm_nr ON public.anomaly_history (vm_nr);
+                CREATE UNIQUE INDEX IF NOT EXISTS ix_anomaly_history_current ON public.anomaly_history (anomaly_id) WHERE is_current = TRUE;
+
+                CREATE OR REPLACE FUNCTION public.fn_anomaly_scd_audit()
+                RETURNS TRIGGER AS $$
+                DECLARE
+                    v_reason TEXT;
+                    v_decision_id BIGINT;
+                    v_user TEXT;
+                BEGIN
+                    v_reason := NULLIF(current_setting('etl.change_reason', true), '');
+                    v_decision_id := NULLIF(current_setting('etl.current_decision_id', true), '')::BIGINT;
+                    v_user := session_user;
+
+                    IF TG_OP = 'INSERT' THEN
+                        INSERT INTO public.anomaly_history (
+                            anomaly_id, project_id, target_id, vm_nr, instrument,
+                            category, layer, evaluated_depth, easting, northing,
+                            latitude, longitude, status, valid_from, valid_to,
+                            is_current, change_reason, decision_id, changed_by
+                        ) VALUES (
+                            NEW.id, NEW.project_id, NEW.target_id, NEW.vm_nr, NEW.instrument,
+                            NEW.category, NEW.layer, NEW.evaluated_depth, NEW.easting, NEW.northing,
+                            NEW.latitude, NEW.longitude, NEW.status, now(), NULL,
+                            true, COALESCE(v_reason, 'created'), v_decision_id, v_user
+                        );
+                        RETURN NEW;
+                    ELSIF TG_OP = 'UPDATE' THEN
+                        IF (OLD.easting IS DISTINCT FROM NEW.easting) OR
+                           (OLD.northing IS DISTINCT FROM NEW.northing) OR
+                           (OLD.latitude IS DISTINCT FROM NEW.latitude) OR
+                           (OLD.longitude IS DISTINCT FROM NEW.longitude) OR
+                           (OLD.evaluated_depth IS DISTINCT FROM NEW.evaluated_depth) OR
+                           (OLD.category IS DISTINCT FROM NEW.category) OR
+                           (OLD.layer IS DISTINCT FROM NEW.layer) OR
+                           (OLD.instrument IS DISTINCT FROM NEW.instrument) OR
+                           (OLD.status IS DISTINCT FROM NEW.status) OR
+                           (OLD.vm_nr IS DISTINCT FROM NEW.vm_nr) OR
+                           (OLD.target_id IS DISTINCT FROM NEW.target_id) THEN
+
+                            UPDATE public.anomaly_history
+                               SET valid_to = now(),
+                                   is_current = false
+                             WHERE anomaly_id = OLD.id
+                               AND is_current = true;
+
+                            IF NOT FOUND THEN
+                                INSERT INTO public.anomaly_history (
+                                    anomaly_id, project_id, target_id, vm_nr, instrument,
+                                    category, layer, evaluated_depth, easting, northing,
+                                    latitude, longitude, status, valid_from, valid_to,
+                                    is_current, change_reason, decision_id, changed_by
+                                ) VALUES (
+                                    OLD.id, OLD.project_id, OLD.target_id, OLD.vm_nr, OLD.instrument,
+                                    OLD.category, OLD.layer, OLD.evaluated_depth, OLD.easting, OLD.northing,
+                                    OLD.latitude, OLD.longitude, OLD.status, now() - INTERVAL '1 millisecond', now(),
+                                    false, 'baseline', NULL, 'system'
+                                );
+                            END IF;
+
+                            INSERT INTO public.anomaly_history (
+                                anomaly_id, project_id, target_id, vm_nr, instrument,
+                                category, layer, evaluated_depth, easting, northing,
+                                latitude, longitude, status, valid_from, valid_to,
+                                is_current, change_reason, decision_id, changed_by
+                            ) VALUES (
+                                NEW.id, NEW.project_id, NEW.target_id, NEW.vm_nr, NEW.instrument,
+                                NEW.category, NEW.layer, NEW.evaluated_depth, NEW.easting, NEW.northing,
+                                NEW.latitude, NEW.longitude, NEW.status, now(), NULL,
+                                true, COALESCE(v_reason, 'update'), v_decision_id, v_user
+                            );
+                        END IF;
+                        RETURN NEW;
+                    END IF;
+                    RETURN NULL;
+                END;
+                $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+                DROP TRIGGER IF EXISTS trigger_anomaly_scd_audit ON public.anomalies;
+                CREATE TRIGGER trigger_anomaly_scd_audit
+                AFTER INSERT OR UPDATE ON public.anomalies
+                FOR EACH ROW
+                EXECUTE FUNCTION public.fn_anomaly_scd_audit();
+
+                -- Backfill existing anomalies into history if not already present
+                INSERT INTO public.anomaly_history (
+                    anomaly_id, project_id, target_id, vm_nr, instrument,
+                    category, layer, evaluated_depth, easting, northing,
+                    latitude, longitude, status, valid_from, valid_to,
+                    is_current, change_reason, changed_by
+                )
+                SELECT
+                    id, project_id, target_id, vm_nr, instrument,
+                    category, layer, evaluated_depth, easting, northing,
+                    latitude, longitude, status, now(), NULL,
+                    TRUE, 'initial', 'system'
+                FROM public.anomalies a
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM public.anomaly_history h WHERE h.anomaly_id = a.id
+                );
+
+                -- Grants for pipeline and approver roles
+                DO $$ BEGIN
+                    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'etl_pipeline') THEN
+                        GRANT SELECT ON public.anomaly_history TO etl_pipeline;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'etl_approver') THEN
+                        GRANT SELECT ON public.anomaly_history TO etl_approver;
+                    END IF;
+                END $$;
+                """
+                conn.execute(text(scd_audit_sql))
+                conn.commit()
+                logger.info("Successfully created/updated SCD Type 2 audit history table and trigger.")
         except Exception as e:
             logger.error(f"Failed to create database triggers: {e}")
 

@@ -3,7 +3,13 @@
     lat/lon come from the source coordinates before any coord_round, in the project's
     own SRID. -#}
 {{ config(materialized='view') }}
-{%- set projects = var('etl')['projects'] -%}
+{%- set target_proj = var('target_project', none) -%}
+{%- set all_projects = var('etl')['projects'] -%}
+{%- if target_proj -%}
+  {%- set projects = all_projects | selectattr('project_id', 'equalto', target_proj) | list -%}
+{%- else -%}
+  {%- set projects = all_projects -%}
+{%- endif -%}
 {% for p in projects %}{% set pl = loop %}{% for s in p['sources'] %}
 {%- set c = s['columns'] %}
 select

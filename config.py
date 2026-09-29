@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     # docker-compose is what actually consumes POSTGRES_PASSWORD. It is declared
     # here only so the two values can be checked against each other below.
     postgres_password: str = ""
+    etl_approver_user: str = "etl_approver"
+    etl_approver_password: str = ""
 
 settings = Settings()
 

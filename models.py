@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Boolean, DateTime, Integer, ForeignKey, JSON, create_engine, text
+from sqlalchemy import Column, String, Float, Boolean, DateTime, Integer, BigInteger, ForeignKey, JSON, create_engine, text
 from sqlalchemy.orm import declarative_base, relationship
 from geoalchemy2 import Geometry
 import datetime
@@ -38,6 +38,33 @@ class Anomaly(Base):
 
     project = relationship("Project", back_populates="anomalies")
     feedbacks = relationship("Feedback", back_populates="anomaly", cascade="all, delete-orphan")
+    history_records = relationship("AnomalyHistory", back_populates="anomaly", cascade="all, delete-orphan")
+
+class AnomalyHistory(Base):
+    __tablename__ = "anomaly_history"
+
+    history_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    anomaly_id = Column(String(36), ForeignKey("anomalies.id", ondelete="CASCADE"), nullable=False, index=True)
+    project_id = Column(String(50), nullable=True, index=True)
+    target_id = Column(String(100), nullable=True, index=True)
+    vm_nr = Column(String(50), nullable=True, index=True)
+    instrument = Column(String(50), nullable=True)
+    category = Column(String(50), nullable=True)
+    layer = Column(String(255), nullable=True)
+    evaluated_depth = Column(Float, nullable=True)
+    easting = Column(Float, nullable=True)
+    northing = Column(Float, nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    status = Column(String(50), nullable=True)
+    valid_from = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
+    valid_to = Column(DateTime, nullable=True)
+    is_current = Column(Boolean, nullable=False, default=True)
+    change_reason = Column(String(50), nullable=False, default="initial")
+    decision_id = Column(BigInteger, nullable=True)
+    changed_by = Column(String(100), nullable=True)
+
+    anomaly = relationship("Anomaly", back_populates="history_records")
 
 class Feedback(Base):
     __tablename__ = "feedback"

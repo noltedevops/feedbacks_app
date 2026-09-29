@@ -2,18 +2,21 @@ from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from typing import List, Optional
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
+import asyncio
 import datetime
 import hashlib
 import hmac
 import os
 import json
 import secrets
+import subprocess
 import uuid
 
 from database import init_db, get_db
@@ -833,6 +836,8 @@ def sync_data(
     # Update coordinates of anomalies if present
     synced_points_count = 0
     if payload.point_updates:
+        if db.bind and db.bind.dialect.name == "postgresql":
+            db.execute(text("SELECT set_config('etl.change_reason', 'field_sync', true)"))
         for pu in payload.point_updates:
             db_anomaly = db.query(models.Anomaly).filter(models.Anomaly.id == pu.id).first()
             if db_anomaly:
@@ -989,6 +994,205 @@ def get_stats(
         "progress_percentage": round(progress_percentage, 1),
         "status_distribution": status_counts
     }
+
+
+# --- ETL Approver API ---
+class ChangeDecisionRequest(BaseModel):
+    change_ids: List[int]
+    decision: str  # 'approve' or 'reject'
+
+class CorrectionDecisionRequest(BaseModel):
+    pair_id: int
+    decision: str  # 'approve' or 'reject'
+
+
+def get_etl_approver_conn():
+    from urllib.parse import urlparse
+    import psycopg
+    db_url = os.environ.get("DATABASE_URL", "")
+    host = os.environ.get("ETL_DB_HOST")
+    port = int(os.environ.get("ETL_DB_PORT", "5432"))
+    dbname = os.environ.get("ETL_DB_NAME")
+    if db_url and not host:
+        parsed = urlparse(db_url)
+        host = parsed.hostname or "127.0.0.1"
+        port = parsed.port or 5432
+        dbname = parsed.path.lstrip("/") or "nolte_geoservices"
+    user = os.environ.get("ETL_APPROVER_USER") or settings.etl_approver_user
+    password = os.environ.get("ETL_APPROVER_PASSWORD") or settings.etl_approver_password
+    return psycopg.connect(
+        host=host or "127.0.0.1",
+        port=port,
+        dbname=dbname or "nolte_geoservices",
+        user=user,
+        password=password,
+        application_name="nolte_etl_api_approver"
+    )
+
+
+@app.get("/api/etl/status")
+def get_etl_pipeline_status(admin: models.User = Depends(require_admin)):
+    try:
+        with get_etl_approver_conn() as conn:
+            runs = [
+                {
+                    "run_id": r[0], "started_at": r[1].isoformat() if r[1] else None,
+                    "finished_at": r[2].isoformat() if r[2] else None, "status": r[3],
+                    "forced": r[4], "summary": r[5]
+                }
+                for r in conn.execute(
+                    "select run_id, started_at, finished_at, status, forced, summary "
+                    "from etl.runs order by run_id desc limit 10"
+                ).fetchall()
+            ]
+            staged_changes = [
+                {
+                    "change_id": r[0], "run_id": r[1], "project_id": r[2], "anomaly_id": r[3],
+                    "vm_nr": r[4], "column_name": r[5], "old_value": r[6], "new_value": r[7],
+                    "staged_at": r[8].isoformat() if r[8] else None
+                }
+                for r in conn.execute(
+                    "select change_id, run_id, project_id, anomaly_id, vm_nr, column_name, "
+                    "old_value, new_value, staged_at from etl.change_log where status = 'staged' "
+                    "order by change_id"
+                ).fetchall()
+            ]
+            correction_pairs = [
+                {
+                    "pair_id": r[0], "run_id": r[1], "project_id": r[2], "new_target_id": r[3],
+                    "new_easting": r[4], "new_northing": r[5], "old_anomaly_id": r[6],
+                    "old_vm_nr": r[7], "old_easting": r[8], "old_northing": r[9],
+                    "distance_m": r[10], "matched_by": r[11], "status": r[12]
+                }
+                for r in conn.execute(
+                    "select pair_id, run_id, project_id, new_target_id, new_easting, new_northing, "
+                    "old_anomaly_id, old_vm_nr, old_easting, old_northing, distance_m, matched_by, status "
+                    "from etl.correction_candidates where status in ('pending', 'conflict') order by pair_id"
+                ).fetchall()
+            ]
+            return {
+                "runs": runs,
+                "staged_changes": staged_changes,
+                "correction_pairs": correction_pairs
+            }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch ETL status: {exc}")
+
+
+@app.post("/api/etl/approvals/change")
+def decide_etl_change(req: ChangeDecisionRequest, admin: models.User = Depends(require_admin)):
+    if req.decision not in ("approve", "reject"):
+        raise HTTPException(status_code=400, detail="Decision must be 'approve' or 'reject'")
+    if not req.change_ids:
+        raise HTTPException(status_code=400, detail="change_ids list cannot be empty")
+    results = []
+    try:
+        with get_etl_approver_conn() as conn:
+            for cid in req.change_ids:
+                row = conn.execute("select etl_admin.decide_change(%s, %s)", (cid, req.decision)).fetchone()
+                conn.commit()
+                results.append({"change_id": cid, "decision_id": row[0]})
+        return {"success": True, "decisions": results}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Approval execution failed: {exc}")
+
+
+@app.post("/api/etl/approvals/correction")
+def decide_etl_correction(req: CorrectionDecisionRequest, admin: models.User = Depends(require_admin)):
+    if req.decision not in ("approve", "reject"):
+        raise HTTPException(status_code=400, detail="Decision must be 'approve' or 'reject'")
+    try:
+        with get_etl_approver_conn() as conn:
+            row = conn.execute("select etl_admin.decide_correction(%s, %s)", (req.pair_id, req.decision)).fetchone()
+            conn.commit()
+            return {"success": True, "pair_id": req.pair_id, "decision_id": row[0]}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Correction decision failed: {exc}")
+
+
+class EtlRunRequest(BaseModel):
+    project_id: Optional[str] = None
+    force: bool = True
+
+
+@app.post("/api/etl/run")
+async def trigger_etl_run(req: EtlRunRequest, admin: models.User = Depends(require_admin)):
+    """Trigger an immediate ETL run (optionally scoped to a project_id) via Docker compose."""
+    cmd = ["docker", "compose", "--profile", "etl", "run", "--rm", "etl", "run"]
+    if req.force:
+        cmd.append("--force")
+    if req.project_id:
+        cmd.extend(["--project", req.project_id])
+
+    try:
+        res = await asyncio.to_thread(
+            subprocess.run, cmd, capture_output=True, text=True, timeout=180
+        )
+        return {
+            "success": res.returncode == 0,
+            "returncode": res.returncode,
+            "stdout": res.stdout,
+            "stderr": res.stderr,
+            "project_id": req.project_id,
+            "force": req.force
+        }
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=504, detail="ETL run timed out after 180 seconds")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to execute ETL run: {exc}")
+
+
+@app.get("/api/etl/history")
+def get_anomaly_history(
+    target_id: Optional[str] = None,
+    vm_nr: Optional[str] = None,
+    project_id: Optional[str] = None,
+    limit: int = 50,
+    admin: models.User = Depends(require_admin)
+):
+    try:
+        with get_etl_approver_conn() as conn:
+            where_clauses = []
+            params = []
+            if target_id:
+                where_clauses.append("h.target_id = %s")
+                params.append(target_id)
+            if vm_nr:
+                where_clauses.append("h.vm_nr = %s")
+                params.append(vm_nr)
+            if project_id:
+                where_clauses.append("h.project_id = %s")
+                params.append(project_id)
+            where_sql = ("where " + " and ".join(where_clauses)) if where_clauses else ""
+            params.append(limit)
+            q = f"""
+                select h.history_id, h.anomaly_id, h.project_id, h.target_id, h.vm_nr,
+                       h.instrument, h.category, h.layer, h.evaluated_depth,
+                       h.easting, h.northing, h.latitude, h.longitude, h.status,
+                       h.valid_from, h.valid_to, h.is_current, h.change_reason,
+                       h.decision_id, h.changed_by
+                  from public.anomaly_history h
+                 {where_sql}
+                 order by h.history_id desc
+                 limit %s
+            """
+            rows = conn.execute(q, tuple(params)).fetchall()
+            return [
+                {
+                    "history_id": r[0], "anomaly_id": r[1], "project_id": r[2], "target_id": r[3],
+                    "vm_nr": r[4], "instrument": r[5], "category": r[6], "layer": r[7],
+                    "evaluated_depth": r[8], "easting": r[9], "northing": r[10],
+                    "latitude": r[11], "longitude": r[12], "status": r[13],
+                    "valid_from": r[14].isoformat() if r[14] else None,
+                    "valid_to": r[15].isoformat() if r[15] else None,
+                    "is_current": r[16], "change_reason": r[17],
+                    "decision_id": r[18], "changed_by": r[19]
+                }
+                for r in rows
+            ]
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch anomaly history: {exc}")
+
 
 # The landing page's assistant. Registered before the static mount below, which
 # answers every path that reaches it.

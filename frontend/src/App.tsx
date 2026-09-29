@@ -10,6 +10,7 @@ import { Overview } from './components/Overview';
 import { AuthDialog, type AuthView } from './components/AuthDialog';
 import { Landing } from './components/Landing';
 import { LangSwitch } from './components/LangSwitch';
+import { EtlPanel } from './components/EtlPanel';
 import { TourHost } from './tour/TourHost';
 import { TourLaunchers } from './tour/TourLaunchers';
 import type { TourId } from './tour/steps';
@@ -37,7 +38,8 @@ import {
   Lock,
   ShieldCheck,
   Users,
-  Tag
+  Tag,
+  Database
 } from 'lucide-react';
 import {
   authFetch, getAccess, setSession, clearSession, NO_ACCESS,
@@ -295,6 +297,9 @@ export default function App() {
   const [showUsersPanel, setShowUsersPanel] = useState(false);
   const [userRows, setUserRows] = useState<AdminUserRow[]>([]);
   const [issuedPassword, setIssuedPassword] = useState<{ username: string; password: string } | null>(null);
+  // Admin-only: ETL pipeline monitor & approver panel
+  const [showEtlPanel, setShowEtlPanel] = useState(false);
+  const [etlPendingCount, setEtlPendingCount] = useState(0);
   // Forced password change after an admin reset.
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [pwCurrent, setPwCurrent] = useState('');
@@ -1128,6 +1133,26 @@ export default function App() {
     return () => clearInterval(timer);
   }, [showAdminPanel, access.is_admin]);
 
+  const loadEtlCount = useCallback(async () => {
+    if (!access.is_admin) return;
+    try {
+      const res = await authFetch(`${API_BASE}/api/etl/status`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const count = (data.staged_changes?.length || 0) + (data.correction_pairs?.length || 0);
+      setEtlPendingCount(count);
+    } catch {
+      // Ignore silent background fetch error
+    }
+  }, [access.is_admin]);
+
+  useEffect(() => {
+    if (!access.is_admin) return;
+    loadEtlCount();
+    const timer = setInterval(loadEtlCount, 30000);
+    return () => clearInterval(timer);
+  }, [access.is_admin, loadEtlCount]);
+
   const decideRequest = async (id: string, approve: boolean) => {
     try {
       const res = await authFetch(`${API_BASE}/api/permissions/requests/${id}/decide`, {
@@ -1580,6 +1605,21 @@ export default function App() {
                     <Users size={20} aria-hidden="true" />
                     <span className="sidebar-item-label">{t('Users')}</span>
                     <span className="rail-tip" aria-hidden="true">{t('Users')}</span>
+                  </button>
+                )}
+
+                {access.is_admin && (
+                  <button
+                    type="button"
+                    className="sidebar-item"
+                    onClick={() => setShowEtlPanel(true)}
+                  >
+                    <Database size={20} aria-hidden="true" />
+                    <span className="sidebar-item-label">{t('ETL Pipeline')}</span>
+                    <span className="rail-tip" aria-hidden="true">{t('ETL Pipeline')}</span>
+                    {etlPendingCount > 0 && (
+                      <span className="sidebar-item-badge">{etlPendingCount}</span>
+                    )}
                   </button>
                 )}
 
@@ -2215,6 +2255,17 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Admin: ETL pipeline monitor & approver */}
+      {showEtlPanel && access.is_admin && (
+        <EtlPanel
+          apiBase={API_BASE}
+          t={t}
+          onClose={() => setShowEtlPanel(false)}
+          onUpdateCounts={count => setEtlPendingCount(count)}
+          showToast={showToast}
+        />
       )}
 
       {/* Toast. A raised panel with ink text, the type carried by the icon and a rule in
