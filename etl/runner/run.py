@@ -43,9 +43,13 @@ from psycopg import sql
 try:
     from .validate_config import validate_config_file
     from .notifier import notify_run_failed, notify_pending_approvals, notify_run_success
+    from .logger import get_logger, set_run_context, clear_run_context
 except ImportError:
     from validate_config import validate_config_file
     from notifier import notify_run_failed, notify_pending_approvals, notify_run_success
+    from logger import get_logger, set_run_context, clear_run_context
+
+log = get_logger("etl.runner")
 
 HERE = Path(__file__).resolve().parent
 ETL_DIR = HERE.parent
@@ -315,14 +319,18 @@ def run(force: bool = False, project_id: str | None = None) -> int:
     run_id = conn.execute("insert into etl.runs (forced, fingerprint) values (%s, %s) returning run_id",
                           (force, json.dumps(fp))).fetchone()[0]
     conn.commit()
+    set_run_context(run_id=run_id, project_id=project_id)
     target_str = f" [project: {project_id}]" if project_id else ""
+    log.info(f"run {run_id} ({'forced' if force else 'scheduled'}){target_str}")
     print(f"run {run_id} ({'forced' if force else 'scheduled'}){target_str}")
 
     if last and last[0] == fp and not force:
         conn.execute("update etl.runs set status = 'skipped', finished_at = now(), summary = %s where run_id = %s",
                      (json.dumps({"reason": "no source, config or decision change since the last successful run", "target_project": project_id}), run_id))
         conn.commit()
+        log.info("no change since the last successful run: skipped")
         print("  no change since the last successful run: skipped")
+        clear_run_context()
         return 0
 
     try:
@@ -347,6 +355,7 @@ def run(force: bool = False, project_id: str | None = None) -> int:
                      (json.dumps(fingerprint(conn, cfg, project_id=project_id)), json.dumps(summary, default=str), run_id))
         conn.commit()
         report(summary)
+        log.info(f"run {run_id} completed successfully and merged into public.anomalies")
         for pid, pdata in summary.get("projects", {}).items():
             staged = pdata.get("changes_staged", 0)
             pairs = pdata.get("correction_pairs_new", 0)
@@ -360,9 +369,11 @@ def run(force: bool = False, project_id: str | None = None) -> int:
                      (json.dumps({"error": str(exc)[:4000], "target_project": project_id}), run_id))
         conn.commit()
         notify_run_failed(run_id, str(exc))
+        log.error(f"RUN {run_id} FAILED: {exc}", exc_info=True)
         print(f"RUN {run_id} FAILED: {exc}", file=sys.stderr)
         return 1
     finally:
+        clear_run_context()
         conn.close()
 
 

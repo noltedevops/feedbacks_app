@@ -1030,6 +1030,87 @@ def get_etl_approver_conn():
     )
 
 
+@app.get("/api/etl/health")
+def get_etl_pipeline_health():
+    """Operational health & staleness monitoring endpoint for the ETL pipeline."""
+    import time
+    t_start = time.perf_counter()
+    try:
+        with get_etl_approver_conn() as conn:
+            # Measure DB ping latency
+            conn.execute("SELECT 1")
+            latency_ms = round((time.perf_counter() - t_start) * 1000, 2)
+
+            # Last run details
+            last_run = conn.execute(
+                "SELECT run_id, status, started_at, finished_at FROM etl.runs ORDER BY run_id DESC LIMIT 1"
+            ).fetchone()
+
+            # Last successful run
+            last_success = conn.execute(
+                "SELECT run_id, finished_at FROM etl.runs WHERE status = 'ok' ORDER BY run_id DESC LIMIT 1"
+            ).fetchone()
+
+            # Pending counts
+            staged_cnt = conn.execute("SELECT count(*) FROM etl.change_log WHERE status = 'staged'").fetchone()[0]
+            corr_cnt = conn.execute("SELECT count(*) FROM etl.correction_candidates WHERE status IN ('pending', 'conflict')").fetchone()[0]
+            targets_cnt = conn.execute("SELECT count(*) FROM public.anomalies").fetchone()[0]
+            history_cnt = conn.execute("SELECT count(*) FROM public.anomaly_history").fetchone()[0]
+
+            now = datetime.datetime.now(datetime.timezone.utc)
+            max_staleness_hours = float(os.environ.get("ETL_MAX_STALENESS_HOURS", "24"))
+
+            seconds_since_last_success = None
+            is_stale = False
+            if last_success and last_success[1]:
+                finished_at = last_success[1]
+                if finished_at.tzinfo is None:
+                    finished_at = finished_at.replace(tzinfo=datetime.timezone.utc)
+                seconds_since_last_success = round((now - finished_at).total_seconds())
+                is_stale = seconds_since_last_success > (max_staleness_hours * 3600)
+
+            # Health classification
+            last_status = last_run[1] if last_run else "none"
+            if last_status == "failed":
+                overall_status = "unhealthy"
+            elif is_stale:
+                overall_status = "degraded"
+            else:
+                overall_status = "healthy"
+
+            return {
+                "status": overall_status,
+                "timestamp": now.isoformat(),
+                "database_latency_ms": latency_ms,
+                "staleness": {
+                    "is_stale": is_stale,
+                    "max_staleness_hours": max_staleness_hours,
+                    "seconds_since_last_success": seconds_since_last_success,
+                    "last_success_at": last_success[1].isoformat() if last_success and last_success[1] else None
+                },
+                "last_run": {
+                    "run_id": last_run[0] if last_run else None,
+                    "status": last_run[1] if last_run else None,
+                    "finished_at": last_run[3].isoformat() if last_run and last_run[3] else None
+                },
+                "pending_approvals": {
+                    "staged_changes": staged_cnt,
+                    "correction_pairs": corr_cnt,
+                    "total": staged_cnt + corr_cnt
+                },
+                "data_counts": {
+                    "anomalies": targets_cnt,
+                    "history_records": history_cnt
+                }
+            }
+    except Exception as exc:
+        return {
+            "status": "unhealthy",
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "error": str(exc)
+        }
+
+
 @app.get("/api/etl/status")
 def get_etl_pipeline_status(admin: models.User = Depends(require_admin)):
     try:

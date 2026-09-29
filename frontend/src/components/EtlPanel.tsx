@@ -13,10 +13,23 @@ import {
   Ban,
   Play,
   History,
-  Search
+  Search,
+  ShieldCheck
 } from 'lucide-react';
 import { authFetch } from '../auth';
 import type { Translator } from '../i18n';
+
+export interface EtlHealth {
+  status: 'healthy' | 'degraded' | 'unhealthy' | string;
+  timestamp: string;
+  database_latency_ms?: number;
+  staleness?: {
+    is_stale: boolean;
+    max_staleness_hours: number;
+    seconds_since_last_success: number | null;
+    last_success_at: string | null;
+  };
+}
 
 export interface EtlRun {
   run_id: number;
@@ -110,12 +123,17 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
   const [historyRecords, setHistoryRecords] = useState<EtlAnomalyHistory[]>([]);
   const [historySearch, setHistorySearch] = useState<string>('');
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
+  const [health, setHealth] = useState<EtlHealth | null>(null);
 
   const fetchStatus = useCallback(async (isInitial = false) => {
     try {
-      const res = await authFetch(`${apiBase}/api/etl/status`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const [resStatus, resHealth] = await Promise.all([
+        authFetch(`${apiBase}/api/etl/status`),
+        authFetch(`${apiBase}/api/etl/health`).catch(() => null)
+      ]);
+
+      if (!resStatus.ok) throw new Error(`HTTP ${resStatus.status}`);
+      const data = await resStatus.json();
       const loadedRuns: EtlRun[] = data.runs || [];
       const loadedChanges: EtlStagedChange[] = data.staged_changes || [];
       const loadedCorrections: EtlCorrectionPair[] = data.correction_pairs || [];
@@ -123,6 +141,11 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
       setRuns(loadedRuns);
       setStagedChanges(loadedChanges);
       setCorrectionPairs(loadedCorrections);
+
+      if (resHealth && resHealth.ok) {
+        const healthData = await resHealth.json();
+        setHealth(healthData);
+      }
 
       const totalPending = loadedChanges.length + loadedCorrections.length;
       if (onUpdateCounts) {
@@ -167,13 +190,15 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
 
   useEffect(() => {
     let ignore = false;
-    authFetch(`${apiBase}/api/etl/status`)
-      .then(res => {
-        if (!res.ok || ignore) return null;
-        return res.json();
-      })
-      .then(data => {
-        if (!data || ignore) return;
+    Promise.all([
+      authFetch(`${apiBase}/api/etl/status`),
+      authFetch(`${apiBase}/api/etl/health`).catch(() => null)
+    ])
+      .then(async ([resStatus, resHealth]) => {
+        if (!resStatus.ok || ignore) return;
+        const data = await resStatus.json();
+        if (ignore) return;
+
         const loadedRuns: EtlRun[] = data.runs || [];
         const loadedChanges: EtlStagedChange[] = data.staged_changes || [];
         const loadedCorrections: EtlCorrectionPair[] = data.correction_pairs || [];
@@ -181,6 +206,12 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
         setRuns(loadedRuns);
         setStagedChanges(loadedChanges);
         setCorrectionPairs(loadedCorrections);
+
+        if (resHealth && resHealth.ok) {
+          const healthData = await resHealth.json();
+          if (!ignore) setHealth(healthData);
+        }
+
         setLoading(false);
 
         const totalPending = loadedChanges.length + loadedCorrections.length;
@@ -424,6 +455,23 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
             <div className="etl-metric-val">
               <span className="etl-num">{correctionPairs.length}</span>
               <span className="etl-metric-sub">{t('shifts')}</span>
+            </div>
+          </div>
+
+          <div className="etl-metric-card">
+            <div className="etl-metric-title">
+              <ShieldCheck size={14} />
+              <span>{t('Pipeline Health')}</span>
+            </div>
+            <div className="etl-metric-val">
+              <span className={`etl-status-pill etl-status-${health?.status === 'healthy' ? 'ok' : health?.status === 'degraded' ? 'skipped' : health?.status === 'unhealthy' ? 'failed' : 'ok'}`}>
+                {health?.status ? health.status.toUpperCase() : 'HEALTHY'}
+              </span>
+              {health?.database_latency_ms != null && (
+                <span className="etl-metric-sub">
+                  {health.database_latency_ms} ms ping
+                </span>
+              )}
             </div>
           </div>
         </div>

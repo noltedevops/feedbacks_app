@@ -97,3 +97,34 @@ Set `ETL_ALERT_WEBHOOK_URL` in `.env` to enable automated alerts:
 - `etl_pipeline`: Runs the pipeline. Possesses `INSERT` and `SELECT` on targets, but **never** `UPDATE` or `DELETE` on `public.anomalies`. It executes changes exclusively via PostgreSQL `SECURITY DEFINER` functions in `etl_admin`.
 - `etl_approver`: Used exclusively for reviewing and deciding staged changes and coordinate shifts. It cannot write directly to `public.anomalies`.
 - All decisions require explicit human review before modifying production records.
+
+---
+
+## 7. CI/CD Automated Validation
+
+A GitHub Actions pipeline (`.github/workflows/etl-ci.yml`) automatically validates changes on every push and pull request touching ETL or frontend components:
+- **Config & Schema Linting**: Validates `projects.yml` syntax, positive integer SRIDs, and column requirements (`python runner/run.py validate-config`).
+- **Automated Unit Tests**: Executes unit test suites verifying schema linter, webhook payloads, and spatial bounds.
+- **Frontend Quality Gates**: Executes ESLint and compiles production Vite bundles (`npm run build`).
+
+---
+
+## 8. Structured JSON Logging & Rotation
+
+The pipeline features dual-destination structured logging via `etl/runner/logger.py`:
+- **Console (stdout)**: Formatted, human-readable execution output tagged with run and project IDs (`[2026-09-29 11:00:00] [INFO] [run:72] [proj:11-26-5151] ...`).
+- **Rotating JSON Lines File (`etl/logs/etl.jsonl`)**: Machine-readable JSON records including UTC timestamps, severity levels, contextual run IDs, project IDs, and exception stack traces. Rotates automatically at 10 MB with 5 backups.
+
+---
+
+## 9. Pipeline Health & Staleness Monitoring (`/api/etl/health`)
+
+An operational health endpoint is available at `GET /api/etl/health` for monitoring systems (Datadog, Prometheus, UptimeRobot, ALB):
+- **Database Latency**: Measures database connection latency in milliseconds.
+- **Staleness SLA**: Compares elapsed time since the last successful merge against `ETL_MAX_STALENESS_HOURS` (default 24h).
+- **Health Classifications**:
+  - `healthy`: Database reachable, last run succeeded or skipped, freshness within SLA.
+  - `degraded`: Pipeline is stale or pending approvals exceed thresholds.
+  - `unhealthy`: Database connection failed or last execution resulted in a gate failure.
+- **Approval Metrics**: Reports real-time counts of staged changes and correction pairs awaiting human action.
+

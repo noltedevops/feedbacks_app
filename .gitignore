@@ -61,3 +61,5 @@ etl/dbt/dbt_packages/
 
 # Local archives of data removed from the database (kept out of git)
 archive/
+etl/logs/
+

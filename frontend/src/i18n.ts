@@ -516,7 +516,13 @@ const de: Record<string, string> = {
   'Filter by Target ID, VM Nr, or Reason...': 'Nach Ziel-ID, VM-Nr. oder Grund filtern...',
   'No audit history records found.': 'Keine Historieeinträge gefunden.',
   'Reason': 'Grund',
-  'Version': 'Version'
+  'Version': 'Version',
+  'Pipeline Health': 'Pipeline-Status',
+  'Healthy': 'Gesund',
+  'Degraded': 'Beeinträchtigt',
+  'Unhealthy': 'Fehlerhaft',
+  'Fresh': 'Aktuell',
+  'Stale': 'Veraltet'
 };
 
 export type Translator = (text: string) => string;
