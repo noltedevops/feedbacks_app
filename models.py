@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Boolean, DateTime, Integer, BigInteger, ForeignKey, JSON, create_engine, text
+from sqlalchemy import Column, String, Text, Float, Boolean, DateTime, Integer, BigInteger, ForeignKey, Index, JSON, create_engine, text
 from sqlalchemy.orm import declarative_base, relationship
 from geoalchemy2 import Geometry
 import datetime
@@ -38,13 +38,20 @@ class Anomaly(Base):
 
     project = relationship("Project", back_populates="anomalies")
     feedbacks = relationship("Feedback", back_populates="anomaly", cascade="all, delete-orphan")
-    history_records = relationship("AnomalyHistory", back_populates="anomaly", cascade="all, delete-orphan")
 
 class AnomalyHistory(Base):
+    """Every version of an anomaly, written only by the fn_anomaly_scd_audit trigger
+    (database.py). Append-only and deliberately without a foreign key: the history of an
+    anomaly must outlive the anomaly, including a project delete."""
     __tablename__ = "anomaly_history"
+    __table_args__ = (
+        # at most one current version per anomaly
+        Index("ix_anomaly_history_current", "anomaly_id", unique=True,
+              postgresql_where=text("is_current"), sqlite_where=text("is_current")),
+    )
 
     history_id = Column(BigInteger, primary_key=True, autoincrement=True)
-    anomaly_id = Column(String(36), ForeignKey("anomalies.id", ondelete="CASCADE"), nullable=False, index=True)
+    anomaly_id = Column(String(36), nullable=False, index=True)
     project_id = Column(String(50), nullable=True, index=True)
     target_id = Column(String(100), nullable=True, index=True)
     vm_nr = Column(String(50), nullable=True, index=True)
@@ -57,14 +64,12 @@ class AnomalyHistory(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     status = Column(String(50), nullable=True)
-    valid_from = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-    valid_to = Column(DateTime, nullable=True)
+    valid_from = Column(DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    valid_to = Column(DateTime(timezone=True), nullable=True)
     is_current = Column(Boolean, nullable=False, default=True)
-    change_reason = Column(String(50), nullable=False, default="initial")
+    change_reason = Column(Text, nullable=False, default="initial")
     decision_id = Column(BigInteger, nullable=True)
-    changed_by = Column(String(100), nullable=True)
-
-    anomaly = relationship("Anomaly", back_populates="history_records")
+    changed_by = Column(Text, nullable=True)
 
 class Feedback(Base):
     __tablename__ = "feedback"
