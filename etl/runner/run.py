@@ -212,14 +212,12 @@ def referenced_columns(source: dict) -> set[str]:
     return cols
 
 
-def validate_sources(conn, cfg, project_id: str | None = None) -> list[str]:
+def validate_sources(conn, cfg) -> list[str]:
     """Every configured table and column must exist with correct types and plausible coordinates;
     returns tables nobody configured. Reads pg_catalog: PUBLIC's access to information_schema is revoked on live."""
     problems, unconfigured = [], []
     NUMERIC_TYPES = {"numeric", "float4", "float8", "int2", "int4", "int8", "double precision"}
-    projects = [p for p in cfg["projects"] if p["project_id"] == project_id] if project_id else cfg["projects"]
-
-    for p in projects:
+    for p in cfg["projects"]:
         tables = {r[0] for r in conn.execute(
             "select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace "
             "where n.nspname = %s and c.relkind in ('r', 'p', 'v', 'm', 'f')", (p["schema"],))}
@@ -285,12 +283,9 @@ def fingerprint(conn, cfg, project_id: str | None = None) -> dict:
     return fp
 
 
-def dbt(*args: str, cfg: dict, target_project: str | None = None) -> None:
-    dbt_vars = {"etl": cfg}
-    if target_project:
-        dbt_vars["target_project"] = target_project
+def dbt(*args: str, cfg: dict) -> None:
     cmd = ["dbt", *args, "--project-dir", str(DBT_DIR), "--profiles-dir", str(DBT_DIR),
-           "--vars", json.dumps(dbt_vars), "--no-use-colors"]
+           "--vars", json.dumps({"etl": cfg}), "--no-use-colors"]
     print("  $", " ".join(cmd[:3]), "...", flush=True)
     res = subprocess.run(cmd, cwd=DBT_DIR, capture_output=True, text=True)
     out = res.stdout + res.stderr
@@ -327,7 +322,8 @@ def _run_on(conn, cfg: dict, force: bool, project_id: str | None) -> int:
     conn.execute(BOOTSTRAP_SQL)
     conn.commit()
 
-    unconfigured = validate_sources(conn, cfg, project_id=project_id)
+    # every project: the dbt build below reads all of them, scoped run or not
+    unconfigured = validate_sources(conn, cfg)
     fp = fingerprint(conn, cfg, project_id=project_id)
     last = conn.execute("select fingerprint from etl.runs where status = 'ok' and (summary->>'target_project' is not distinct from %s) order by run_id desc limit 1",
                         (project_id,)).fetchone()
@@ -348,9 +344,9 @@ def _run_on(conn, cfg: dict, force: bool, project_id: str | None) -> int:
         return 0
 
     try:
-        dbt("run", "--select", "stg_candidates", "excluded_rows", "dup_report", cfg=cfg, target_project=project_id)
+        dbt("run", "--select", "stg_candidates", "excluded_rows", "dup_report", cfg=cfg)
         register_ids(conn)
-        dbt("run", "--select", "int_candidates", cfg=cfg, target_project=project_id)
+        dbt("run", "--select", "int_candidates", cfg=cfg)
         summary = merge(conn, cfg, run_id, project_id=project_id)
         summary["target_project"] = project_id
         summary["unconfigured_tables"] = unconfigured
@@ -363,7 +359,7 @@ def _run_on(conn, cfg: dict, force: bool, project_id: str | None) -> int:
         summary["duplicates"] = [dict(zip(("project_id", "target_id", "rows"), r)) for r in
                                  conn.execute(dup_q, (project_id,) if project_id else ())]
         conn.commit()
-        dbt("test", cfg=cfg, target_project=project_id)
+        dbt("test", cfg=cfg)
         # The fingerprint is re-taken after the merge: the merge itself changes public.
         conn.execute("update etl.runs set status = 'ok', finished_at = now(), fingerprint = %s, summary = %s where run_id = %s",
                      (json.dumps(fingerprint(conn, cfg, project_id=project_id)), json.dumps(summary, default=str), run_id))
@@ -432,8 +428,11 @@ def merge(conn, cfg, run_id: int, project_id: str | None = None) -> dict:
         # 3. the approver's decisions since the last run. Only etl_admin functions can
         #    carry them out, and only as the approver took them (etl_pipeline has no
         #    UPDATE on public.anomalies at all).
-        s["corrections_applied"] = apply_decided_corrections(conn, run_id)
-        s["changes_applied"] = apply_decided_changes(conn, run_id)
+        #    A scoped run carries out only its own project's decisions: its gates check
+        #    only that project, so it must not touch the others.
+        scope = [p["project_id"] for p in projects_to_run] if project_id else None
+        s["corrections_applied"] = apply_decided_corrections(conn, run_id, scope)
+        s["changes_applied"] = apply_decided_changes(conn, run_id, scope)
         if s["corrections_applied"]:
             # an applied correction maps the corrected source row onto the existing target
             conn.execute("""update etl.int_candidates c set id = d.anomaly_id, target_id = p.target_id, via_alias = true
@@ -559,13 +558,19 @@ def seed_vm_registry(conn, cfg) -> None:
                      (f"seed:{schema}.{table}", list(prefixes), json.dumps(prefixes)))
 
 
-def apply_decided_corrections(conn, run_id) -> int:
+_DECISION_SCOPE = ("and (%s::text[] is null or anomaly_id in "
+                   "(select id from public.anomalies where project_id = any(%s))) ")
+
+
+def apply_decided_corrections(conn, run_id, projects: list[str] | None = None) -> int:
     """Carry out the approver's correction decisions. apply_correction moves the target
-    to the coordinates the approver saw; the pipeline cannot move anything itself."""
+    to the coordinates the approver saw; the pipeline cannot move anything itself.
+    projects limits it to those projects' targets; None is every project."""
     n = 0
     for did, pair_id, decision in conn.execute(
             "select decision_id, ref_id, decision from etl_approval.decisions "
-            "where kind = 'correction' and outcome is null order by decision_id").fetchall():
+            "where kind = 'correction' and outcome is null " + _DECISION_SCOPE + "order by decision_id",
+            (projects, projects)).fetchall():
         if decision == "approve":
             conn.execute("select etl_admin.apply_correction(%s)", (did,))
             status, n = "applied", n + 1
@@ -577,14 +582,16 @@ def apply_decided_corrections(conn, run_id) -> int:
     return n
 
 
-def apply_decided_changes(conn, run_id) -> int:
+def apply_decided_changes(conn, run_id, projects: list[str] | None = None) -> int:
     """Carry out the approver's change decisions. apply_change writes exactly the value
     the approver approved, and only while the live value is still the one it was staged
-    against (else 'stale'). A change the source no longer asks for is closed unapplied."""
+    against (else 'stale'). A change the source no longer asks for is closed unapplied.
+    projects limits it to those projects' targets; None is every project."""
     n = 0
     for did, change_id, decision, anomaly_id, col, new in conn.execute(
             "select decision_id, ref_id, decision, anomaly_id, column_name, new_value from etl_approval.decisions "
-            "where kind = 'change' and outcome is null order by decision_id").fetchall():
+            "where kind = 'change' and outcome is null " + _DECISION_SCOPE + "order by decision_id",
+            (projects, projects)).fetchall():
         if decision != "approve":
             conn.execute("select etl_admin.close_decision(%s, 'closed')", (did,))
             outcome = "rejected"

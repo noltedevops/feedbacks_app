@@ -42,6 +42,15 @@ The linter validates:
 - **Sources**: Verifies table names, instruments (`magnetic`, `georadar`), and coordinate column definitions (`easting`, `northing`).
 - **Data Types & Bounds**: Verifies coordinate columns in Postgres are numeric/float types and fall within valid UTM boundaries.
 
+### What a single-project run does
+
+`run --project <id>` (or a project picked in the web UI) still **validates and builds every project**: dbt always rebuilds `etl.stg_candidates`, `etl.int_candidates`, `etl.excluded_rows` and `etl.dup_report` for all of them, so those tables are never left holding one project. Only these are limited to the chosen project:
+- the merge into `public.anomalies` (inserts, staged changes, correction pairs);
+- the approver's decisions carried out: other projects' approved or rejected decisions wait for their own run or the next full run;
+- the per-project row-count gates, and the report.
+
+Because every project is built, a broken source table in any project fails a single-project run too, exactly as it fails a full run.
+
 ---
 
 ## 3. Web Approver & Runner Interface
