@@ -8,6 +8,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# compose mounts etl/config over this read-only; the copy is the fallback for a bare `docker run`
 COPY config ./config
 COPY dbt ./dbt
 COPY runner ./runner

@@ -71,6 +71,11 @@ services:
       # No default: an unset schedule means "not scheduled", never a silent every-15-minutes.
       ETL_CRON_SCHEDULE: ${ETL_CRON_SCHEDULE:-}
       ETL_INTERVAL_SECONDS: ${ETL_INTERVAL_SECONDS:-0}
+    # The project config is read from the repository, not the copy baked into the image:
+    # an edited projects.yml takes effect on the next run, with no rebuild, and the web
+    # app (which reads the same file for its project list) never disagrees with the runner.
+    volumes:
+      - ./etl/config:/app/config:ro
     # The runner is PID 1 and has no SIGTERM handler, so without an init process a
     # `docker stop` waits out the timeout and ends in SIGKILL (exit 137), possibly mid-run.
     init: true
@@ -96,6 +101,8 @@ services:
       ETL_DB_NAME: ${ETL_DB_NAME:-nolte_geoservices}
       ETL_APPROVER_USER: ${ETL_APPROVER_USER:-etl_approver}
       ETL_APPROVER_PASSWORD: ${ETL_APPROVER_PASSWORD:-}
+    volumes:
+      - ./etl/config:/app/config:ro
     depends_on:
       db:
         condition: service_healthy

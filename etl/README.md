@@ -49,6 +49,11 @@ docker compose --profile etl run --rm etl run --force    # ignore the "nothing c
 docker compose --profile etl run --rm etl-approve        # what is waiting for a decision
 ```
 
+`etl/config/` is mounted read-only into both services, so an edit to `projects.yml` is
+picked up by the next run - no rebuild. A new project still needs `setup-sql` re-applied
+for its schema's grants. Changes to `runner/` or `dbt/` do need
+`docker compose --profile etl up -d --build etl`.
+
 Scheduling: `docker compose --profile etl up -d etl` starts the `loop` command. It does
 nothing until `ETL_INTERVAL_SECONDS` is set above 0 in `.env`.
 
