@@ -885,7 +885,7 @@ grant usage on schema etl to etl_approver;
 alter default privileges for role etl_pipeline in schema etl grant select on tables to etl_approver;
 grant select on all tables in schema etl to etl_approver;
 grant usage on schema public to etl_approver;
-grant select on public.anomalies, public.anomaly_history to etl_approver;
+grant select on public.anomalies, public.projects, public.anomaly_history to etl_approver;
 grant select on public.anomaly_history to etl_pipeline;
 """
 

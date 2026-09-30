@@ -99,6 +99,11 @@ export interface EtlAnomalyHistory {
   changed_by: string | null;
 }
 
+export interface EtlProjectOption {
+  project_id: string;
+  project_name: string;
+}
+
 interface EtlPanelProps {
   apiBase: string;
   t: Translator;
@@ -120,6 +125,7 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
   const [runs, setRuns] = useState<EtlRun[]>([]);
   const [stagedChanges, setStagedChanges] = useState<EtlStagedChange[]>([]);
   const [correctionPairs, setCorrectionPairs] = useState<EtlCorrectionPair[]>([]);
+  const [projects, setProjects] = useState<EtlProjectOption[]>([]);
   const [selectedChanges, setSelectedChanges] = useState<Set<number>>(new Set());
 
   // Run execution state
@@ -233,10 +239,14 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
       const loadedRuns: EtlRun[] = data.runs || [];
       const loadedChanges: EtlStagedChange[] = data.staged_changes || [];
       const loadedCorrections: EtlCorrectionPair[] = data.correction_pairs || [];
+      const loadedProjects: EtlProjectOption[] = data.projects || [];
 
       setRuns(loadedRuns);
       setStagedChanges(loadedChanges);
       setCorrectionPairs(loadedCorrections);
+      if (loadedProjects.length > 0) {
+        setProjects(loadedProjects);
+      }
 
       if (resHealth && resHealth.ok) {
         const healthData = await resHealth.json();
@@ -298,10 +308,14 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
         const loadedRuns: EtlRun[] = data.runs || [];
         const loadedChanges: EtlStagedChange[] = data.staged_changes || [];
         const loadedCorrections: EtlCorrectionPair[] = data.correction_pairs || [];
+        const loadedProjects: EtlProjectOption[] = data.projects || [];
 
         setRuns(loadedRuns);
         setStagedChanges(loadedChanges);
         setCorrectionPairs(loadedCorrections);
+        if (loadedProjects.length > 0) {
+          setProjects(loadedProjects);
+        }
 
         if (resHealth && resHealth.ok) {
           const healthData = await resHealth.json();
@@ -447,12 +461,32 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
   const latestRun = runs[0];
   const pendingCount = stagedChanges.length + correctionPairs.length;
 
-  const availableProjects = Array.from(new Set([
-    '11-26-5151',
-    '11-24-2736',
-    ...stagedChanges.map(c => c.project_id),
-    ...correctionPairs.map(p => p.project_id)
-  ].filter(Boolean))).sort();
+  const availableProjects = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of projects) {
+      if (p.project_id) {
+        map.set(
+          p.project_id,
+          p.project_name && p.project_name !== p.project_id
+            ? `${p.project_id} (${p.project_name})`
+            : p.project_id
+        );
+      }
+    }
+    for (const c of stagedChanges) {
+      if (c.project_id && !map.has(c.project_id)) {
+        map.set(c.project_id, c.project_id);
+      }
+    }
+    for (const cp of correctionPairs) {
+      if (cp.project_id && !map.has(cp.project_id)) {
+        map.set(cp.project_id, cp.project_id);
+      }
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([id, label]) => ({ id, label }));
+  }, [projects, stagedChanges, correctionPairs]);
 
   const formatDuration = (start: string | null, finish: string | null) => {
     if (!start || !finish) return '-';
@@ -586,7 +620,7 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
               >
                 <option value="">{t('All Projects')}</option>
                 {availableProjects.map(p => (
-                  <option key={p} value={p}>{p}</option>
+                  <option key={p.id} value={p.id}>{p.label}</option>
                 ))}
               </select>
             </div>

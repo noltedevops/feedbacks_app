@@ -1151,10 +1151,35 @@ def get_etl_pipeline_status(admin: models.User = Depends(require_admin)):
                     "from etl.correction_candidates where status in ('pending', 'conflict') order by pair_id"
                 ).fetchall()
             ]
+            # Query configured and existing projects
+            proj_dict = {}
+            for r in conn.execute(
+                "select project_id, coalesce(project_name, project_id) from public.projects order by project_id"
+            ).fetchall():
+                proj_dict[r[0]] = r[1]
+
+            cfg_path = os.path.join(os.path.dirname(__file__), "etl", "config", "projects.yml")
+            if os.path.exists(cfg_path):
+                try:
+                    import yaml
+                    with open(cfg_path, "r", encoding="utf-8") as f:
+                        cfg = yaml.safe_load(f) or {}
+                    for p in cfg.get("projects", []):
+                        if p.get("project_id"):
+                            proj_dict[p["project_id"]] = p.get("project_name", p["project_id"])
+                except Exception:
+                    pass
+
+            projects_list = [
+                {"project_id": pid, "project_name": pname}
+                for pid, pname in sorted(proj_dict.items())
+            ]
+
             return {
                 "runs": runs,
                 "staged_changes": staged_changes,
-                "correction_pairs": correction_pairs
+                "correction_pairs": correction_pairs,
+                "projects": projects_list
             }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to fetch ETL status: {exc}")
