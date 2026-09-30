@@ -212,12 +212,19 @@ A user who has been offline picks up permissions granted while they were away vi
 
 ## Backups
 
-The database holds the `users` table, so dumps are sensitive. `.gitignore` excludes
-`backup-*.sql` for that reason — keep that naming so the rule catches new dumps.
+The database holds the `users` table, so dumps are sensitive. They are written outside
+the repository, to `%USERPROFILE%\nolte-db-backups`, so a stray `git add` or a copy of
+the project folder never carries them. `.gitignore` still excludes `backup-*.sql` as a
+second line of defence — keep that naming so the rule catches a dump taken in the wrong
+place.
 
 ```powershell
-docker exec feedback_postgres_db pg_dump -U postgres nolte_geoservices > backup-nolte_geoservices-$(Get-Date -Format yyyyMMdd-HHmmss).sql
+New-Item -ItemType Directory -Force "$env:USERPROFILE\nolte-db-backups" | Out-Null
+docker exec feedback_postgres_db pg_dump -U postgres nolte_geoservices > "$env:USERPROFILE\nolte-db-backups\backup-nolte_geoservices-$(Get-Date -Format yyyyMMdd-HHmmss).sql"
 ```
+
+Dumps older than 2026-09-30 were moved there from the repository root. Dump filenames
+quoted in [ETL_DESIGN.md](ETL_DESIGN.md) refer to files in that folder.
 
 Take one before anything destructive, such as a manual edit or an ETL migration.
 
