@@ -1,85 +1,94 @@
-"""Tests for SCD Type 2 Audit History and Web Approver / Runner Endpoints."""
+"""Tests for the SCD Type 2 audit history on public.anomalies.
+
+These run against a real PostgreSQL database and change rows in it, so they refuse to
+run unless DATABASE_URL names a database ending in "_test" - never the live one. Each
+test works inside one transaction that is rolled back, so even the test database is
+left as it was.
+
+    DATABASE_URL=postgresql://postgres:...@127.0.0.1:5432/nolte_phase1_test \
+        python -m unittest etl/tests/test_scd_audit.py
+"""
 from __future__ import annotations
 
 import unittest
-from datetime import datetime, timezone
-import database
-import models
+
 from sqlalchemy import text
+
+import database
+
+
+def _require_test_database() -> None:
+    url = database.engine.url
+    if url.get_backend_name() != "postgresql":
+        raise unittest.SkipTest(f"needs PostgreSQL; DATABASE_URL resolved to {url.get_backend_name()}")
+    if not (url.database or "").endswith("_test"):
+        raise unittest.SkipTest(
+            f"refusing to run against database {url.database!r}: "
+            "point DATABASE_URL at a copy whose name ends in '_test'")
 
 
 class TestScdAuditHistory(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        _require_test_database()
+        database.init_db()  # the trigger and table must exist; guarded above
+        cls.engine = database.engine
+
     def setUp(self):
-        self.engine = database.engine
-        # Ensure database tables and triggers are up to date
-        database.init_db()
+        self.conn = self.engine.connect()
+        self.trans = self.conn.begin()
+
+    def tearDown(self):
+        self.trans.rollback()
+        self.conn.close()
+
+    def _any_anomaly(self):
+        row = self.conn.execute(text(
+            "SELECT id, evaluated_depth FROM public.anomalies ORDER BY id LIMIT 1")).fetchone()
+        self.assertIsNotNone(row, "the test database should contain at least one anomaly")
+        return row
 
     def test_scd_type_2_history_lifecycle(self):
-        """Verify that updating an anomaly closes the prior history record and creates a new current version."""
-        with self.engine.connect() as conn:
-            # 1. Fetch a test anomaly
-            anomaly = conn.execute(
-                text("SELECT id, easting, northing, evaluated_depth FROM public.anomalies ORDER BY id LIMIT 1")
-            ).fetchone()
-            self.assertIsNotNone(anomaly, "Database should contain at least one anomaly")
-            anomaly_id, orig_e, orig_n, orig_depth = anomaly[0], anomaly[1], anomaly[2], anomaly[3]
+        """Updating an anomaly closes the prior history record and creates a new current version."""
+        anomaly_id, orig_depth = self._any_anomaly()
 
-            # 2. Check that it currently has exactly 1 current record in anomaly_history
-            curr_rec = conn.execute(
-                text("SELECT history_id, is_current, valid_to, evaluated_depth, easting FROM public.anomaly_history WHERE anomaly_id = :aid AND is_current = true"),
-                {"aid": anomaly_id}
-            ).fetchone()
-            self.assertIsNotNone(curr_rec, "Anomaly should have an active current history record")
-            self.assertIsNone(curr_rec[2], "Current record valid_to must be None")
+        curr = self.conn.execute(text(
+            "SELECT history_id, valid_to FROM public.anomaly_history "
+            "WHERE anomaly_id = :aid AND is_current"), {"aid": anomaly_id}).fetchone()
+        self.assertIsNotNone(curr, "anomaly should have a current history record")
+        self.assertIsNone(curr[1], "current record valid_to must be NULL")
+        old_history_id = curr[0]
 
-            old_history_id = curr_rec[0]
+        self.conn.execute(text("SELECT set_config('etl.change_reason', 'test_scd_change', true)"))
+        self.conn.execute(text("SELECT set_config('etl.current_decision_id', '99999', true)"))
+        new_depth = (orig_depth or 0.0) + 0.35
+        self.conn.execute(text("UPDATE public.anomalies SET evaluated_depth = :d WHERE id = :aid"),
+                          {"d": new_depth, "aid": anomaly_id})
 
-            # 3. Perform an update simulating an approver change with session config set
-            conn.execute(text("SELECT set_config('etl.change_reason', 'test_scd_change', true)"))
-            conn.execute(text("SELECT set_config('etl.current_decision_id', '99999', true)"))
-            new_depth = (orig_depth or 0.0) + 0.35
-            conn.execute(
-                text("UPDATE public.anomalies SET evaluated_depth = :depth WHERE id = :aid"),
-                {"depth": new_depth, "aid": anomaly_id}
-            )
-            conn.commit()
+        closed = self.conn.execute(text(
+            "SELECT is_current, valid_to FROM public.anomaly_history WHERE history_id = :hid"),
+            {"hid": old_history_id}).fetchone()
+        self.assertFalse(closed[0], "previous record must no longer be current")
+        self.assertIsNotNone(closed[1], "previous record valid_to must be set")
 
-            # 4. Verify SCD Type 2 state
-            # Old record should now be closed
-            closed_rec = conn.execute(
-                text("SELECT is_current, valid_to FROM public.anomaly_history WHERE history_id = :hid"),
-                {"hid": old_history_id}
-            ).fetchone()
-            self.assertFalse(closed_rec[0], "Previous record is_current must be false")
-            self.assertIsNotNone(closed_rec[1], "Previous record valid_to must now be set")
+        new = self.conn.execute(text(
+            "SELECT evaluated_depth, change_reason, decision_id FROM public.anomaly_history "
+            "WHERE anomaly_id = :aid AND is_current"), {"aid": anomaly_id}).fetchone()
+        self.assertIsNotNone(new, "a new current record must exist")
+        self.assertEqual(new[0], new_depth)
+        self.assertEqual(new[1], "test_scd_change")
+        self.assertEqual(new[2], 99999)
 
-            # A new current record should exist
-            new_curr_rec = conn.execute(
-                text("SELECT history_id, is_current, valid_to, evaluated_depth, change_reason, decision_id FROM public.anomaly_history WHERE anomaly_id = :aid AND is_current = true"),
-                {"aid": anomaly_id}
-            ).fetchone()
-            self.assertIsNotNone(new_curr_rec, "A new current record must exist")
-            self.assertEqual(new_curr_rec[3], new_depth, "New record must hold the updated evaluated_depth")
-            self.assertEqual(new_curr_rec[4], "test_scd_change", "change_reason should match session setting")
-            self.assertEqual(new_curr_rec[5], 99999, "decision_id should match session setting")
-
-            # 5. Clean up / restore original depth
-            conn.execute(text("SELECT set_config('etl.change_reason', 'test_cleanup', true)"))
-            conn.execute(
-                text("UPDATE public.anomalies SET evaluated_depth = :depth WHERE id = :aid"),
-                {"depth": orig_depth, "aid": anomaly_id}
-            )
-            # Remove test history rows created during this test
-            conn.execute(
-                text("DELETE FROM public.anomaly_history WHERE anomaly_id = :aid AND history_id > :hid"),
-                {"aid": anomaly_id, "hid": old_history_id}
-            )
-            # Reopen original history record
-            conn.execute(
-                text("UPDATE public.anomaly_history SET is_current = true, valid_to = NULL WHERE history_id = :hid"),
-                {"hid": old_history_id}
-            )
-            conn.commit()
+    def test_unrelated_update_writes_no_history(self):
+        """An update that changes no tracked value adds no version."""
+        anomaly_id, _ = self._any_anomaly()
+        before = self.conn.execute(text(
+            "SELECT count(*) FROM public.anomaly_history WHERE anomaly_id = :aid"), {"aid": anomaly_id}).scalar()
+        self.conn.execute(text("UPDATE public.anomalies SET evaluated_depth = evaluated_depth WHERE id = :aid"),
+                          {"aid": anomaly_id})
+        after = self.conn.execute(text(
+            "SELECT count(*) FROM public.anomaly_history WHERE anomaly_id = :aid"), {"aid": anomaly_id}).scalar()
+        self.assertEqual(before, after)
 
 
 if __name__ == "__main__":
