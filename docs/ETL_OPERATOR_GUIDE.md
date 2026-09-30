@@ -56,7 +56,8 @@ Admins can manage the entire ETL lifecycle from the web application without usin
    - **Run Sync Now**: Triggers an execution in the background and refreshes the panel once finished.
 4. **Staged Changes Tab**:
    - Shows attribute differences (`category`, `layer`, `evaluated_depth`, `instrument`).
-   - Select individual rows or use "Select All" for bulk approve/reject.
+   - Select individual rows or use "Select All" for bulk approve/reject. A bulk decision is all-or-nothing: if one change can no longer be decided (no longer staged, already decided), none of the batch is recorded and the reason is returned.
+   - Every decision records who took it in `etl_approval.decisions.decided_by`: `etl_approver via app user <username>` from the web UI, plain `etl_approver` from the CLI.
 5. **Coordinate Corrections Tab**:
    - Compares existing coordinates with new source coordinates.
    - Displays spatial shift distance in meters and rule match rationale (`source_key` vs spatial proximity).

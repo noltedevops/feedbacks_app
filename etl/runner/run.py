@@ -800,6 +800,15 @@ create schema if not exists etl_admin authorization postgres;
 revoke all on schema etl_admin from public;
 grant usage on schema etl_admin to etl_pipeline, etl_approver;
 
+-- Who decided: the login, plus the person when the app decides for an admin. The app
+-- shares the etl_approver login among admins and sets etl.actor (transaction-local) to
+-- the admin's username; the CLI sets nothing, so decided_by stays the bare login.
+create or replace function etl_admin.decider() returns text
+language sql stable set search_path = pg_catalog as $fn$
+  select session_user::text || coalesce(' via app user ' || nullif(current_setting('etl.actor', true), ''), '')
+$fn$;
+revoke all on function etl_admin.decider() from public;
+
 create or replace function etl_admin.decide_change(p_change_id bigint, p_decision text) returns bigint
 language plpgsql security definer set search_path = pg_catalog, public as $fn$
 declare r record; d bigint;
@@ -810,7 +819,7 @@ begin
   if r.column_name not in ('category', 'layer', 'evaluated_depth', 'instrument') then
     raise exception 'column % cannot be changed by the pipeline', r.column_name; end if;
   insert into etl_approval.decisions (kind, ref_id, decision, anomaly_id, column_name, old_value, new_value, decided_by)
-  values ('change', p_change_id, p_decision, r.anomaly_id, r.column_name, r.old_value, r.new_value, session_user)
+  values ('change', p_change_id, p_decision, r.anomaly_id, r.column_name, r.old_value, r.new_value, etl_admin.decider())
   returning decision_id into d;
   return d;
 end $fn$;
@@ -823,7 +832,7 @@ begin
   select * into r from etl.correction_candidates where pair_id = p_pair_id and status in ('pending', 'conflict');
   if not found then raise exception 'pair % is not open', p_pair_id; end if;
   insert into etl_approval.decisions (kind, ref_id, decision, anomaly_id, new_target_id, new_easting, new_northing, decided_by)
-  values ('correction', p_pair_id, p_decision, r.old_anomaly_id, r.new_target_id, r.new_easting, r.new_northing, session_user)
+  values ('correction', p_pair_id, p_decision, r.old_anomaly_id, r.new_target_id, r.new_easting, r.new_northing, etl_admin.decider())
   returning decision_id into d;
   return d;
 end $fn$;
