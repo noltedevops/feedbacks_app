@@ -9,12 +9,11 @@ from etl.runner.logger import JsonFormatter, ConsoleFormatter, set_run_context, 
 import os
 from unittest import mock
 
-# server.py runs init_db() on import, against DATABASE_URL - by default the live database.
-# These are unit tests with the database mocked out: point the import at a throwaway
-# in-memory SQLite and skip the schema setup entirely.
+# Unit tests with the database mocked out: point server's engine at a throwaway in-memory
+# SQLite rather than the configured (live) database. Importing server runs no DDL; that
+# happens in its lifespan, which these tests never start.
 os.environ["DATABASE_URL"] = "sqlite://"
-with mock.patch("database.init_db"):
-    import server  # noqa: E402
+import server  # noqa: E402
 
 
 class TestStructuredLogging(unittest.TestCase):

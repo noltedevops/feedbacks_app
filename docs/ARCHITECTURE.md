@@ -55,8 +55,10 @@ same figures server-side but **has no caller** — there is no reference to it a
 
 ## Backend
 
-`server.py` is a single module holding the whole API. `init_db()` runs at import time and
-the lifespan hook seeds default users before the first request.
+`server.py` is a single module holding the whole API. Its lifespan hook runs `init_db()`
+and then seeds default users, once, before the first request. Importing `server.py` runs
+no DDL (`tests/test_server_startup.py`), so scripts and tests that import it do not touch
+the schema of whatever database `DATABASE_URL` names.
 
 ### Data model (`models.py`)
 
