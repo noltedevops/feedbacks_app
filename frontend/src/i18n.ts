@@ -505,6 +505,7 @@ const de: Record<string, string> = {
   'Force sync (bypass cache)': 'Erzwingen (Cache umgehen)',
   'ETL sync completed successfully.': 'ETL-Synchronisierung erfolgreich abgeschlossen.',
   'ETL sync failed.': 'ETL-Synchronisierung fehlgeschlagen.',
+  'No source change since the last run: nothing to do.': 'Keine Quelländerung seit dem letzten Lauf: nichts zu tun.',
   'Audit History': 'Änderungshistorie',
   'Audit History (SCD Type 2)': 'Änderungshistorie (SCD Typ 2)',
   'Valid From': 'Gültig ab',

@@ -1191,17 +1191,7 @@ def get_etl_pipeline_status(admin: models.User = Depends(require_admin)):
             ).fetchall():
                 proj_dict[r[0]] = r[1]
 
-            cfg_path = os.path.join(os.path.dirname(__file__), "etl", "config", "projects.yml")
-            if os.path.exists(cfg_path):
-                try:
-                    import yaml
-                    with open(cfg_path, "r", encoding="utf-8") as f:
-                        cfg = yaml.safe_load(f) or {}
-                    for p in cfg.get("projects", []):
-                        if p.get("project_id"):
-                            proj_dict[p["project_id"]] = p.get("project_name", p["project_id"])
-                except Exception:
-                    pass
+            proj_dict.update(_etl_configured_projects())
 
             projects_list = [
                 {"project_id": pid, "project_name": pname}
@@ -1272,15 +1262,47 @@ def decide_etl_correction(req: CorrectionDecisionRequest, admin: models.User = D
     return {"success": True, "pair_id": req.pair_id, "decision_id": row[0]}
 
 
+_REPO_DIR = os.path.dirname(os.path.abspath(__file__))
+_ETL_CONFIG_PATH = os.path.join(_REPO_DIR, "etl", "config", "projects.yml")
+_COMPOSE_FILE = os.path.join(_REPO_DIR, "docker-compose.yml")
+_ETL_RUN_TIMEOUT_SECONDS = 180
+
+
+def _etl_configured_projects() -> dict:
+    """project_id -> project_name from etl/config/projects.yml - the file the ETL
+    containers mount, so this is exactly what the runner will see. {} if unreadable."""
+    try:
+        import yaml
+        with open(_ETL_CONFIG_PATH, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) or {}
+    except Exception:
+        logging.getLogger("server").exception("Could not read %s", _ETL_CONFIG_PATH)
+        return {}
+    return {p["project_id"]: p.get("project_name", p["project_id"])
+            for p in cfg.get("projects", []) if p.get("project_id")}
+
+
 class EtlRunRequest(BaseModel):
     project_id: Optional[str] = None
-    force: bool = True
+    # Off by default: a forced run skips the "nothing changed since the last run" check.
+    force: bool = False
 
 
 @app.post("/api/etl/run")
 async def trigger_etl_run(req: EtlRunRequest, admin: models.User = Depends(require_admin)):
-    """Trigger an immediate ETL run (optionally scoped to a project_id) via Docker compose."""
-    cmd = ["docker", "compose", "--profile", "etl", "run", "--rm", "etl", "run"]
+    """Run the pipeline once now (optionally for one project), as a one-off ETL container.
+
+    outcome is 'ok', 'skipped' (nothing changed since the last run) or 'failed'. Another
+    run holding the pipeline's lock is 409 - nothing was done. A run still going when the
+    timeout ends is 504; it is not stopped, and shows up in the runs list when it ends."""
+    if req.project_id is not None and req.project_id not in _etl_configured_projects():
+        raise HTTPException(status_code=400, detail=f"Unknown project '{req.project_id}'")
+
+    # Explicit compose file and project directory: the server's working directory is
+    # whatever it was started from. --no-deps: the database is already up; a run must
+    # never start or recreate it.
+    cmd = ["docker", "compose", "-f", _COMPOSE_FILE, "--project-directory", _REPO_DIR,
+           "--profile", "etl", "run", "--rm", "--no-deps", "etl", "run"]
     if req.force:
         cmd.append("--force")
     if req.project_id:
@@ -1288,20 +1310,36 @@ async def trigger_etl_run(req: EtlRunRequest, admin: models.User = Depends(requi
 
     try:
         res = await asyncio.to_thread(
-            subprocess.run, cmd, capture_output=True, text=True, timeout=180
+            subprocess.run, cmd, capture_output=True, text=True,
+            timeout=_ETL_RUN_TIMEOUT_SECONDS, cwd=_REPO_DIR
         )
-        return {
-            "success": res.returncode == 0,
-            "returncode": res.returncode,
-            "stdout": res.stdout,
-            "stderr": res.stderr,
-            "project_id": req.project_id,
-            "force": req.force
-        }
     except subprocess.TimeoutExpired:
-        raise HTTPException(status_code=504, detail="ETL run timed out after 180 seconds")
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to execute ETL run: {exc}")
+        raise HTTPException(
+            status_code=504,
+            detail=f"The ETL run did not finish within {_ETL_RUN_TIMEOUT_SECONDS} seconds. "
+                   "It may still be running; check the runs list before starting another.")
+    except Exception:
+        logging.getLogger("server").exception("Could not start the ETL run")
+        raise HTTPException(status_code=500, detail="Could not start the ETL run (is Docker running?)")
+
+    if "another run holds the lock" in res.stdout:
+        raise HTTPException(status_code=409, detail="Another ETL run is in progress; nothing was done.")
+
+    if res.returncode != 0:
+        outcome = "failed"
+    elif "no change since the last successful run: skipped" in res.stdout:
+        outcome = "skipped"
+    else:
+        outcome = "ok"
+    return {
+        "success": res.returncode == 0,
+        "outcome": outcome,
+        "returncode": res.returncode,
+        "stdout": res.stdout,
+        "stderr": res.stderr,
+        "project_id": req.project_id,
+        "force": req.force
+    }
 
 
 @app.get("/api/etl/history")

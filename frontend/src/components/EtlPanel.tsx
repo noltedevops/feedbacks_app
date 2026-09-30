@@ -130,7 +130,8 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
 
   // Run execution state
   const [syncProject, setSyncProject] = useState<string>('');
-  const [forceSync, setForceSync] = useState<boolean>(true);
+  // Off by default, like the API: a forced run skips the "nothing changed" check.
+  const [forceSync, setForceSync] = useState<boolean>(false);
   const [runningSync, setRunningSync] = useState<boolean>(false);
 
   // History state
@@ -380,7 +381,9 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
         throw new Error(errData.detail || `HTTP ${res.status}`);
       }
       const data = await res.json();
-      if (data.success) {
+      if (data.outcome === 'skipped') {
+        showToast('info', t('No source change since the last run: nothing to do.'));
+      } else if (data.success) {
         showToast('success', t('ETL sync completed successfully.'));
       } else {
         showToast('error', t('ETL sync failed.'));
