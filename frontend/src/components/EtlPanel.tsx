@@ -22,7 +22,7 @@ import { authFetch } from '../auth';
 import type { Translator } from '../i18n';
 
 export interface EtlHealth {
-  status: 'healthy' | 'degraded' | 'unhealthy' | string;
+  status: 'healthy' | 'degraded' | 'unhealthy' | 'unknown' | string;
   timestamp: string;
   database_latency_ms?: number;
   staleness?: {
@@ -231,7 +231,7 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
     try {
       const [resStatus, resHealth] = await Promise.all([
         authFetch(`${apiBase}/api/etl/status`),
-        authFetch(`${apiBase}/api/etl/health`).catch(() => null)
+        authFetch(`${apiBase}/api/etl/health/details`).catch(() => null)
       ]);
 
       if (!resStatus.ok) throw new Error(`HTTP ${resStatus.status}`);
@@ -298,7 +298,7 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
     let ignore = false;
     Promise.all([
       authFetch(`${apiBase}/api/etl/status`),
-      authFetch(`${apiBase}/api/etl/health`).catch(() => null)
+      authFetch(`${apiBase}/api/etl/health/details`).catch(() => null)
     ])
       .then(async ([resStatus, resHealth]) => {
         if (!resStatus.ok || ignore) return;
@@ -594,8 +594,8 @@ export const EtlPanel: React.FC<EtlPanelProps> = ({
               <span>{t('Pipeline Health')}</span>
             </div>
             <div className="etl-metric-val">
-              <span className={`etl-status-pill etl-status-${health?.status === 'healthy' ? 'ok' : health?.status === 'degraded' ? 'skipped' : health?.status === 'unhealthy' ? 'failed' : 'ok'}`}>
-                {health?.status ? health.status.toUpperCase() : 'HEALTHY'}
+              <span className={`etl-status-pill etl-status-${health?.status === 'healthy' ? 'ok' : health?.status === 'degraded' ? 'skipped' : health?.status === 'unhealthy' ? 'failed' : 'pending'}`}>
+                {health?.status ? health.status.toUpperCase() : 'UNKNOWN'}
               </span>
               {health?.database_latency_ms != null && (
                 <span className="etl-metric-sub">

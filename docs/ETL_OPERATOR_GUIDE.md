@@ -16,7 +16,7 @@ This guide covers operational procedures, configuration validation, Web UI appro
 | **Trigger Single Project** | Web UI: Select project &rarr; `Run Sync Now`<br>CLI: `docker compose --profile etl run --rm etl run --force --project 11-26-5151` | Admin user (UI) / `etl_pipeline` (CLI) |
 | **Start Cron Orchestrator** | CLI: `docker compose --profile etl run --rm etl cron --schedule "*/15 * * * *"`<br>Daemon: Container running with `ETL_CRON_SCHEDULE` | `etl_pipeline` |
 | **Validate Configuration** | `docker compose --profile etl run --rm etl validate-config` | Read-only |
-| **Check Pipeline Health** | Web UI: Top KPI Ribbon<br>API: `GET /api/etl/health` | Read-only |
+| **Check Pipeline Health** | Web UI: Top KPI Ribbon<br>API: `GET /api/etl/health` (public, status only)<br>`GET /api/etl/health/details` (admin) | Read-only |
 | **Review Approvals (Web)** | Web UI: Click `Database` icon in navigation rail | Admin user (`etl_approver`) |
 | **Review Approvals (CLI)** | `docker compose --profile etl run --rm etl-approve status --approver` | `etl_approver` |
 | **Approve / Reject Staged** | `docker compose --profile etl run --rm etl-approve approve-change <ids...>`<br>`docker compose --profile etl run --rm etl-approve reject-change <ids...>` | `etl_approver` |
@@ -123,14 +123,17 @@ The pipeline features dual-destination structured logging via `etl/runner/logger
 
 ## 9. Pipeline Health & Staleness Monitoring (`/api/etl/health`)
 
-An operational health endpoint is available at `GET /api/etl/health` for monitoring systems (Datadog, Prometheus, UptimeRobot, ALB):
-- **Database Latency**: Measures database connection latency in milliseconds.
-- **Staleness SLA**: Compares elapsed time since the last successful merge against `ETL_MAX_STALENESS_HOURS` (default 24h).
-- **Health Classifications**:
-  - `healthy`: Database reachable, last run succeeded or skipped, freshness within SLA.
-  - `degraded`: Pipeline is stale or pending approvals exceed thresholds.
-  - `unhealthy`: Database connection failed or last execution resulted in a gate failure.
-- **Approval Metrics**: Reports real-time counts of staged changes and correction pairs awaiting human action.
+Two endpoints:
+- **`GET /api/etl/health`** (public, for monitors such as UptimeRobot or a load balancer): returns only `{"status": "..."}`, with HTTP **503** when `unhealthy`. The result is cached for 30 seconds, so polling it costs at most one database connection per window. It never returns counts, timings or error text.
+- **`GET /api/etl/health/details`** (admin login required; used by the ETL panel): database ping latency, staleness, the last finished run, pending approval counts and row counts.
+
+**Freshness** is measured from the last run that finished `ok` **or `skipped`**: a skipped run is a live pipeline that found no source change, which is the normal state between surveys. The threshold is `ETL_MAX_STALENESS_HOURS` (default 24h); with scheduling off, runs happen only on demand and the status turns `degraded` after that window.
+
+**Classifications**:
+- `healthy`: the latest finished run did not fail, and the last `ok`/`skipped` run is within the threshold.
+- `degraded`: the last `ok`/`skipped` run is older than the threshold.
+- `unhealthy`: the approval database is unreachable, the latest finished run failed, or no run has ever succeeded.
+- `unknown`: no run has ever finished.
 
 ---
 
