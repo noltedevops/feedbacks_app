@@ -12,8 +12,8 @@ This guide covers operational procedures, configuration validation, Web UI appro
 
 | Action | Command / Location | Privileges Required |
 | :--- | :--- | :--- |
-| **Trigger Full Run** | Web UI: `Database` icon &rarr; `Run Sync Now`<br>CLI: `docker compose --profile etl run --rm etl run --force` | Admin user (UI) / `etl_pipeline` (CLI) |
-| **Trigger Single Project** | Web UI: Select project &rarr; `Run Sync Now`<br>CLI: `docker compose --profile etl run --rm etl run --force --project 11-26-5151` | Admin user (UI) / `etl_pipeline` (CLI) |
+| **Trigger Full Run** | Web UI: `Database` icon &rarr; `Run Sync Now`<br>CLI: `docker compose --profile etl run --rm etl run` (add `--force` to bypass the nothing-changed check) | Admin user (UI) / `etl_pipeline` (CLI) |
+| **Trigger Single Project** | Web UI: Select project &rarr; `Run Sync Now`<br>CLI: `docker compose --profile etl run --rm etl run --project 11-26-5151` | Admin user (UI) / `etl_pipeline` (CLI) |
 | **Start Cron Orchestrator** | CLI: `docker compose --profile etl run --rm etl cron --schedule "*/15 * * * *"`<br>Daemon: Container running with `ETL_CRON_SCHEDULE` | `etl_pipeline` |
 | **Validate Configuration** | `docker compose --profile etl run --rm etl validate-config` | Read-only |
 | **Check Pipeline Health** | Web UI: Top KPI Ribbon<br>API: `GET /api/etl/health` (public, status only)<br>`GET /api/etl/health/details` (admin) | Read-only |
@@ -61,8 +61,8 @@ Admins can manage the entire ETL lifecycle from the web application without usin
 2. **Top Health Ribbon**: Displays real-time **Pipeline Health** (Healthy/Degraded/Unhealthy), database connection ping latency (ms), freshness SLA status, and counts of pending staged changes and coordinate shifts.
 3. **Execution Bar**:
    - **Project Selector**: Run across all projects or select a specific project (`11-26-5151`, `11-24-2736`).
-   - **Force Sync Toggle**: Bypasses the fingerprint cache to immediately apply decisions.
-   - **Run Sync Now**: Triggers an execution in the background and refreshes the panel once finished.
+   - **Force Sync Toggle** (off by default): bypasses the "nothing changed since the last successful run" check. Not needed to carry out new decisions: an open decision already counts as a change.
+   - **Run Sync Now**: runs the pipeline once in a one-off ETL container and waits for it (up to 180 seconds), then refreshes the panel. It reports `completed`, `nothing to do` (skipped), or `failed`; if another run holds the pipeline's lock it does nothing and says so (HTTP 409). A run that outlasts the wait is not stopped: it appears in the runs list when it ends.
 4. **Staged Changes Tab**:
    - Shows attribute differences (`category`, `layer`, `evaluated_depth`, `instrument`).
    - Select individual rows or use "Select All" for bulk approve/reject. A bulk decision is all-or-nothing: if one change can no longer be decided (no longer staged, already decided), none of the batch is recorded and the reason is returned.
@@ -183,19 +183,8 @@ Run isolated ephemeral containers on host cron without running continuous daemon
 0 * * * * root cd /opt/feedbackapp && docker compose run --rm etl run >> /var/log/etl.log 2>&1
 ```
 
-### Option C: Native PostgreSQL `pg_cron`
-For managed PostgreSQL environments with the `pg_cron` extension pre-loaded (`shared_preload_libraries = 'pg_cron'`):
-```sql
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-
--- Trigger ETL runner container or webhook via pg_cron:
-SELECT cron.schedule('etl_merge_tick', '*/15 * * * *',
-  $$SELECT net.http_post(
-      url:='http://app:8000/api/etl/run-now',
-      headers:='{"Authorization": "Bearer ...", "Content-Type": "application/json"}'::jsonb
-    );$$
-);
-```
+### Not supported: triggering runs from the database (`pg_cron`)
+An earlier version of this guide showed `pg_cron` calling an HTTP endpoint. That does not work: `POST /api/etl/run` requires a logged-in admin session, the app has no API tokens, and the database container has neither `pg_cron` nor `pg_net`. Use Option A or B.
 
 ---
 
