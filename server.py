@@ -15,6 +15,7 @@ import hashlib
 import hmac
 import os
 import json
+import logging
 import secrets
 import subprocess
 import uuid
@@ -1185,22 +1186,45 @@ def get_etl_pipeline_status(admin: models.User = Depends(require_admin)):
         raise HTTPException(status_code=500, detail=f"Failed to fetch ETL status: {exc}")
 
 
+def _etl_decision_error(exc: Exception, what: str) -> HTTPException:
+    """etl_admin refuses with RAISE EXCEPTION (not staged, already decided, ...): that is
+    the approver's business, so say why. Anything else is logged, not echoed."""
+    import psycopg
+    if isinstance(exc, psycopg.errors.RaiseException):
+        return HTTPException(status_code=409, detail=f"{what}: {exc.diag.message_primary}. Nothing was recorded.")
+    if isinstance(exc, psycopg.errors.UniqueViolation):  # etl_approval.decisions: unique (kind, ref_id)
+        return HTTPException(status_code=409, detail=f"{what}: it has already been decided. Nothing was recorded.")
+    logging.getLogger("server").exception("ETL decision failed")
+    return HTTPException(status_code=500, detail=f"{what}: unexpected database error. Nothing was recorded.")
+
+
+def _set_etl_actor(conn, admin: models.User) -> None:
+    """The approver login is shared by every admin; etl_admin.decide_* append this
+    transaction-local name to decided_by so each decision names the person."""
+    conn.execute("select set_config('etl.actor', %s, true)", (admin.username,))
+
+
 @app.post("/api/etl/approvals/change")
 def decide_etl_change(req: ChangeDecisionRequest, admin: models.User = Depends(require_admin)):
     if req.decision not in ("approve", "reject"):
         raise HTTPException(status_code=400, detail="Decision must be 'approve' or 'reject'")
-    if not req.change_ids:
+    change_ids = list(dict.fromkeys(req.change_ids))  # a repeated id would hit the unique decision
+    if not change_ids:
         raise HTTPException(status_code=400, detail="change_ids list cannot be empty")
     results = []
+    current = None
     try:
-        with get_etl_approver_conn() as conn:
-            for cid in req.change_ids:
+        # One transaction: every change in the batch is decided, or none is.
+        with get_etl_approver_conn() as conn, conn.transaction():
+            _set_etl_actor(conn, admin)
+            for cid in change_ids:
+                current = cid
                 row = conn.execute("select etl_admin.decide_change(%s, %s)", (cid, req.decision)).fetchone()
-                conn.commit()
                 results.append({"change_id": cid, "decision_id": row[0]})
-        return {"success": True, "decisions": results}
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Approval execution failed: {exc}")
+        what = f"Change {current} could not be decided" if current is not None else "Could not reach the approval database"
+        raise _etl_decision_error(exc, what)
+    return {"success": True, "decisions": results}
 
 
 @app.post("/api/etl/approvals/correction")
@@ -1208,12 +1232,12 @@ def decide_etl_correction(req: CorrectionDecisionRequest, admin: models.User = D
     if req.decision not in ("approve", "reject"):
         raise HTTPException(status_code=400, detail="Decision must be 'approve' or 'reject'")
     try:
-        with get_etl_approver_conn() as conn:
+        with get_etl_approver_conn() as conn, conn.transaction():
+            _set_etl_actor(conn, admin)
             row = conn.execute("select etl_admin.decide_correction(%s, %s)", (req.pair_id, req.decision)).fetchone()
-            conn.commit()
-            return {"success": True, "pair_id": req.pair_id, "decision_id": row[0]}
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Correction decision failed: {exc}")
+        raise _etl_decision_error(exc, f"Pair {req.pair_id} could not be decided")
+    return {"success": True, "pair_id": req.pair_id, "decision_id": row[0]}
 
 
 class EtlRunRequest(BaseModel):
