@@ -48,6 +48,10 @@ jobs:
         run: |
           python -m unittest etl/tests/test_validation_and_alerts.py
 
+      - name: Run ETL Runner Robustness Unit Tests
+        run: |
+          python -m unittest etl/tests/test_runner_robustness.py
+
   frontend-lint-and-build:
     name: Frontend Lint & Production Build
     runs-on: ubuntu-latest

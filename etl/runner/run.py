@@ -46,11 +46,11 @@ from psycopg import sql
 
 try:
     from .validate_config import validate_config_file
-    from .notifier import notify_run_failed, notify_pending_approvals, notify_run_success
+    from .notifier import notify_run_failed, notify_pending_approvals, notify_run_success, send_webhook
     from .logger import get_logger, set_run_context, clear_run_context
 except ImportError:
     from validate_config import validate_config_file
-    from notifier import notify_run_failed, notify_pending_approvals, notify_run_success
+    from notifier import notify_run_failed, notify_pending_approvals, notify_run_success, send_webhook
     from logger import get_logger, set_run_context, clear_run_context
 
 log = get_logger("etl.runner")
@@ -310,6 +310,17 @@ def run(force: bool = False, project_id: str | None = None) -> int:
             return 1
 
     conn = connect()
+    try:
+        return _run_on(conn, cfg, force, project_id)
+    finally:
+        # Closing the session also releases its advisory lock - on every path, including
+        # "skipped", "lock held" and a source mismatch raised before any run is recorded.
+        # In the long-lived loop/cron process an unclosed connection would outlive the run.
+        clear_run_context()
+        conn.close()
+
+
+def _run_on(conn, cfg: dict, force: bool, project_id: str | None) -> int:
     if not conn.execute("select pg_try_advisory_lock(hashtext(%s))", (LOCK_KEY,)).fetchone()[0]:
         print("another run holds the lock; nothing done")
         return 0
@@ -334,7 +345,6 @@ def run(force: bool = False, project_id: str | None = None) -> int:
         conn.commit()
         log.info("no change since the last successful run: skipped")
         print("  no change since the last successful run: skipped")
-        clear_run_context()
         return 0
 
     try:
@@ -376,9 +386,6 @@ def run(force: bool = False, project_id: str | None = None) -> int:
         log.error(f"RUN {run_id} FAILED: {exc}", exc_info=True)
         print(f"RUN {run_id} FAILED: {exc}", file=sys.stderr)
         return 1
-    finally:
-        clear_run_context()
-        conn.close()
 
 
 def register_ids(conn) -> None:
@@ -1015,6 +1022,23 @@ class CronSchedule:
         return 3600.0
 
 
+def scheduled_run(project_id: str | None = None) -> None:
+    """One run for a scheduler, which must survive it whatever happens.
+
+    run() records and alerts its own failures once a run exists. What escapes it happened
+    before that: a config that fails validation or no longer matches the database
+    (SystemExit), or an unreachable database. Unhandled, either ended the process, and
+    with restart: always the container then restarted into the same error in a tight loop.
+    Log it, alert once per occurrence, and let the schedule try again next time."""
+    try:
+        run(project_id=project_id)
+    except (SystemExit, Exception) as exc:  # noqa: BLE001 - a scheduler outlives any one run
+        msg = str(exc) or exc.__class__.__name__
+        log.error(f"Scheduled run could not start: {msg}", exc_info=not isinstance(exc, SystemExit))
+        print(f"[ETL SCHEDULER] run could not start: {msg}", file=sys.stderr)
+        send_webhook("[ALERT] ETL run could not start", msg[:3000], level="error")
+
+
 def cron_orchestrator(schedule_expr: str, project_id: str | None = None) -> int:
     """Structured cron orchestrator supporting 5-field cron syntax, exact tick alignment, and graceful signal handling."""
     cron = CronSchedule(schedule_expr)
@@ -1049,12 +1073,8 @@ def cron_orchestrator(schedule_expr: str, project_id: str | None = None) -> int:
         if stop_requested:
             break
 
-        try:
-            log.info("Triggering scheduled pipeline run...")
-            run(project_id=project_id)
-        except Exception as e:
-            log.error(f"Error during scheduled pipeline run: {e}", exc_info=True)
-            print(f"[ETL CRON ERROR] Pipeline run failed: {e}", file=sys.stderr)
+        log.info("Triggering scheduled pipeline run...")
+        scheduled_run(project_id=project_id)
 
     log.info("Cron orchestrator stopped cleanly.")
     print("[ETL CRON] Orchestrator stopped cleanly.")
@@ -1097,7 +1117,7 @@ def main() -> int:
             while True:
                 time.sleep(3600)
         while True:
-            run()
+            scheduled_run()
             time.sleep(interval)
     if a.cmd == "status":
         status(approver=a.approver); return 0
