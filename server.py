@@ -18,6 +18,7 @@ import json
 import logging
 import secrets
 import subprocess
+import threading
 import uuid
 
 from database import init_db, get_db
@@ -1031,85 +1032,113 @@ def get_etl_approver_conn():
     )
 
 
-@app.get("/api/etl/health")
-def get_etl_pipeline_health():
-    """Operational health & staleness monitoring endpoint for the ETL pipeline."""
+def _etl_health() -> dict:
+    """The pipeline's health, from etl.runs. A skipped run is a live pipeline that found
+    nothing new, so it counts toward freshness like an ok run.
+
+      unknown    no run has ever finished
+      unhealthy  approval database unreachable, the latest finished run failed, or no
+                 run has ever succeeded
+      degraded   the last ok/skipped run is older than ETL_MAX_STALENESS_HOURS
+      healthy    otherwise
+    """
     import time
-    t_start = time.perf_counter()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    max_staleness_hours = float(os.environ.get("ETL_MAX_STALENESS_HOURS", "24"))
     try:
         with get_etl_approver_conn() as conn:
-            # Measure DB ping latency
+            t_ping = time.perf_counter()
             conn.execute("SELECT 1")
-            latency_ms = round((time.perf_counter() - t_start) * 1000, 2)
+            latency_ms = round((time.perf_counter() - t_ping) * 1000, 2)
 
-            # Last run details
             last_run = conn.execute(
-                "SELECT run_id, status, started_at, finished_at FROM etl.runs ORDER BY run_id DESC LIMIT 1"
+                "SELECT run_id, status, started_at, finished_at FROM etl.runs "
+                "WHERE status <> 'running' ORDER BY run_id DESC LIMIT 1"
             ).fetchone()
-
-            # Last successful run
-            last_success = conn.execute(
-                "SELECT run_id, finished_at FROM etl.runs WHERE status = 'ok' ORDER BY run_id DESC LIMIT 1"
+            last_alive = conn.execute(
+                "SELECT run_id, status, finished_at FROM etl.runs "
+                "WHERE status IN ('ok', 'skipped') ORDER BY run_id DESC LIMIT 1"
             ).fetchone()
-
-            # Pending counts
             staged_cnt = conn.execute("SELECT count(*) FROM etl.change_log WHERE status = 'staged'").fetchone()[0]
             corr_cnt = conn.execute("SELECT count(*) FROM etl.correction_candidates WHERE status IN ('pending', 'conflict')").fetchone()[0]
             targets_cnt = conn.execute("SELECT count(*) FROM public.anomalies").fetchone()[0]
             history_cnt = conn.execute("SELECT count(*) FROM public.anomaly_history").fetchone()[0]
+    except Exception:
+        logging.getLogger("server").exception("ETL health check could not reach the database")
+        return {"status": "unhealthy", "timestamp": now.isoformat(), "error": "approval database unreachable"}
 
-            now = datetime.datetime.now(datetime.timezone.utc)
-            max_staleness_hours = float(os.environ.get("ETL_MAX_STALENESS_HOURS", "24"))
+    seconds_since_last_alive = None
+    is_stale = False
+    if last_alive and last_alive[2]:
+        finished_at = last_alive[2]
+        if finished_at.tzinfo is None:
+            finished_at = finished_at.replace(tzinfo=datetime.timezone.utc)
+        seconds_since_last_alive = round((now - finished_at).total_seconds())
+        is_stale = seconds_since_last_alive > max_staleness_hours * 3600
 
-            seconds_since_last_success = None
-            is_stale = False
-            if last_success and last_success[1]:
-                finished_at = last_success[1]
-                if finished_at.tzinfo is None:
-                    finished_at = finished_at.replace(tzinfo=datetime.timezone.utc)
-                seconds_since_last_success = round((now - finished_at).total_seconds())
-                is_stale = seconds_since_last_success > (max_staleness_hours * 3600)
+    if last_run is None:
+        overall_status = "unknown"
+    elif last_run[1] == "failed" or last_alive is None:
+        overall_status = "unhealthy"
+    elif is_stale:
+        overall_status = "degraded"
+    else:
+        overall_status = "healthy"
 
-            # Health classification
-            last_status = last_run[1] if last_run else "none"
-            if last_status == "failed":
-                overall_status = "unhealthy"
-            elif is_stale:
-                overall_status = "degraded"
-            else:
-                overall_status = "healthy"
-
-            return {
-                "status": overall_status,
-                "timestamp": now.isoformat(),
-                "database_latency_ms": latency_ms,
-                "staleness": {
-                    "is_stale": is_stale,
-                    "max_staleness_hours": max_staleness_hours,
-                    "seconds_since_last_success": seconds_since_last_success,
-                    "last_success_at": last_success[1].isoformat() if last_success and last_success[1] else None
-                },
-                "last_run": {
-                    "run_id": last_run[0] if last_run else None,
-                    "status": last_run[1] if last_run else None,
-                    "finished_at": last_run[3].isoformat() if last_run and last_run[3] else None
-                },
-                "pending_approvals": {
-                    "staged_changes": staged_cnt,
-                    "correction_pairs": corr_cnt,
-                    "total": staged_cnt + corr_cnt
-                },
-                "data_counts": {
-                    "anomalies": targets_cnt,
-                    "history_records": history_cnt
-                }
-            }
-    except Exception as exc:
-        return {
-            "status": "unhealthy",
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "error": str(exc)
+    return {
+        "status": overall_status,
+        "timestamp": now.isoformat(),
+        "database_latency_ms": latency_ms,
+        "staleness": {
+            "is_stale": is_stale,
+            "max_staleness_hours": max_staleness_hours,
+            "seconds_since_last_success": seconds_since_last_alive,
+            "last_success_at": last_alive[2].isoformat() if last_alive and last_alive[2] else None,
+            "last_success_status": last_alive[1] if last_alive else None,
+        },
+        "last_run": {
+            "run_id": last_run[0] if last_run else None,
+            "status": last_run[1] if last_run else None,
+            "finished_at": last_run[3].isoformat() if last_run and last_run[3] else None
+        },
+        "pending_approvals": {
+            "staged_changes": staged_cnt,
+            "correction_pairs": corr_cnt,
+            "total": staged_cnt + corr_cnt
+        },
+        "data_counts": {
+            "anomalies": targets_cnt,
+            "history_records": history_cnt
         }
+    }
+
+
+# The public probe reuses one result for this long, so polling it - by a monitor or by
+# anyone - costs at most one approver connection per window.
+_ETL_HEALTH_CACHE_SECONDS = 30
+_etl_health_cache: dict = {"at": 0.0, "status": None}
+_etl_health_lock = threading.Lock()
+
+
+@app.get("/api/etl/health")
+def get_etl_pipeline_health(response: Response):
+    """Public liveness probe for monitors: the status word only, 503 when unhealthy.
+    Counts, timings and errors are admin-only, at /api/etl/health/details."""
+    import time
+    with _etl_health_lock:
+        if _etl_health_cache["status"] is None or time.monotonic() - _etl_health_cache["at"] > _ETL_HEALTH_CACHE_SECONDS:
+            _etl_health_cache["status"] = _etl_health()["status"]
+            _etl_health_cache["at"] = time.monotonic()
+        status = _etl_health_cache["status"]
+    if status == "unhealthy":
+        response.status_code = 503
+    return {"status": status}
+
+
+@app.get("/api/etl/health/details")
+def get_etl_pipeline_health_details(admin: models.User = Depends(require_admin)):
+    """Operational health & staleness details for the ETL panel."""
+    return _etl_health()
 
 
 @app.get("/api/etl/status")
