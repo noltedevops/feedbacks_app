@@ -14,7 +14,9 @@ Design: docs/ETL_DESIGN.md. The rules this file enforces:
 
 Commands:
   run [--force]                 one pipeline run
-  loop                          run every ETL_INTERVAL_SECONDS (the container's command)
+  loop                          the container's command: on ETL_CRON_SCHEDULE if set, else every
+                                ETL_INTERVAL_SECONDS; neither set = scheduling off
+  cron --schedule EXPR          run on a 5-field cron schedule
   status                        pending approvals, DB-only rows, last runs
   approve-change ID... | --run RUN_ID     approve staged value changes
   reject-change ID...
@@ -1076,13 +1078,13 @@ def main() -> int:
     if a.cmd == "cron":
         return cron_orchestrator(a.schedule, project_id=a.project)
     if a.cmd == "loop":
-        # Prefer structured cron if ETL_CRON_SCHEDULE is set
-        cron_expr = os.environ.get("ETL_CRON_SCHEDULE")
+        # ETL_CRON_SCHEDULE wins over ETL_INTERVAL_SECONDS; compose passes it as "" when unset.
+        cron_expr = os.environ.get("ETL_CRON_SCHEDULE", "").strip()
         if cron_expr:
             return cron_orchestrator(cron_expr)
         interval = int(os.environ.get("ETL_INTERVAL_SECONDS", "0"))
         if interval <= 0:
-            print("ETL_INTERVAL_SECONDS is not set: scheduling is off. Nothing runs.")
+            print("Neither ETL_CRON_SCHEDULE nor ETL_INTERVAL_SECONDS is set: scheduling is off. Nothing runs.")
             while True:
                 time.sleep(3600)
         while True:
