@@ -54,8 +54,9 @@ services:
   # The ETL runner (etl/). Behind a profile, so `docker compose up` never starts it:
   #   docker compose --profile etl build etl
   #   docker compose --profile etl run --rm etl run        (one run)
-  # Scheduling is off until ETL_INTERVAL_SECONDS is set above 0. It connects as the
-  # least-privilege etl_pipeline role, never as postgres.
+  # Scheduling is off until ETL_CRON_SCHEDULE (a 5-field cron expression) or
+  # ETL_INTERVAL_SECONDS (> 0) is set in .env; when both are set, the cron schedule wins.
+  # It connects as the least-privilege etl_pipeline role, never as postgres.
   etl:
     build: ./etl
     profiles: ["etl"]
@@ -67,7 +68,8 @@ services:
       # Not ":?": compose interpolates every service, so that form would break a plain
       # `docker compose up` on machines without it. The runner refuses to start without it.
       ETL_DB_PASSWORD: ${ETL_DB_PASSWORD:-}
-      ETL_CRON_SCHEDULE: ${ETL_CRON_SCHEDULE:-*/15 * * * *}
+      # No default: an unset schedule means "not scheduled", never a silent every-15-minutes.
+      ETL_CRON_SCHEDULE: ${ETL_CRON_SCHEDULE:-}
       ETL_INTERVAL_SECONDS: ${ETL_INTERVAL_SECONDS:-0}
     # The runner is PID 1 and has no SIGTERM handler, so without an init process a
     # `docker stop` waits out the timeout and ends in SIGKILL (exit 137), possibly mid-run.

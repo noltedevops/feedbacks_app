@@ -85,7 +85,7 @@ Target history is maintained in `public.anomaly_history` through the PostgreSQL 
 
 ## 5. Webhook Notifications
 
-Set `ETL_ALERT_WEBHOOK_URL` in `.env` to enable automated alerts:
+Set `ETL_WEBHOOK_URL` in `.env` to enable automated alerts:
 - **Slack / Teams / Discord / Generic HTTP**: Posts JSON notifications automatically.
 - **Alert Events**:
   - `FAILED`: Triggered on unhandled errors or safety gate failures with traceback.
@@ -189,9 +189,9 @@ SELECT cron.schedule('etl_merge_tick', '*/15 * * * *',
 
 | Variable | Default | Purpose |
 | :--- | :--- | :--- |
-| `ETL_CRON_SCHEDULE` | `*/15 * * * *` | 5-field cron expression for wall-clock aligned container scheduling. |
-| `ETL_INTERVAL_SECONDS` | `0` (off) | Fallback fixed sleep interval in seconds for legacy loop mode. |
-| `ETL_ALERT_WEBHOOK_URL` | *(unset)* | Webhook endpoint for automated Teams / Slack / Discord alert notifications. |
+| `ETL_CRON_SCHEDULE` | *(unset)* | 5-field cron expression for wall-clock aligned container scheduling. Takes precedence over `ETL_INTERVAL_SECONDS`. Neither set = scheduling off. |
+| `ETL_INTERVAL_SECONDS` | `0` (off) | Fixed sleep interval in seconds, used when `ETL_CRON_SCHEDULE` is unset. |
+| `ETL_WEBHOOK_URL` | *(unset)* | Webhook endpoint for automated Teams / Slack / Discord alert notifications. |
 | `ETL_MAX_STALENESS_HOURS` | `24` | SLA threshold in hours before `/api/etl/health` flags the pipeline as stale. |
 | `ETL_DB_HOST` | `localhost` | PostgreSQL server hostname or container service name. |
 | `ETL_DB_PORT` | `5432` | PostgreSQL listening port. |
