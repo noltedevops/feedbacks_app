@@ -27,8 +27,6 @@ import report
 import assistant
 from config import settings
 
-init_db()
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,9 +35,14 @@ async def lifespan(app: FastAPI):
     Everything before the yield runs once before the first request; anything
     after it would run on shutdown, of which this app has none.
 
+    init_db() - schema DDL and triggers - runs here, when the server starts, and
+    not at import: importing this module (tests, manage_access.py) used to apply
+    it to whatever DATABASE_URL named, which by default is the live database.
+
     seed_default_users is defined further down the module: the name is looked up
     when this runs, not when it is declared, so the ordering is fine.
     """
+    init_db()
     from database import SessionLocal
     db = SessionLocal()
     try:
