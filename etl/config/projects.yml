@@ -85,3 +85,16 @@ projects:
           depth: { column: field_4, round: 2 }
           category: { expr: "'Kat-' || field_3" }
           layer: null
+
+      - table: Picks_04_03
+        instrument: georadar
+        key: id
+        where: "field_3 not in (0, 4)"
+        coord_round: 2
+        id_decimals: 3
+        columns:
+          easting: field_1
+          northing: field_2
+          depth: { column: field_4, round: 2 }
+          category: { expr: "'Kat-' || field_3" }
+          layer: null
