@@ -1,0 +1,4 @@
+# Generated PDFs (ReportLab) are pure ASCII, so git would treat them as text and
+# core.autocrlf would rewrite their line endings on checkout - shifting every byte offset
+# in the xref table and leaving a broken file. Never convert them.
+*.pdf binary
