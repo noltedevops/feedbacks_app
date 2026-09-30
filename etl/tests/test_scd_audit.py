@@ -90,6 +90,41 @@ class TestScdAuditHistory(unittest.TestCase):
             "SELECT count(*) FROM public.anomaly_history WHERE anomaly_id = :aid"), {"aid": anomaly_id}).scalar()
         self.assertEqual(before, after)
 
+    def _assert_refused(self, sql: str, params: dict | None = None) -> None:
+        nested = self.conn.begin_nested()
+        with self.assertRaises(Exception) as ctx:
+            self.conn.execute(text(sql), params or {})
+        nested.rollback()
+        self.assertIn("append-only", str(ctx.exception))
+
+    def test_history_rows_cannot_be_deleted(self):
+        self._assert_refused("DELETE FROM public.anomaly_history WHERE history_id = "
+                             "(SELECT min(history_id) FROM public.anomaly_history)")
+
+    def test_history_rows_cannot_be_truncated(self):
+        self._assert_refused("TRUNCATE public.anomaly_history")
+
+    def test_history_values_cannot_be_edited(self):
+        self._assert_refused("UPDATE public.anomaly_history SET easting = easting + 1 WHERE history_id = "
+                             "(SELECT min(history_id) FROM public.anomaly_history)")
+
+    def test_closed_version_cannot_be_reopened(self):
+        anomaly_id, orig_depth = self._any_anomaly()
+        self.conn.execute(text("UPDATE public.anomalies SET evaluated_depth = :d WHERE id = :aid"),
+                          {"d": (orig_depth or 0.0) + 1, "aid": anomaly_id})
+        self._assert_refused("UPDATE public.anomaly_history SET is_current = true, valid_to = NULL "
+                             "WHERE anomaly_id = :aid AND NOT is_current", {"aid": anomaly_id})
+
+    def test_history_outlives_a_deleted_anomaly(self):
+        anomaly_id, _ = self._any_anomaly()
+        before = self.conn.execute(text(
+            "SELECT count(*) FROM public.anomaly_history WHERE anomaly_id = :aid"), {"aid": anomaly_id}).scalar()
+        self.assertGreater(before, 0)
+        self.conn.execute(text("DELETE FROM public.anomalies WHERE id = :aid"), {"aid": anomaly_id})
+        after = self.conn.execute(text(
+            "SELECT count(*) FROM public.anomaly_history WHERE anomaly_id = :aid"), {"aid": anomaly_id}).scalar()
+        self.assertEqual(before, after)
+
 
 if __name__ == "__main__":
     unittest.main()

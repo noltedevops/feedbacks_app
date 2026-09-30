@@ -279,7 +279,7 @@ def init_db():
                 scd_audit_sql = """
                 CREATE TABLE IF NOT EXISTS public.anomaly_history (
                     history_id BIGSERIAL PRIMARY KEY,
-                    anomaly_id VARCHAR(36) NOT NULL REFERENCES public.anomalies(id) ON DELETE CASCADE,
+                    anomaly_id VARCHAR(36) NOT NULL,
                     project_id VARCHAR(50),
                     target_id VARCHAR(100),
                     vm_nr VARCHAR(50),
@@ -299,6 +299,35 @@ def init_db():
                     decision_id BIGINT,
                     changed_by TEXT
                 );
+
+                -- History outlives the anomaly: no foreign key, so deleting an anomaly or its
+                -- project keeps the record of every version. Tables created before this rule
+                -- carried an ON DELETE CASCADE foreign key; drop whatever foreign key exists.
+                DO $$ DECLARE c record; BEGIN
+                    FOR c IN SELECT conname FROM pg_constraint
+                              WHERE conrelid = 'public.anomaly_history'::regclass AND contype = 'f' LOOP
+                        EXECUTE format('ALTER TABLE public.anomaly_history DROP CONSTRAINT %I', c.conname);
+                    END LOOP;
+                END $$;
+
+                -- Tables first created by create_all had zone-less timestamps and capped text.
+                -- The trigger wrote now() into them under the server's zone, Etc/UTC.
+                DO $$ BEGIN
+                    IF (SELECT format_type(atttypid, atttypmod) FROM pg_attribute
+                         WHERE attrelid = 'public.anomaly_history'::regclass AND attname = 'valid_from')
+                       = 'timestamp without time zone' THEN
+                        ALTER TABLE public.anomaly_history
+                            ALTER COLUMN valid_from TYPE TIMESTAMPTZ USING valid_from AT TIME ZONE 'UTC',
+                            ALTER COLUMN valid_to TYPE TIMESTAMPTZ USING valid_to AT TIME ZONE 'UTC',
+                            ALTER COLUMN valid_from SET DEFAULT now();
+                    END IF;
+                    IF (SELECT format_type(atttypid, atttypmod) FROM pg_attribute
+                         WHERE attrelid = 'public.anomaly_history'::regclass AND attname = 'change_reason') <> 'text' THEN
+                        ALTER TABLE public.anomaly_history
+                            ALTER COLUMN change_reason TYPE TEXT,
+                            ALTER COLUMN changed_by TYPE TEXT;
+                    END IF;
+                END $$;
 
                 CREATE INDEX IF NOT EXISTS ix_anomaly_history_anomaly_id ON public.anomaly_history (anomaly_id);
                 CREATE INDEX IF NOT EXISTS ix_anomaly_history_project_id ON public.anomaly_history (project_id);
@@ -379,7 +408,38 @@ def init_db():
                     END IF;
                     RETURN NULL;
                 END;
-                $$ LANGUAGE plpgsql SECURITY DEFINER;
+                $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public;
+
+                -- Append-only: the only change a history row may ever take is the audit
+                -- trigger closing the current version. Everything else - edits, deletes,
+                -- truncate - is refused, whoever asks (short of disabling the trigger).
+                CREATE OR REPLACE FUNCTION public.fn_anomaly_history_append_only()
+                RETURNS TRIGGER AS $$
+                BEGIN
+                    IF TG_OP = 'UPDATE' THEN
+                        IF OLD.is_current AND NOT NEW.is_current
+                           AND OLD.valid_to IS NULL AND NEW.valid_to IS NOT NULL
+                           AND (to_jsonb(OLD) - 'is_current' - 'valid_to')
+                             = (to_jsonb(NEW) - 'is_current' - 'valid_to') THEN
+                            RETURN NEW;
+                        END IF;
+                    END IF;
+                    RAISE EXCEPTION 'anomaly_history is append-only: % refused', TG_OP
+                        USING HINT = 'Only closing the current version (is_current to false, valid_to set) is allowed.';
+                END;
+                $$ LANGUAGE plpgsql SET search_path = pg_catalog, public;
+
+                DROP TRIGGER IF EXISTS trigger_anomaly_history_append_only ON public.anomaly_history;
+                CREATE TRIGGER trigger_anomaly_history_append_only
+                BEFORE UPDATE OR DELETE ON public.anomaly_history
+                FOR EACH ROW
+                EXECUTE FUNCTION public.fn_anomaly_history_append_only();
+
+                DROP TRIGGER IF EXISTS trigger_anomaly_history_no_truncate ON public.anomaly_history;
+                CREATE TRIGGER trigger_anomaly_history_no_truncate
+                BEFORE TRUNCATE ON public.anomaly_history
+                FOR EACH STATEMENT
+                EXECUTE FUNCTION public.fn_anomaly_history_append_only();
 
                 DROP TRIGGER IF EXISTS trigger_anomaly_scd_audit ON public.anomalies;
                 CREATE TRIGGER trigger_anomaly_scd_audit

@@ -80,6 +80,7 @@ Target history is maintained in `public.anomaly_history` through the PostgreSQL 
    - The change reason is tagged automatically (`etl_change`, `etl_correction`, `field_sync`, `initial`).
    - If applied via ETL approver, the associated `decision_id` is recorded.
 3. **Integrity**: A partial unique index `(anomaly_id) WHERE is_current = true` enforces at most one current record per target at the database engine level.
+4. **Append-only**: the trigger `trigger_anomaly_history_append_only` refuses every `DELETE`, `TRUNCATE` and `UPDATE` on `anomaly_history` except the audit trigger closing the current version. There is no foreign key to `anomalies`: deleting a target, or its project, keeps its full history. Only disabling the trigger (superuser) gets around this.
 
 ---
 
