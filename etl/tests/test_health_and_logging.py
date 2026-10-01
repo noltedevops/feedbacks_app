@@ -14,6 +14,8 @@ from unittest import mock
 # happens in its lifespan, which these tests never start.
 os.environ["DATABASE_URL"] = "sqlite://"
 import server  # noqa: E402
+import security  # noqa: E402
+from routers import etl as etl_api  # noqa: E402
 
 
 class TestStructuredLogging(unittest.TestCase):
@@ -86,8 +88,8 @@ class _FakeConn:
 
 
 def _health(last_run, last_alive):
-    with mock.patch.object(server, "get_etl_approver_conn", return_value=_FakeConn(last_run, last_alive)):
-        return server._etl_health()
+    with mock.patch.object(etl_api, "get_etl_approver_conn", return_value=_FakeConn(last_run, last_alive)):
+        return etl_api._etl_health()
 
 
 class TestHealthClassification(unittest.TestCase):
@@ -119,39 +121,39 @@ class TestHealthClassification(unittest.TestCase):
         self.assertEqual(_health(None, None)["status"], "unknown")
 
     def test_unreachable_database_hides_the_error(self):
-        with mock.patch.object(server, "get_etl_approver_conn", side_effect=RuntimeError('password authentication failed for user "etl_approver"')):
-            h = server._etl_health()
+        with mock.patch.object(etl_api, "get_etl_approver_conn", side_effect=RuntimeError('password authentication failed for user "etl_approver"')):
+            h = etl_api._etl_health()
         self.assertEqual(h["status"], "unhealthy")
         self.assertNotIn("etl_approver", str(h))
 
 
 class TestPublicHealthProbe(unittest.TestCase):
     def setUp(self):
-        server._etl_health_cache.update(at=0.0, status=None)
+        etl_api._etl_health_cache.update(at=0.0, status=None)
 
     def tearDown(self):
-        server._etl_health_cache.update(at=0.0, status=None)
+        etl_api._etl_health_cache.update(at=0.0, status=None)
 
     def test_public_probe_returns_status_only_and_503_when_unhealthy(self):
         full = {"status": "unhealthy", "timestamp": "x", "error": "approval database unreachable"}
-        with mock.patch.object(server, "_etl_health", return_value=full):
+        with mock.patch.object(etl_api, "_etl_health", return_value=full):
             response = mock.Mock(status_code=200)
-            body = server.get_etl_pipeline_health(response)
+            body = etl_api.get_etl_pipeline_health(response)
         self.assertEqual(body, {"status": "unhealthy"})
         self.assertEqual(response.status_code, 503)
 
     def test_public_probe_is_cached(self):
-        with mock.patch.object(server, "_etl_health", return_value={"status": "healthy"}) as calc:
+        with mock.patch.object(etl_api, "_etl_health", return_value={"status": "healthy"}) as calc:
             for _ in range(5):
-                server.get_etl_pipeline_health(mock.Mock(status_code=200))
+                etl_api.get_etl_pipeline_health(mock.Mock(status_code=200))
         self.assertEqual(calc.call_count, 1)
 
     def test_details_route_requires_admin_and_probe_does_not(self):
         def deps(path):
             route = next(r for r in server.app.routes if getattr(r, "path", None) == path)
             return {d.call for d in route.dependant.dependencies}
-        self.assertIn(server.require_admin, deps("/api/etl/health/details"))
-        self.assertNotIn(server.require_admin, deps("/api/etl/health"))
+        self.assertIn(security.require_admin, deps("/api/etl/health/details"))
+        self.assertNotIn(security.require_admin, deps("/api/etl/health"))
 
 
 class TestCronSchedule(unittest.TestCase):

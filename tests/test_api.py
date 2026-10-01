@@ -12,7 +12,6 @@ to run unless DATABASE_URL names a database ending in "_test":
 from __future__ import annotations
 
 import base64
-import datetime
 import unittest
 import uuid
 
@@ -20,6 +19,7 @@ from sqlalchemy import text
 
 import database
 import models
+import security
 
 
 def setUpModule():
@@ -50,7 +50,7 @@ def _seed():
     try:
         def user(name, **flags):
             db.add(models.User(id=f"usr-{name}", full_name=name.title(), username=name,
-                               password_hash=server.hash_password(PASSWORD), **flags))
+                               password_hash=security.hash_password(PASSWORD), **flags))
         user("admin", can_field=True, can_dashboard=True, is_admin=True)
         user("collector", can_field=True, can_dashboard=False)
         user("analyst", can_field=False, can_dashboard=True)
@@ -180,7 +180,7 @@ class TestSurfacesAndAdmin(unittest.TestCase):
     def test_reset_password_issues_a_one_time_temporary(self):
         db = database.SessionLocal()
         db.add(models.User(id="usr-resetme", full_name="R", username="resetme",
-                           password_hash=server.hash_password(PASSWORD), can_field=True))
+                           password_hash=security.hash_password(PASSWORD), can_field=True))
         db.commit(); db.close()
         r = client.post("/api/admin/users/usr-resetme/reset-password", headers=_auth("admin"))
         self.assertEqual(r.status_code, 200)
@@ -193,7 +193,7 @@ class TestPermissionRequests(unittest.TestCase):
     def test_request_decide_flow(self):
         db = database.SessionLocal()
         db.add(models.User(id="usr-asker", full_name="A", username="asker",
-                           password_hash=server.hash_password(PASSWORD), can_field=True, can_dashboard=False))
+                           password_hash=security.hash_password(PASSWORD), can_field=True, can_dashboard=False))
         db.commit(); db.close()
         asker = _auth("asker")
         self.assertEqual(client.post("/api/permissions/request", headers=asker,
