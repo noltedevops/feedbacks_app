@@ -15,7 +15,7 @@ import sys
 
 from database import SessionLocal
 import models
-from server import hash_password, verify_password
+from security import hash_password, verify_password
 
 SURFACES = {
     "field": "can_field",

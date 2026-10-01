@@ -55,8 +55,11 @@ same figures server-side but **has no caller** — there is no reference to it a
 
 ## Backend
 
-`server.py` is a single module holding the whole API. Its lifespan hook runs `init_db()`
-and then seeds default users, once, before the first request. Importing `server.py` runs
+`server.py` creates the app and includes the API routers; the endpoints live in
+`routers/`, one module per area (`auth`, `admin`, `permissions`, `points` - points, sync,
+projects, stats -, `reports`, `etl`), and passwords, tokens and the access dependencies in
+`security.py`. Its lifespan hook runs `init_db()` and then seeds default users, once,
+before the first request. Importing `server.py` runs
 no DDL (`tests/test_server_startup.py`), so scripts and tests that import it do not touch
 the schema of whatever database `DATABASE_URL` names.
 
@@ -130,7 +133,7 @@ process, so every restart invalidates every session.
 
 Authorisation is by **surface**, not by role. `role` is only a label in the user menu;
 every account lands on the Overview page after signing in. The dependencies in
-`server.py` are:
+`security.py` are:
 
 - `current_user` — valid token required
 - `require_surface("field")` / `require_surface("dashboard")` — the matching flag; a 403
@@ -168,14 +171,14 @@ every account lands on the Overview page after signing in. The dependencies in
 They are in git at `e0aa3a3`.
 
 **`GET /api/reports/bilder/{feedback_id}` has no auth dependency whatsoever**
-(`server.py:935-936`). Anyone who can reach the server and has or guesses a feedback id
+(`routers/reports.py`, `report_photo_gallery`). Anyone who can reach the server and has or guesses a feedback id
 gets that excavation's full photo gallery. That is deliberate — it is the link target
 from the PDF, and requiring a session would break reports opened outside a signed-in
 browser — but it is an unauthenticated read of operational site photos and should be
 weighed again before the app leaves the LAN.
 
 `CORSMiddleware` is configured `allow_origins=["*"]` with `allow_credentials=True`
-(`server.py:52-58`). Auth is a bearer token in a header rather than a cookie, so this is
+(`server.py`). Auth is a bearer token in a header rather than a cookie, so this is
 not the classic credential-leak hole, but it does mean any site a signed-in user visits
 can call this API with a script-supplied token. Worth tightening when there is a real
 origin to name.
@@ -201,7 +204,7 @@ over the LAN keeps working. The CSV is written with a BOM so Excel renders umlau
 
 `POST /api/assistant` backs the "Ask AI Assistant" box on the landing page. It is
 registered as its own `APIRouter` and included *before* the static mount
-(`server.py:995`), which answers every path that reaches it.
+(`server.py`), which answers every path that reaches it.
 
 **It touches no user data and no database.** It takes no `db` dependency, imports no
 models, and keeps no conversation history. Its only state is an in-process rate limiter
@@ -325,11 +328,11 @@ Server-side, `/api/sync` upserts each record by primary key (dialect-specific
 raising a foreign-key error, normalises the incoming ISO-8601 `Z` timestamp to naive UTC
 to match `TIMESTAMP WITHOUT TIME ZONE`, marks the anomaly `investigated`, and returns the
 refreshed point list. `project_id` is taken from the parent anomaly, never from the
-payload (`server.py:809`), so the stored project cannot disagree with the target.
+payload (`routers/points.py`, `sync_data`), so the stored project cannot disagree with the target.
 
 #### The `visit_date` guard
 
-This is the load-bearing line of the whole sync path (`server.py:760-764`):
+This is the load-bearing line of the whole sync path (`routers/points.py`, `_upsert_feedback`):
 
 ```python
 stmt = insert(table).values(**values).on_conflict_do_update(
@@ -354,10 +357,10 @@ Re-editing a target reuses the existing feedback id (`App.tsx:721`), which is wh
 the second submission an update rather than a second row. There is therefore **no
 history**: `feedback` holds one row per anomaly, and a correction overwrites the
 previous values. `GET /api/points` still orders by `visit_date DESC` and takes the first
-(`server.py:656-661`), so it would cope if that ever changed.
+(`routers/points.py`, `get_points`), so it would cope if that ever changed.
 
 One field is accepted and then dropped on the floor: `FeedbackCreate.status`
-(`server.py:73`) is never written — it is absent from the values dict at `:862-888`. The
+(`routers/points.py`) is never written — it is absent from the values dict in `sync_data`. The
 status shown everywhere is re-derived on read by the rule above. The client's `status`
 is dead weight on the wire.
 

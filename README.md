@@ -30,7 +30,7 @@ For project status, live data volumes and the open-items list, see
 
 | Layer | What is used |
 |---|---|
-| API | Python 3.13, FastAPI + uvicorn (`server.py`) |
+| API | Python 3.13, FastAPI + uvicorn (`server.py`, `routers/`) |
 | ORM / models | SQLAlchemy 2 + GeoAlchemy2 (`models.py`, `database.py`) |
 | Database | PostgreSQL 16 + PostGIS 3.4 (Docker), SRID 32632 geometry |
 | Auth | PBKDF2-HMAC-SHA256 (stdlib `hashlib`), HMAC-signed bearer tokens |
@@ -256,7 +256,10 @@ pin.
 ## Repository layout
 
 ```
-server.py               FastAPI app: auth, points, sync, reports, stats, static mount
+server.py               FastAPI app: startup, routers, static mount
+security.py             Passwords, session tokens, login/surface/admin dependencies
+routers/                The API, one module per area: auth, admin, permissions,
+                        points (points, sync, projects, stats), reports, etl
 models.py               SQLAlchemy models: Project, Anomaly, Feedback, User, PermissionRequest
 database.py             Engine, retry/fallback, init_db, PostGIS trigger, UTM32N <-> WGS84
 config.py               pydantic-settings; warns on password mismatch
