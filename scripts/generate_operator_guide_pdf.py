@@ -1,7 +1,6 @@
 """Generates a professional PDF version of docs/ETL_OPERATOR_GUIDE.md using ReportLab."""
 import os
 import re
-import sys
 from datetime import datetime
 from xml.sax.saxutils import escape
 
@@ -9,7 +8,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether, HRFlowable, Preformatted
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, Preformatted
 )
 from reportlab.pdfgen import canvas
 

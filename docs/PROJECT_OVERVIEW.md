@@ -65,10 +65,14 @@ to the office database for analytics.
   PostGIS setup is surfaced clearly instead of silently continuing.
 - **Deployment** — currently runs locally (uvicorn + Docker). Needs a hosted
   environment, HTTPS, and backup strategy for the Postgres volume.
-- **Testing** — the ETL pipeline is tested: `dbt test` on every run, and a full
-  acceptance suite (`etl/tests/acceptance.py`) run against a copy of the database. The
-  application itself has no automated tests, and there is no CI. `scripts/doctor.py`
-  exits 1 on any failure and would be a reasonable first gate.
+- **Testing** — CI (`.github/workflows/ci.yml`) runs on every push and pull request to
+  `main`: pyflakes and the unit tests; the migrations building a PostGIS database from
+  nothing, `alembic check`, and the audit-history and API tests against it; the frontend
+  lint, type-check and build, and a check that the committed `static/` is that build.
+  The ETL pipeline is also tested by `dbt test` on every run and by the acceptance suite
+  (`etl/tests/acceptance.py`) against a copy of the database. Not covered: the browser
+  UI (five frontend files are still excluded from lint for older errors), and the ETL
+  runner end to end.
 - **Adding a project by configuration alone is untested** — two projects
   (`11-24-2736` Wilhelmshaven, `11-26-5151` Köln) are loaded through the ETL config
   (`etl/config/projects.yml`). What has not been exercised is bringing in a third one

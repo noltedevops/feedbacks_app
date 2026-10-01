@@ -45,7 +45,17 @@ class TestScdAuditHistory(unittest.TestCase):
     def _any_anomaly(self):
         row = self.conn.execute(text(
             "SELECT id, evaluated_depth FROM public.anomalies ORDER BY id LIMIT 1")).fetchone()
-        self.assertIsNotNone(row, "the test database should contain at least one anomaly")
+        if row is None:
+            # An empty database (CI builds one from the migrations): make a target inside
+            # this test's transaction, which is rolled back with everything else.
+            self.conn.execute(text(
+                "INSERT INTO public.projects (project_id, project_name) VALUES ('ci-0001', 'CI')"))
+            self.conn.execute(text(
+                "INSERT INTO public.anomalies (id, project_id, instrument, easting, northing, "
+                "target_id, vm_nr, evaluated_depth) VALUES ('ci-anomaly-1', 'ci-0001', 'georadar', "
+                "440000.0, 5935000.0, 'ci-0001-440000.000-5935000.000', 'ci-1', 1.0)"))
+            row = self.conn.execute(text(
+                "SELECT id, evaluated_depth FROM public.anomalies ORDER BY id LIMIT 1")).fetchone()
         return row
 
     def test_scd_type_2_history_lifecycle(self):
@@ -98,6 +108,7 @@ class TestScdAuditHistory(unittest.TestCase):
         self.assertIn("append-only", str(ctx.exception))
 
     def test_history_rows_cannot_be_deleted(self):
+        self._any_anomaly()  # at least one history row to refuse to touch
         self._assert_refused("DELETE FROM public.anomaly_history WHERE history_id = "
                              "(SELECT min(history_id) FROM public.anomaly_history)")
 
@@ -105,6 +116,7 @@ class TestScdAuditHistory(unittest.TestCase):
         self._assert_refused("TRUNCATE public.anomaly_history")
 
     def test_history_values_cannot_be_edited(self):
+        self._any_anomaly()  # at least one history row to refuse to touch
         self._assert_refused("UPDATE public.anomaly_history SET easting = easting + 1 WHERE history_id = "
                              "(SELECT min(history_id) FROM public.anomaly_history)")
 

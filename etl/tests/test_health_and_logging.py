@@ -5,7 +5,7 @@ import json
 import logging
 import unittest
 from datetime import datetime, timezone, timedelta
-from etl.runner.logger import JsonFormatter, ConsoleFormatter, set_run_context, clear_run_context, get_logger
+from etl.runner.logger import JsonFormatter, ConsoleFormatter, set_run_context, clear_run_context
 import os
 from unittest import mock
 
