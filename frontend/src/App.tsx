@@ -484,7 +484,6 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
-  const [isEditLocationMode, setIsEditLocationMode] = useState(false);
 
   // Set once a record is written to IndexedDB; swaps the form out for the thank-you
   // screen. Never touched by the sync result - see handleSaveFeedback.
@@ -604,6 +603,9 @@ export default function App() {
     setSyncing(true);
     try {
       const pendingItems = await db.pendingFeedback.toArray();
+      // Target moves are no longer made in the field (coordinates are survey-grade, from
+      // GIS/CAD), but a device updated from an older version may still hold some queued:
+      // they are sent, so the queue drains and the pending count can reach zero.
       const pendingPoints = await db.pendingPointUpdates.toArray();
       const sentFeedbackIds = pendingItems.map((i) => i.id);
       const sentPointIds = pendingPoints.map((p) => p.id);
@@ -728,10 +730,6 @@ export default function App() {
     notes: string | null;
     investigator: string | null;
     investigator_username: string | null;
-    easting?: number;
-    northing?: number;
-    latitude?: number;
-    longitude?: number;
     
     // New fields
     target_id: string;
@@ -773,23 +771,8 @@ export default function App() {
 
       await db.pendingFeedback.put(feedbackRecord);
       
-      const coordsUpdated = feedbackData.latitude !== undefined && feedbackData.longitude !== undefined;
-      if (coordsUpdated) {
-        await db.pendingPointUpdates.put({
-          id: selectedPoint.id,
-          easting: feedbackData.easting!,
-          northing: feedbackData.northing!,
-          latitude: feedbackData.latitude!,
-          longitude: feedbackData.longitude!
-        });
-      }
-      
       const updatedPoint: LocalPoint = {
         ...selectedPoint,
-        easting: coordsUpdated ? feedbackData.easting! : selectedPoint.easting,
-        northing: coordsUpdated ? feedbackData.northing! : selectedPoint.northing,
-        latitude: coordsUpdated ? feedbackData.latitude! : selectedPoint.latitude,
-        longitude: coordsUpdated ? feedbackData.longitude! : selectedPoint.longitude,
         local_status: 'investigated',
         feedback: {
           id: feedbackRecord.id,
@@ -825,7 +808,6 @@ export default function App() {
       setSubmission({ point: updatedPoint, vmNr: selectedPoint.vm_nr });
       setSelectedPoint(null);
       setBlankFormPointId(null);
-      setIsEditLocationMode(false);
 
       if (isOnline) {
         void handleSync({ silent: true });
@@ -1187,18 +1169,6 @@ export default function App() {
     }
   };
 
-  const handlePointPositionChange = (lat: number, lng: number) => {
-    if (!selectedPoint) return;
-    setSelectedPoint(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        latitude: lat,
-        longitude: lng
-      };
-    });
-  };
-
   const handleSignOut = () => {
     clearSession();
     setAccess(NO_ACCESS);
@@ -1215,7 +1185,6 @@ export default function App() {
     setSelectedPoint(null);
     setSubmission(null);
     setBlankFormPointId(null);
-    setIsEditLocationMode(false);
     setUsernameInput('');
     setPasswordInput('');
     setCurrentUser('');
@@ -1265,14 +1234,12 @@ export default function App() {
     setSelectedPoint(null);
   }, [view, activeFilterKey]);
 
-  // Turn off edit location mode when selectedPoint changes - any new value, as before,
-  // including the new object a marker drag makes. Adjusted during render, not in an
-  // effect. Opening any target also leaves the confirmation screen behind; submitting
-  // clears selectedPoint in the same batch, so this never eats a fresh confirmation.
+  // Opening any target leaves the confirmation screen behind. Adjusted during render,
+  // not in an effect. Submitting clears selectedPoint in the same batch, so this never
+  // eats a fresh confirmation.
   const [lastSelectedPoint, setLastSelectedPoint] = useState(selectedPoint);
   if (lastSelectedPoint !== selectedPoint) {
     setLastSelectedPoint(selectedPoint);
-    setIsEditLocationMode(false);
     if (selectedPoint) setSubmission(null);
   }
 
@@ -1766,7 +1733,6 @@ export default function App() {
                     currentUser={currentUserFullName}
                     currentUserUsername={currentUser}
                     lastTeamsTools={lastTeamsTools}
-                    isEditLocationMode={isEditLocationMode}
                     onSave={handleSaveFeedback}
                     onCancel={() => {
                       setSelectedPoint(null);
@@ -1938,8 +1904,6 @@ export default function App() {
                     selectedPoint={selectedPoint}
                     onSelectPoint={handleSelectPoint}
                     viewMode="collector"
-                    isEditLocationMode={isEditLocationMode}
-                    onPointPositionChange={handlePointPositionChange}
                     isMobile={isMobile}
                   />
                 </div>
@@ -1962,7 +1926,6 @@ export default function App() {
                     selectedPoint={selectedPoint}
                     onSelectPoint={handleSelectPoint}
                     viewMode="dashboard"
-                    isEditLocationMode={false}
                   />
                 </div>
               )}
@@ -1996,7 +1959,6 @@ export default function App() {
                       selectedPoint={selectedPoint}
                       onSelectPoint={handleSelectPoint}
                       viewMode="dashboard"
-                      isEditLocationMode={false}
                       isMobile
                     />
                   ) : undefined}

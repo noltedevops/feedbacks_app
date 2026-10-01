@@ -62,7 +62,6 @@ const de: Record<string, string> = {
   'Satellite Map': 'Satellitenkarte',
   'Map Legend': 'Kartenlegende',
   'Tap to activate map': 'Tippen zum Aktivieren',
-  'DRAG TO RE-POSITION': 'ZUM VERSCHIEBEN ZIEHEN',
   'Target ID': 'Ziel-ID',
   'UTM coords': 'UTM-Koordinaten',
   'Coordinate': 'Koordinate',
@@ -148,9 +147,6 @@ const de: Record<string, string> = {
 
   // --- Feedback form ---
   'Field Application Form': 'Feld-Erfassungsformular',
-  'Location Edit Mode Active:': 'Standort-Bearbeitung aktiv:',
-  'Drag the target marker on the map to its exact location. Coordinates will update in real-time. Click "Submit" to save.':
-    'Ziehen Sie den Zielmarker auf der Karte an die exakte Position. Die Koordinaten werden in Echtzeit aktualisiert. Zum Speichern auf „Absenden“ klicken.',
   'Instrument': 'Instrument',
   'Survey result': 'Bewertungsergebnis',
   'Evaluated depth (m)': 'Bewertete Tiefe (m)',

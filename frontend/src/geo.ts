@@ -4,8 +4,8 @@
  * Pure functions, no React and no coordinate conversion. The targets already carry
  * `latitude`/`longitude` alongside their UTM easting/northing - the server writes both
  * - so anything working from a point's position reads those directly. Nothing here
- * needs a UTM -> lat/lng step, and none is added: the only conversion in the frontend
- * is latLonToUtm32nJS in utm.ts, which runs the other way.
+ * needs a UTM -> lat/lng step, and none is added: the frontend does no coordinate
+ * conversion at all.
  *
  * Spherical, not ellipsoidal. Over the few hundred metres between a crew and a target
  * the difference from Vincenty is well under a metre, and the numbers here are rounded

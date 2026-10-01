@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 'react-leaflet';
+import { MapContainer, TileLayer, Popup, useMap, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { type LocalPoint, getResolvedStatus } from '../db/indexedDb';
@@ -17,8 +17,6 @@ interface FieldMapProps {
   onSelectPoint: (point: LocalPoint | null) => void;
   viewMode: 'collector' | 'dashboard';
   onAddDataClick?: () => void;
-  isEditLocationMode?: boolean;
-  onPointPositionChange?: (lat: number, lng: number) => void;
   // Narrow-screen layout: shrinks the floating map chrome and gates touch panning
   // behind a tap so the map does not eat the page's vertical scroll.
   isMobile?: boolean;
@@ -551,8 +549,6 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
   onSelectPoint,
   viewMode,
   onAddDataClick,
-  isEditLocationMode = false,
-  onPointPositionChange,
   isMobile = false
 }) => {
   const t = makeT(lang);
@@ -660,41 +656,7 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
       const isInvestigated = point.local_status === 'investigated';
       const color = isInvestigated ? statusFill.found : statusFill.pending;
 
-      if (isSelected && isEditLocationMode) {
-        // A draggable marker for editing the location. Styled by .marker-edit in
-        // field.css from the same status tokens, so it needs no colour of its own here.
-        return (
-          <Marker
-            key={point.id}
-            position={[point.latitude, point.longitude]}
-            draggable={true}
-            icon={L.divIcon({
-              className: 'custom-leaflet-marker',
-              html: `<div class="map-marker-pin marker-selected marker-edit" data-status="${isInvestigated ? 'found' : 'pending'}"><span></span></div>`,
-              iconSize: [16, 16],
-              iconAnchor: [8, 8]
-            })}
-            eventHandlers={{
-              dragend: (e) => {
-                const marker = e.target;
-                const position = marker.getLatLng();
-                if (onPointPositionChange) {
-                  onPointPositionChange(position.lat, position.lng);
-                }
-              }
-            }}
-          >
-            <Popup className="target-popup">
-              <div className="tp tp--compact">
-                <span className="tp-vm num">VM Nr. {point.vm_nr}</span>
-                <span className="tp-section-title">{t('DRAG TO RE-POSITION')}</span>
-              </div>
-            </Popup>
-          </Marker>
-        );
-      }
-
-      // Otherwise, render a high-performance CircleMarker (small point size), drawn
+      // A high-performance CircleMarker (small point size), drawn
       // into the shared canvas renderer rather than as its own SVG path. Touch
       // targets get a bigger radius - 2.5px is unhittable with a finger.
       // Keyed by theme as well as target: react-leaflet applies a CircleMarker's colour
@@ -723,7 +685,7 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
         />
       );
     })
-  ), [points, selectedPoint, isEditLocationMode, onSelectPoint, openPopupFor, onPointPositionChange, renderer, isMobile, t, statusFill]);
+  ), [points, selectedPoint, onSelectPoint, openPopupFor, renderer, isMobile, statusFill]);
 
   return (
     <div className="field-map">

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { type LocalPoint, type TeamsTools } from '../db/indexedDb';
-import { Camera, Upload, Send, X, Move, Users } from 'lucide-react';
+import { Camera, Upload, Send, X, Users } from 'lucide-react';
 import { Select } from './Select';
 
 // The findings a crew can record, in the order they are offered.
 const FUNDSTUECK_OPTIONS = ['ohne Fund', 'Eisenteil', 'Eisenstange / Eisenstab', 'Eisendraht', 'Eisenseil', 'Eisennägel', 'Steine', 'Sonstige'];
 import { makeT, type AppLang } from '../i18n';
-import { latLonToUtm32nJS } from '../utm';
 
 const optionalNumber = (v: number | null | undefined) => (v !== null && v !== undefined ? String(v) : '');
 
@@ -41,7 +40,6 @@ interface FeedbackFormProps {
   // Most recent teams & tools recorded for this project, used to auto-populate
   // the section when the crew answers "No" to Need update?
   lastTeamsTools: TeamsTools | null;
-  isEditLocationMode: boolean;
   onSave: (feedbackData: {
     status: string;
     actual_depth: number | null;
@@ -49,10 +47,6 @@ interface FeedbackFormProps {
     notes: string | null;
     investigator: string | null;
     investigator_username: string | null;
-    easting?: number;
-    northing?: number;
-    latitude?: number;
-    longitude?: number;
     
     // New fields
     target_id: string;
@@ -74,7 +68,6 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   currentUser,
   currentUserUsername,
   lastTeamsTools,
-  isEditLocationMode,
   onSave, 
   onCancel
 }) => {
@@ -166,15 +159,9 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
     };
   }, [cameraStream]);
 
-  // Coordinates follow the point. A marker drag changes only its latitude/longitude, so
-  // once they differ from where the target was when the form opened, easting/northing
-  // are computed from the new position; until then they are the stored values.
-  const [openedAt] = useState(() => ({ latitude: point.latitude, longitude: point.longitude }));
-  const { latitude, longitude } = point;
-  const moved = latitude !== openedAt.latitude || longitude !== openedAt.longitude;
-  const [easting, northing] = moved
-    ? latLonToUtm32nJS(latitude, longitude).map((v) => Number(v.toFixed(3)))
-    : [point.easting, point.northing];
+  // The target's survey coordinates, shown read-only. They come from GIS/CAD and are
+  // never changed in the field.
+  const { easting, northing } = point;
 
   // Compress photo and append to photo list
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -238,10 +225,6 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
       notes: notes.trim() || null,
       investigator: currentUser,
       investigator_username: currentUserUsername,
-      easting,
-      northing,
-      latitude,
-      longitude,
       
       // New fields
       target_id: point.target_id || `11-24-2736-${easting.toFixed(3)}-${northing.toFixed(3)}`,
@@ -278,16 +261,6 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           <X size={18} aria-hidden="true" />
         </button>
       </div>
-
-      {/* Edit Location Info Banner */}
-      {isEditLocationMode && (
-        <div className="ff-banner" role="status">
-          <Move size={16} aria-hidden="true" />
-          <div>
-            <strong>{t('Location Edit Mode Active:')}</strong> {t('Drag the target marker on the map to its exact location. Coordinates will update in real-time. Click "Submit" to save.')}
-          </div>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="ff-form">
 
