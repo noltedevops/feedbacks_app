@@ -115,11 +115,15 @@ app is `latLonToUtm32nJS()` in `FeedbackForm.tsx`, for a marker dragged offline.
    boot starts the app and the database together, and nothing supervises this process.
 3. **Failure is fatal** unless `ALLOW_SQLITE_FALLBACK=1` is set *in the process
    environment*. This is not read from `.env`; see the README gotchas.
-4. `init_db()` enables PostGIS, runs `create_all`, then applies additive migrations by
-   hand — `create_all` never alters an existing table, so columns added later
-   (`feedback.teams_tools`, the four user flags) are added with explicit `ALTER TABLE`
-   and backfilled once from `role`.
-5. The coordinate trigger is created or replaced, and legacy triggers dropped.
+4. `init_db()` (run by the lifespan hook) applies any Alembic migration in `migrations/`
+   the database does not have yet; at the newest revision it does nothing. A failing
+   migration raises and the server does not start. Revision `0001` is the baseline: the
+   schema as `init_db` used to build and patch it on every startup until 2026-10-01 -
+   PostGIS, the tables, the additive columns (`feedback.teams_tools`,
+   `feedback.project_id`, the four user flags) with their backfills, the coordinate
+   trigger and the `anomaly_history` audit - frozen, and repeatable, so it changed
+   nothing on the live database but the recorded revision. See OPERATIONS.md,
+   *Schema migrations*.
 
 Logged connection URLs are masked with `safe_url()` — the password never reaches
 scrollback or CI output.
