@@ -140,17 +140,53 @@ export interface AccuracyRow {
   excavatedCount: number;
 }
 
-export function AccuracyBody({ data, hasExcavationData, kpis, emptyNote, t, c, size, animate }: ChartProps & {
+export function AccuracyBody({ data, hasExcavationData, kpis, emptyNote, instrument, onSelectInstrument, t, c, size, animate }: ChartProps & {
   data: AccuracyRow[];
   hasExcavationData: boolean;
-  kpis: { meanDepthError: string; biasText: string; falsePositiveRate: number };
+  kpis: {
+    meanDepthError: string;
+    biasText: string;
+    falsePositiveRate: number;
+    velocityDriftText?: string;
+    velocityDriftLabel?: string;
+    velocityDriftTooltip?: string;
+  };
   emptyNote: string;
+  instrument?: string;
+  onSelectInstrument?: (inst: string) => void;
 }) {
   return (
     <>
       {/* What the percent axis is: each series' own share, so the ~70 dug targets read
           against the ~1700 surveyed ones on one scale. Counts stay in the tooltip. */}
-      <p className="dash-panel-note">{t('Share of targets per 0.2 m depth band')}</p>
+      <div className="accuracy-subhead">
+        <p className="dash-panel-note">{t('Share of targets per 0.2 m depth band')}</p>
+        {onSelectInstrument && (
+          <div className="accuracy-inst-pills">
+            <button
+              type="button"
+              className={`pill-btn${instrument === 'all' ? ' active' : ''}`}
+              onClick={() => onSelectInstrument('all')}
+            >
+              {t('All')}
+            </button>
+            <button
+              type="button"
+              className={`pill-btn${instrument === 'georadar' ? ' active' : ''}`}
+              onClick={() => onSelectInstrument('georadar')}
+            >
+              {t('Georadar')}
+            </button>
+            <button
+              type="button"
+              className={`pill-btn${instrument === 'magnetic' ? ' active' : ''}`}
+              onClick={() => onSelectInstrument('magnetic')}
+            >
+              {t('Magnetic')}
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* The curve always renders: Evaluated (Sensor) comes from errechnete Tiefe and is
           valid for pending targets too. Only the Excavated series and the KPIs below
@@ -196,6 +232,12 @@ export function AccuracyBody({ data, hasExcavationData, kpis, emptyNote, t, c, s
             <dt>{t('ESTIMATION BIAS')}</dt>
             <dd title={kpis.biasText}>{kpis.biasText}</dd>
           </div>
+          {kpis.velocityDriftText && (
+            <div>
+              <dt>{kpis.velocityDriftLabel || t('VELOCITY DRIFT')}</dt>
+              <dd className="num" title={kpis.velocityDriftTooltip}>{kpis.velocityDriftText}</dd>
+            </div>
+          )}
           <div>
             <dt>{t('FPR (EMPTY)')}</dt>
             <dd className="num">{kpis.falsePositiveRate}%</dd>
