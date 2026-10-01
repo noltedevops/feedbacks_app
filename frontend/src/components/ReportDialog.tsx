@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { FileText, Table2, X, Loader2 } from 'lucide-react';
 import { Select } from './Select';
 import { makeT, type AppLang } from '../i18n';
@@ -33,15 +33,16 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
   onClose
 }) => {
   const t = makeT(lang);
-  const [projectId, setProjectId] = useState<string>(projects[0]?.project_id ?? '');
+  // What the user picked, or null until they pick. Until then the dialog shows the first
+  // project - the list can arrive after the dialog opens. Derived rather than copied into
+  // state by an effect, which also snapped an explicit "All Projects" ('') straight back
+  // to the first project, so all projects could never be exported at once.
+  const [chosenProjectId, setChosenProjectId] = useState<string | null>(null);
+  const projectId = chosenProjectId ?? projects[0]?.project_id ?? '';
   const [start, setStart] = useState<string>('');
   const [end, setEnd] = useState<string>('');
   const [busy, setBusy] = useState<'pdf' | 'csv' | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!projectId && projects.length) setProjectId(projects[0].project_id);
-  }, [projects, projectId]);
 
   const rangeInvalid = Boolean(start && end && start > end);
 
@@ -123,7 +124,7 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
           <Select
             className="report-field"
             value={projectId}
-            onChange={setProjectId}
+            onChange={setChosenProjectId}
             ariaLabel={t('Project ID')}
             title={selectedLabel ? `${projectId} — ${selectedLabel}` : projectId || t('All Projects')}
             options={[

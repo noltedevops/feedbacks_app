@@ -1,7 +1,8 @@
-import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import { db, type LocalPoint, type PendingFeedback, type TeamsTools } from './db/indexedDb';
 import { FieldMap } from './components/FieldMap';
-import { Dashboard, matchesDepthBucket } from './components/Dashboard';
+import { Dashboard } from './components/Dashboard';
+import { matchesDepthBucket } from './depthBuckets';
 import { FeedbackForm } from './components/FeedbackForm';
 import { ReportDialog, type ProjectOption } from './components/ReportDialog';
 import { FilterBar } from './components/FilterBar';
@@ -107,6 +108,18 @@ type AppView = 'overview' | 'field' | 'dashboard';
 // The view survives a reload, so a crew member reloading the PWA is not thrown back
 // out of the field app. Signing in afresh always resets to the overview.
 const VIEW_KEY = 'nolte_view';
+
+/** The session this device kept from its last sign-in, or null. */
+function storedSession(): { user: string; role: AppRole; fullName: string } | null {
+  const user = localStorage.getItem('nolte_user');
+  const role = localStorage.getItem('nolte_role');
+  if (!user || !role) return null;
+  // The stored name is used as-is. This used to replace any name without a space - or
+  // a missing one - with a hard-coded name and wrote that back, which renamed other
+  // users, and the investigator on their records with them. A missing name shows the
+  // username until /api/auth/me supplies the real one.
+  return { user, role: role as AppRole, fullName: localStorage.getItem('nolte_user_fullname') || user };
+}
 
 /** The persisted view, or the overview for anything unrecognised. */
 function storedView(): AppView {
@@ -268,23 +281,108 @@ function SubmissionConfirmation({ lang, vmNr, syncState, onOpenForm, onBackToLis
   );
 }
 
+/** Replace the local mirror of the targets with the server's list. Writes IndexedDB
+ *  only; the caller reads it back. Throws when the server cannot be reached. */
+async function mirrorServerPoints(): Promise<void> {
+  const res = await authFetch(`${API_BASE}/api/points`);
+  if (!res.ok) throw new Error('API server error');
+  const serverPoints = await res.json();
+  
+  await db.transaction('rw', db.points, async () => {
+    await db.points.clear();
+    for (const p of serverPoints) {
+      const status = p.feedback ? 'investigated' : 'unvisited';
+      await db.points.put({
+        id: p.id,
+        project_id: p.project_id || '11-24-2736',
+        target_id: p.target_id || '',
+        vm_nr: p.vm_nr,
+        easting: p.easting,
+        northing: p.northing,
+        latitude: p.latitude,
+        longitude: p.longitude,
+        evaluated_depth: p.evaluated_depth,
+        opening_length: p.opening_length,
+        opening_width: p.opening_width,
+        opening_depth: p.opening_depth,
+        opening_volume: p.opening_volume,
+        find_description: p.find_description,
+        image_id: p.image_id,
+        remarks: p.remarks,
+        created_at: p.created_at,
+        local_status: status,
+        feedback: p.feedback,
+        instrument: p.instrument,
+        layer: p.layer,
+        category: p.category ?? null
+      });
+    }
+  });
+}
+
+/** Records still waiting to be sent: field logs plus moved targets. */
+async function readPendingCount(): Promise<number> {
+  const feedbackCount = await db.pendingFeedback.count();
+  const pointUpdatesCount = await db.pendingPointUpdates.count();
+  return feedbackCount + pointUpdatesCount;
+}
+
+/** The accounts, for the admin's users panel; null when the request fails. */
+async function fetchAdminUsers(): Promise<AdminUserRow[] | null> {
+  try {
+    const res = await authFetch(`${API_BASE}/api/admin/users`);
+    return res.ok ? await res.json() : null;
+  } catch (err) {
+    console.warn('Could not load users', err);
+    return null;
+  }
+}
+
+/** Open permission requests, for the admin badge and panel; null when the request fails. */
+async function fetchPendingRequests(): Promise<PermissionRequestRow[] | null> {
+  try {
+    const res = await authFetch(`${API_BASE}/api/permissions/requests?status=pending`);
+    return res.ok ? await res.json() : null;
+  } catch (err) {
+    console.warn('Could not load permission requests', err);
+    return null;
+  }
+}
+
+/** Staged changes plus correction pairs awaiting an ETL decision; null when unknown. */
+async function fetchEtlPendingCount(): Promise<number | null> {
+  try {
+    const res = await authFetch(`${API_BASE}/api/etl/status`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return (data.staged_changes?.length || 0) + (data.correction_pairs?.length || 0);
+  } catch {
+    return null; // a silent background count
+  }
+}
+
 export default function App() {
-  // Session States
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUser, setCurrentUser] = useState('');
-  const [currentUserFullName, setCurrentUserFullName] = useState('');
+  // Session States. A session this device kept is restored as the initial state, so a
+  // reload opens straight onto it - it used to be restored by an effect after a first
+  // render as signed-out.
+  const [restored] = useState(storedSession);
+  const [isLoggedIn, setIsLoggedIn] = useState(restored !== null);
+  const [currentUser, setCurrentUser] = useState(restored?.user ?? '');
+  const [currentUserFullName, setCurrentUserFullName] = useState(restored?.fullName ?? '');
   // The account's role, as the server records it. Labels the avatar; routes nothing.
-  const [userRole, setUserRole] = useState<AppRole>('collector');
+  const [userRole, setUserRole] = useState<AppRole>(restored?.role ?? 'collector');
   // The surface the user asked for. What actually renders is `view` below, which
-  // re-checks it against the access flags.
-  const [requestedView, setRequestedView] = useState<AppView>('overview');
+  // re-checks it against the access flags. A reload resumes where the user was, unlike
+  // a sign-in; `view` still holds this against the flags, so a surface revoked in the
+  // meantime cannot return.
+  const [requestedView, setRequestedView] = useState<AppView>(() => (restored ? storedView() : 'overview'));
   // The guided tour running over a surface, if any. Started only by a click - from the
   // Overview or the profile menu - never automatically.
   const [tour, setTour] = useState<TourId | null>(null);
   // Keys the tour, so starting one again - even the same one - begins at step one.
   const [tourRun, setTourRun] = useState(0);
   // What this account may open. Mirrored from the server; the server re-checks.
-  const [access, setAccess] = useState<Access>(NO_ACCESS);
+  const [access, setAccess] = useState<Access>(() => (restored ? getAccess() : NO_ACCESS));
   // Surface the user tried to open without permission -> drives the request dialog.
   const [permissionPrompt, setPermissionPrompt] = useState<Surface | null>(null);
   const [permissionNote, setPermissionNote] = useState('');
@@ -386,7 +484,6 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
-  const [addDataOpen, setAddDataOpen] = useState(false);
   const [isEditLocationMode, setIsEditLocationMode] = useState(false);
 
   // Set once a record is written to IndexedDB; swaps the form out for the thank-you
@@ -424,27 +521,6 @@ export default function App() {
   // Toast Notification
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
-  // Restore session
-  useEffect(() => {
-    const sessionUser = localStorage.getItem('nolte_user');
-    const sessionRole = localStorage.getItem('nolte_role');
-    if (sessionUser && sessionRole) {
-      // The stored name is used as-is. This used to replace any name without a
-      // space - or a missing one - with a hard-coded name and wrote that back, which
-      // renamed other users, and the investigator on their records with them.
-      // A missing name shows the username until /api/auth/me supplies the real one.
-      const sessionFullName = localStorage.getItem('nolte_user_fullname') || sessionUser;
-      setCurrentUser(sessionUser);
-      setUserRole(sessionRole as AppRole);
-      setCurrentUserFullName(sessionFullName);
-      setAccess(getAccess());
-      // A reload resumes where the user was, unlike a sign-in. `view` still holds
-      // this against the flags, so a surface revoked in the meantime cannot return.
-      setRequestedView(storedView());
-      setIsLoggedIn(true);
-    }
-  }, []);
-
   // Re-read our own access on start, so permission granted while this device was
   // offline takes effect without making the user sign out and back in.
   useEffect(() => {
@@ -477,44 +553,6 @@ export default function App() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  // Monitor online status
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      showToast('success', t('Connection restored. Cloud sync enabled.'));
-    };
-    const handleOffline = () => {
-      setIsOnline(false);
-      showToast('info', t('Offline mode active. Logs queued in IndexedDB.'));
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  // Sync / Load data
-  useEffect(() => {
-    if (isLoggedIn) {
-      loadLocalData();
-      updatePendingCount();
-      if (navigator.onLine) {
-        fetchFromServer();
-      }
-    }
-  }, [isLoggedIn]);
-
-  // Auto-sync when online. Silent: the crew did not ask for this run, and a failure
-  // here is harmless because the records stay queued locally.
-  useEffect(() => {
-    if (isOnline && pendingSyncCount > 0 && isLoggedIn) {
-      void handleSync({ silent: true });
-    }
-  }, [isOnline, pendingSyncCount, isLoggedIn]);
-
   const showToast = (type: 'success' | 'error' | 'info', message: string) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 4000);
@@ -531,9 +569,7 @@ export default function App() {
 
   const updatePendingCount = async () => {
     try {
-      const feedbackCount = await db.pendingFeedback.count();
-      const pointUpdatesCount = await db.pendingPointUpdates.count();
-      setPendingSyncCount(feedbackCount + pointUpdatesCount);
+      setPendingSyncCount(await readPendingCount());
     } catch (err) {
       console.error(err);
     }
@@ -548,47 +584,6 @@ export default function App() {
       .catch(() => setServerProjects([]));
   }, [isOnline]);
 
-  const fetchFromServer = async () => {
-    try {
-      const res = await authFetch(`${API_BASE}/api/points`);
-      if (!res.ok) throw new Error('API server error');
-      const serverPoints = await res.json();
-      
-      await db.transaction('rw', db.points, async () => {
-        await db.points.clear();
-        for (const p of serverPoints) {
-          const status = p.feedback ? 'investigated' : 'unvisited';
-          await db.points.put({
-            id: p.id,
-            project_id: p.project_id || '11-24-2736',
-            target_id: p.target_id || '',
-            vm_nr: p.vm_nr,
-            easting: p.easting,
-            northing: p.northing,
-            latitude: p.latitude,
-            longitude: p.longitude,
-            evaluated_depth: p.evaluated_depth,
-            opening_length: p.opening_length,
-            opening_width: p.opening_width,
-            opening_depth: p.opening_depth,
-            opening_volume: p.opening_volume,
-            find_description: p.find_description,
-            image_id: p.image_id,
-            remarks: p.remarks,
-            created_at: p.created_at,
-            local_status: status,
-            feedback: p.feedback,
-            instrument: p.instrument,
-            layer: p.layer,
-            category: p.category ?? null
-          });
-        }
-      });
-      await loadLocalData();
-    } catch (err) {
-      console.warn('Could not contact API server. Operating on cached local DB.', err);
-    }
-  };
 
   // `silent` suppresses the failure toasts for syncs the crew did not ask for, so a
   // background retry never shouts over the submission confirmation.
@@ -678,6 +673,53 @@ export default function App() {
       }
     }
   };
+
+  // Effects that act through the functions above. Effect events read the latest of
+  // those functions (and of `t`) without making them dependencies: each is re-created on
+  // every render, and as dependencies they would re-run these effects on every render.
+  const onConnectivityChange = useEffectEvent((online: boolean) => {
+    setIsOnline(online);
+    if (online) showToast('success', t('Connection restored. Cloud sync enabled.'));
+    else showToast('info', t('Offline mode active. Logs queued in IndexedDB.'));
+  });
+
+  // Monitor online status
+  useEffect(() => {
+    const handleOnline = () => onConnectivityChange(true);
+    const handleOffline = () => onConnectivityChange(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Sync / Load data: the local mirror at once, then the server's list over it when
+  // online. Responses that land after a sign-out are dropped (active).
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    let active = true;
+    const showPoints = (localPoints: LocalPoint[]) => { if (active) setPoints(localPoints); };
+    db.points.toArray().then(showPoints).catch(console.error);
+    readPendingCount().then((n) => { if (active) setPendingSyncCount(n); }).catch(console.error);
+    if (navigator.onLine) {
+      mirrorServerPoints()
+        .then(() => db.points.toArray())
+        .then(showPoints)
+        .catch((err) => console.warn('Could not contact API server. Operating on cached local DB.', err));
+    }
+    return () => { active = false; };
+  }, [isLoggedIn]);
+
+  const autoSync = useEffectEvent(() => { void handleSync({ silent: true }); });
+
+  // Auto-sync when online. Silent: the crew did not ask for this run, and a failure
+  // here is harmless because the records stay queued locally.
+  useEffect(() => {
+    if (isOnline && pendingSyncCount > 0 && isLoggedIn) autoSync();
+  }, [isOnline, pendingSyncCount, isLoggedIn]);
 
   const handleSaveFeedback = async (feedbackData: {
     status: string;
@@ -1017,18 +1059,12 @@ export default function App() {
     }
   };
 
-  const loadUsers = async () => {
-    try {
-      const res = await authFetch(`${API_BASE}/api/admin/users`);
-      if (!res.ok) return;
-      setUserRows(await res.json());
-    } catch (err) {
-      console.warn('Could not load users', err);
-    }
-  };
 
   useEffect(() => {
-    if (showUsersPanel && access.is_admin) loadUsers();
+    if (!showUsersPanel || !access.is_admin) return;
+    let active = true;
+    fetchAdminUsers().then((rows) => { if (active && rows) setUserRows(rows); });
+    return () => { active = false; };
   }, [showUsersPanel, access.is_admin]);
 
   const updateUserAccess = async (row: AdminUserRow, patch: Partial<AdminUserRow>) => {
@@ -1113,45 +1149,27 @@ export default function App() {
     }
   };
 
-  const loadPermissionRequests = async () => {
-    try {
-      const res = await authFetch(`${API_BASE}/api/permissions/requests?status=pending`);
-      if (!res.ok) return;
-      setPendingRequests(await res.json());
-    } catch (err) {
-      console.warn('Could not load permission requests', err);
-    }
-  };
 
   // Load once when an admin signs in so the sidebar badge is right, then poll
   // only while the panel is open.
   useEffect(() => {
     if (!access.is_admin) return;
-    loadPermissionRequests();
-    if (!showAdminPanel) return;
-    const timer = setInterval(loadPermissionRequests, 20000);
-    return () => clearInterval(timer);
+    let active = true;
+    const refresh = () => fetchPendingRequests().then((rows) => { if (active && rows) setPendingRequests(rows); });
+    refresh();
+    const timer = showAdminPanel ? setInterval(refresh, 20000) : undefined;
+    return () => { active = false; clearInterval(timer); };
   }, [showAdminPanel, access.is_admin]);
 
-  const loadEtlCount = useCallback(async () => {
-    if (!access.is_admin) return;
-    try {
-      const res = await authFetch(`${API_BASE}/api/etl/status`);
-      if (!res.ok) return;
-      const data = await res.json();
-      const count = (data.staged_changes?.length || 0) + (data.correction_pairs?.length || 0);
-      setEtlPendingCount(count);
-    } catch {
-      // Ignore silent background fetch error
-    }
-  }, [access.is_admin]);
 
   useEffect(() => {
     if (!access.is_admin) return;
-    loadEtlCount();
-    const timer = setInterval(loadEtlCount, 30000);
-    return () => clearInterval(timer);
-  }, [access.is_admin, loadEtlCount]);
+    let active = true;
+    const refresh = () => fetchEtlPendingCount().then((n) => { if (active && n !== null) setEtlPendingCount(n); });
+    refresh();
+    const timer = setInterval(refresh, 30000);
+    return () => { active = false; clearInterval(timer); };
+  }, [access.is_admin]);
 
   const decideRequest = async (id: string, approve: boolean) => {
     try {
@@ -1247,13 +1265,16 @@ export default function App() {
     setSelectedPoint(null);
   }, [view, activeFilterKey]);
 
-  // Turn off edit location mode when selectedPoint changes
-  useEffect(() => {
+  // Turn off edit location mode when selectedPoint changes - any new value, as before,
+  // including the new object a marker drag makes. Adjusted during render, not in an
+  // effect. Opening any target also leaves the confirmation screen behind; submitting
+  // clears selectedPoint in the same batch, so this never eats a fresh confirmation.
+  const [lastSelectedPoint, setLastSelectedPoint] = useState(selectedPoint);
+  if (lastSelectedPoint !== selectedPoint) {
+    setLastSelectedPoint(selectedPoint);
     setIsEditLocationMode(false);
-    // Opening any target leaves the confirmation screen behind. Submitting clears
-    // selectedPoint in the same batch, so this never eats a fresh confirmation.
     if (selectedPoint) setSubmission(null);
-  }, [selectedPoint]);
+  }
 
   // The point handed to the form. "Open Field Application Form" asks for a blank sheet
   // on the target just filed, and hiding its feedback puts FeedbackForm on its own
@@ -1737,13 +1758,15 @@ export default function App() {
 
                 {formPoint ? (
                   <FeedbackForm
+                    // A fresh form per target, and per blank sheet on it - never a refill
+                    // of the open one (see FeedbackForm's initial values).
+                    key={blankFormPointId === formPoint.id ? `${formPoint.id}:blank` : formPoint.id}
                     lang={lang}
                     point={formPoint}
                     currentUser={currentUserFullName}
                     currentUserUsername={currentUser}
                     lastTeamsTools={lastTeamsTools}
                     isEditLocationMode={isEditLocationMode}
-                    setIsEditLocationMode={setIsEditLocationMode}
                     onSave={handleSaveFeedback}
                     onCancel={() => {
                       setSelectedPoint(null);
@@ -1953,9 +1976,6 @@ export default function App() {
                   filteredPoints={dashboardFilteredPoints}
                   selectedPoint={selectedPoint}
                   onSelectPoint={handleSelectPoint}
-                  isOnline={isOnline}
-                  addDataOpen={addDataOpen}
-                  setAddDataOpen={setAddDataOpen}
                   filterStatus={dashFilters.status}
                   setFilterStatus={dashFilters.setStatus}
                   filterInstrument={dashFilters.instrument}

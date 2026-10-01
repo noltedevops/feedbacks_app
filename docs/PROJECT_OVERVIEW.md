@@ -71,8 +71,7 @@ to the office database for analytics.
   lint, type-check and build, and a check that the committed `static/` is that build.
   The ETL pipeline is also tested by `dbt test` on every run and by the acceptance suite
   (`etl/tests/acceptance.py`) against a copy of the database. Not covered: the browser
-  UI (five frontend files are still excluded from lint for older errors), and the ETL
-  runner end to end.
+  UI beyond lint and type-checking, and the ETL runner end to end.
 - **Adding a project by configuration** — done for Giessen Oberhof (`11_24_2704`) on
   2026-09-29: a new project schema, its `projects.yml` entry, `setup-sql` re-applied
   for the grants, a first run inserting its 316 targets, and feedback since received
