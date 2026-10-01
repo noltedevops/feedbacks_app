@@ -365,6 +365,33 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     });
   }, [excavatedPoints]);
 
+  const volumeKpis = useMemo(() => {
+    let totalVolume = 0;
+    let volumeCount = 0;
+    let findingWithVolumeCount = 0;
+
+    excavatedPoints.forEach(p => {
+      const vol = p.feedback?.m_cube;
+      if (vol != null && vol > 0) {
+        totalVolume += vol;
+        volumeCount++;
+        if (p.feedback?.fundstueck && p.feedback.fundstueck !== 'ohne Fund') {
+          findingWithVolumeCount++;
+        }
+      }
+    });
+
+    const meanPitVolume = volumeCount > 0 ? (totalVolume / volumeCount).toFixed(2) : '0.00';
+    const totalVolumeFormatted = totalVolume.toFixed(1);
+    const yieldRatio = totalVolume > 0 ? (findingWithVolumeCount / totalVolume).toFixed(2) : '0.00';
+
+    return {
+      totalVolume: `${totalVolumeFormatted} m³`,
+      meanPitVolume: `${meanPitVolume} m³`,
+      yieldRatio: `${yieldRatio} / m³`
+    };
+  }, [excavatedPoints]);
+
   // ---- Chart colours --------------------------------------------------------
   // Recharts writes series colours into SVG attributes, legends and tooltips, none of
   // which can read var(), so the tokens are resolved here - per theme, from the one
@@ -605,7 +632,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     if (!hasExcavationData) return <ExcavationOnly note={excavationOnlyNote} />;
     if (id === 'findings') return <FindingsChart data={findingsDesc} size={size} {...chartCommon} />;
     if (id === 'sohle') return <SohleChart data={sohleDesc} size={size} {...chartCommon} />;
-    return <ProfilingChart data={metricsChartData} size={size} {...chartCommon} />;
+    return <ProfilingChart data={metricsChartData} volumeKpis={volumeKpis} size={size} {...chartCommon} />;
   };
 
   const fundstueckPanel = (
