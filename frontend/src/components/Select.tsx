@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronDown, Search, X } from 'lucide-react';
 import { useIsMobile } from '../useIsMobile';
 
 /**
@@ -9,7 +9,10 @@ import { useIsMobile } from '../useIsMobile';
  * On a desktop or tablet: a menu - a soft raised panel that eases in under the
  * control, options grouped under overline headers, an optional second line under an
  * option (a project's name under its id), a tick on the current value. Keyboard
- * complete: arrows, Home/End, Enter/Space, Escape, Tab, and type-ahead.
+ * complete: arrows, Home/End, Enter/Space, Escape, Tab, and type-ahead / live search.
+ *
+ * When `searchable` is true: offers a pinned search input filter at the top of the
+ * menu with real-time text matching against both option labels and descriptions.
  *
  * On a phone: the native <select>. The OS picker is faster with a thumb, works with
  * gloves, and is what the crew already knows - the one place the platform's own
@@ -38,13 +41,31 @@ interface SelectProps {
   id?: string;
   disabled?: boolean;
   title?: string;
+  /** Enables a search input at the top of the dropdown menu */
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  emptyText?: string;
 }
 
 // How far the panel may run before it flips above the control instead.
 const PANEL_MAX_H = 320;
 const GAP = 4;
 
-export function Select({ value, onChange, options, ariaLabel, className, icon, size = 'md', id, disabled, title }: SelectProps) {
+export function Select({
+  value,
+  onChange,
+  options,
+  ariaLabel,
+  className,
+  icon,
+  size = 'md',
+  id,
+  disabled,
+  title,
+  searchable,
+  searchPlaceholder,
+  emptyText
+}: SelectProps) {
   const isMobile = useIsMobile();
   const selected = options.find(o => o.value === value);
 
@@ -81,6 +102,9 @@ export function Select({ value, onChange, options, ariaLabel, className, icon, s
       disabled={disabled}
       title={title}
       selected={selected}
+      searchable={searchable}
+      searchPlaceholder={searchPlaceholder}
+      emptyText={emptyText}
     />
   );
 }
@@ -96,22 +120,50 @@ function groupOptions(options: SelectOption[]): [string | undefined, SelectOptio
   return out;
 }
 
-function MenuSelect({ value, onChange, options, ariaLabel, className, icon, size, id, disabled, title, selected }: SelectProps & { selected?: SelectOption }) {
+function MenuSelect({
+  value,
+  onChange,
+  options,
+  ariaLabel,
+  className,
+  icon,
+  size,
+  id,
+  disabled,
+  title,
+  selected,
+  searchable,
+  searchPlaceholder,
+  emptyText
+}: SelectProps & { selected?: SelectOption }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const [active, setActive] = useState(-1);
   const [pos, setPos] = useState<{ top: number; left: number; minWidth: number; maxHeight: number; above: boolean } | null>(null);
+
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const typeahead = useRef({ text: '', at: 0 });
+
   const baseId = useId();
   const listId = `${baseId}-list`;
   const optionId = (i: number) => `${baseId}-opt-${i}`;
-  const groups = useMemo(() => groupOptions(options), [options]);
-  const indexOf = useMemo(() => new Map(options.map((o, i) => [o.value, i])), [options]);
+
+  const filteredOptions = useMemo(() => {
+    if (!searchable || !query.trim()) return options;
+    const q = query.trim().toLowerCase();
+    return options.filter(o =>
+      o.label.toLowerCase().includes(q) ||
+      (o.description && o.description.toLowerCase().includes(q))
+    );
+  }, [options, searchable, query]);
+
+  const groups = useMemo(() => groupOptions(filteredOptions), [filteredOptions]);
+  const indexOf = useMemo(() => new Map(filteredOptions.map((o, i) => [o.value, i])), [filteredOptions]);
 
   // Place the panel under the control - or above it, when there is more room there.
-  // Fixed to the viewport and portalled to the body, so no panel with overflow:hidden
-  // (the dashboard's, the report dialog's) can clip it.
   const place = useCallback(() => {
     const t = triggerRef.current;
     if (!t) return;
@@ -122,19 +174,18 @@ function MenuSelect({ value, onChange, options, ariaLabel, className, icon, size
     const maxHeight = Math.min(PANEL_MAX_H, above ? aboveRoom : below);
     setPos({
       top: above ? r.top - GAP : r.bottom + GAP,
-      left: Math.min(r.left, window.innerWidth - Math.max(r.width, 200) - 8),
-      minWidth: r.width,
+      left: Math.min(r.left, window.innerWidth - Math.max(r.width, searchable ? 240 : 200) - 8),
+      minWidth: Math.max(r.width, searchable ? 240 : 200),
       maxHeight,
       above
     });
-  }, []);
+  }, [searchable]);
 
   const openMenu = useCallback((startAt?: number) => {
     if (disabled) return;
+    setQuery('');
     const current = options.findIndex(o => o.value === value);
     setActive(startAt ?? (current >= 0 ? current : 0));
-    // A control scrolled half out of its panel (the form scrolls inside the sidebar)
-    // comes fully into view first, so the menu is placed against where it really is.
     triggerRef.current?.scrollIntoView({ block: 'nearest' });
     place();
     setOpen(true);
@@ -146,11 +197,11 @@ function MenuSelect({ value, onChange, options, ariaLabel, className, icon, size
   }, []);
 
   const choose = useCallback((i: number) => {
-    const o = options[i];
+    const o = filteredOptions[i];
     if (!o) return;
     if (o.value !== value) onChange(o.value);
     close();
-  }, [options, value, onChange, close]);
+  }, [filteredOptions, value, onChange, close]);
 
   // While open: follow the control as the page or a panel scrolls, and close on a
   // press anywhere outside the control and the menu.
@@ -158,7 +209,7 @@ function MenuSelect({ value, onChange, options, ariaLabel, className, icon, size
     if (!open) return;
     const onDown = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (triggerRef.current?.contains(target) || listRef.current?.contains(target)) return;
+      if (triggerRef.current?.contains(target) || panelRef.current?.contains(target)) return;
       close(false);
     };
     const onMove = () => place();
@@ -172,11 +223,15 @@ function MenuSelect({ value, onChange, options, ariaLabel, className, icon, size
     };
   }, [open, close, place]);
 
-  // Focus moves into the list when it opens, and the active option stays in view.
+  // Focus moves into the search input if searchable, or the list if not.
   useLayoutEffect(() => {
     if (!open) return;
-    listRef.current?.focus({ preventScroll: true });
-  }, [open]);
+    if (searchable) {
+      searchInputRef.current?.focus({ preventScroll: true });
+    } else {
+      listRef.current?.focus({ preventScroll: true });
+    }
+  }, [open, searchable]);
 
   useLayoutEffect(() => {
     if (!open || active < 0) return;
@@ -185,7 +240,7 @@ function MenuSelect({ value, onChange, options, ariaLabel, className, icon, size
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, active]);
 
-  // Type-ahead: letters typed within half a second build one prefix.
+  // Type-ahead: letters typed within half a second build one prefix (used when not searchable).
   const jumpTo = (key: string) => {
     const now = Date.now();
     const t = typeahead.current;
@@ -193,8 +248,8 @@ function MenuSelect({ value, onChange, options, ariaLabel, className, icon, size
     t.at = now;
     const needle = t.text.toLowerCase();
     const from = t.text.length === 1 ? active + 1 : active;
-    const order = [...options.keys()].map(k => (k + Math.max(0, from)) % options.length);
-    const hit = order.find(k => options[k].label.toLowerCase().startsWith(needle));
+    const order = [...filteredOptions.keys()].map(k => (k + Math.max(0, from)) % filteredOptions.length);
+    const hit = order.find(k => filteredOptions[k].label.toLowerCase().startsWith(needle));
     if (hit !== undefined) setActive(hit);
   };
 
@@ -206,18 +261,47 @@ function MenuSelect({ value, onChange, options, ariaLabel, className, icon, size
     }
   };
 
+  const onInputKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setActive(i => Math.min(filteredOptions.length - 1, i + 1));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setActive(i => Math.max(0, i - 1));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (active >= 0 && active < filteredOptions.length) {
+          choose(active);
+        } else if (filteredOptions.length > 0) {
+          choose(0);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        e.stopPropagation();
+        close();
+        break;
+      case 'Tab':
+        close(false);
+        break;
+    }
+  };
+
   const onListKey = (e: React.KeyboardEvent) => {
     switch (e.key) {
-      case 'ArrowDown': e.preventDefault(); setActive(i => Math.min(options.length - 1, i + 1)); break;
+      case 'ArrowDown': e.preventDefault(); setActive(i => Math.min(filteredOptions.length - 1, i + 1)); break;
       case 'ArrowUp': e.preventDefault(); setActive(i => Math.max(0, i - 1)); break;
       case 'Home': e.preventDefault(); setActive(0); break;
-      case 'End': e.preventDefault(); setActive(options.length - 1); break;
+      case 'End': e.preventDefault(); setActive(filteredOptions.length - 1); break;
       case 'Enter':
       case ' ': e.preventDefault(); choose(active); break;
       case 'Escape': e.preventDefault(); e.stopPropagation(); close(); break;
       case 'Tab': close(false); break;
       default:
-        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) jumpTo(e.key);
+        if (!searchable && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) jumpTo(e.key);
     }
   };
 
@@ -243,14 +327,9 @@ function MenuSelect({ value, onChange, options, ariaLabel, className, icon, size
       </button>
 
       {open && pos && createPortal(
-        <ul
-          ref={listRef}
-          id={listId}
-          role="listbox"
-          aria-label={ariaLabel}
-          aria-activedescendant={active >= 0 ? optionId(active) : undefined}
-          tabIndex={-1}
-          className={`sel-panel${pos.above ? ' sel-panel--above' : ''}`}
+        <div
+          ref={panelRef}
+          className={`sel-panel${pos.above ? ' sel-panel--above' : ''}${searchable ? ' sel-panel--searchable' : ''}`}
           // Computed placement - the one thing a stylesheet cannot know.
           style={{
             top: pos.above ? undefined : pos.top,
@@ -259,37 +338,88 @@ function MenuSelect({ value, onChange, options, ariaLabel, className, icon, size
             minWidth: pos.minWidth,
             maxHeight: pos.maxHeight
           }}
-          onKeyDown={onListKey}
         >
-          {groups.map(([group, opts], gi) => (
-            <React.Fragment key={group ?? `g${gi}`}>
-              {group && <li role="presentation" className="sel-group">{group}</li>}
-              {opts.map((o) => {
-                const i = indexOf.get(o.value) ?? 0;
-                const isSelected = o.value === value;
-                return (
-                  <li
-                    key={o.value}
-                    id={optionId(i)}
-                    role="option"
-                    aria-selected={isSelected}
-                    data-active={i === active ? '' : undefined}
-                    className="sel-option"
-                    onMouseEnter={() => setActive(i)}
-                    // mousedown, not click: keep focus in the list until the choice lands.
-                    onMouseDown={(e) => { e.preventDefault(); choose(i); }}
-                  >
-                    <span className="sel-option-text">
-                      <span className="sel-option-label">{o.label}</span>
-                      {o.description && <span className="sel-option-desc">{o.description}</span>}
-                    </span>
-                    {isSelected && <Check size={16} className="sel-option-check" aria-hidden="true" />}
-                  </li>
-                );
-              })}
-            </React.Fragment>
-          ))}
-        </ul>,
+          {searchable && (
+            <div className="sel-search-bar">
+              <Search size={14} className="sel-search-icon" aria-hidden="true" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                className="sel-search-input"
+                placeholder={searchPlaceholder ?? 'Search...'}
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setActive(0);
+                }}
+                onKeyDown={onInputKey}
+                aria-label={searchPlaceholder ?? 'Search'}
+                autoComplete="off"
+                spellCheck="false"
+              />
+              {query && (
+                <button
+                  type="button"
+                  className="sel-search-clear"
+                  onClick={() => {
+                    setQuery('');
+                    setActive(0);
+                    searchInputRef.current?.focus();
+                  }}
+                  aria-label="Clear search"
+                >
+                  <X size={12} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+          )}
+
+          <ul
+            ref={listRef}
+            id={listId}
+            role="listbox"
+            aria-label={ariaLabel}
+            aria-activedescendant={active >= 0 ? optionId(active) : undefined}
+            tabIndex={-1}
+            className="sel-list"
+            onKeyDown={onListKey}
+          >
+            {filteredOptions.length === 0 ? (
+              <li className="sel-empty" role="presentation">
+                {emptyText ?? 'No matching results'}
+              </li>
+            ) : (
+              groups.map(([group, opts], gi) => (
+                <React.Fragment key={group ?? `g${gi}`}>
+                  {group && <li role="presentation" className="sel-group">{group}</li>}
+                  {opts.map((o) => {
+                    const i = indexOf.get(o.value) ?? 0;
+                    const isSelected = o.value === value;
+                    return (
+                      <li
+                        key={o.value}
+                        id={optionId(i)}
+                        role="option"
+                        aria-selected={isSelected}
+                        data-active={i === active ? '' : undefined}
+                        className="sel-option"
+                        onMouseEnter={() => setActive(i)}
+                        // mousedown, not click: keep focus in the list until the choice lands.
+                        onMouseDown={(e) => { e.preventDefault(); choose(i); }}
+                      >
+                        <span className="sel-option-text">
+                          <span className="sel-option-label">{o.label}</span>
+                          {o.description && <span className="sel-option-desc">{o.description}</span>}
+                        </span>
+                        {isSelected && <Check size={16} className="sel-option-check" aria-hidden="true" />}
+                      </li>
+                    );
+                  })}
+                </React.Fragment>
+              ))
+            )}
+          </ul>
+        </div>,
         document.body
       )}
     </>

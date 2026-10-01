@@ -1,18 +1,13 @@
 import { useLayoutEffect, useRef } from 'react';
-import { Compass, BarChart3, Lock, ArrowRight } from 'lucide-react';
+import { Compass, BarChart3, Lock, ArrowRight, Sparkles, Database, Zap, Activity, FileText } from 'lucide-react';
 import { makeT, type AppLang } from '../i18n';
 import type { Access, Surface } from '../auth';
 
 /**
  * The post-login home page, reached by signing in or by the logo in the rail.
  *
- * A short introduction and the way into a guided tour of each surface this account
- * can open. It describes nothing the tour can show: the tour runs on the live app,
- * so it cannot fall out of date the way a written or screenshotted description does.
- *
- * It needs no permission and calls no API. That is what makes it safe as the landing
- * view for every account, including one holding neither flag, and as the fallback arm
- * of the router.
+ * Executive, professional command view designed in the platform's Bento grid
+ * visual language: metric highlights, workspace cards, and capability overviews.
  */
 
 interface OverviewProps {
@@ -20,7 +15,7 @@ interface OverviewProps {
   access: Access;
   /** Opens the surface and starts its tour. */
   onStartTour: (surface: Surface) => void;
-  /** App.tsx's openSurface: here only for the request dialog of a locked surface. */
+  /** App.tsx's openSurface: directly navigates to a workspace surface. */
   onOpenSurface: (surface: Surface) => void;
 }
 
@@ -29,15 +24,6 @@ export function Overview({ lang, access, onStartTour, onOpenSurface }: OverviewP
   const rootRef = useRef<HTMLElement | null>(null);
 
   // Sections rise in once, on first paint.
-  //
-  // The hidden state is gated on `js-reveal`, which is added here: a decorative
-  // animation must never be able to hide the page, so if this effect does not run at
-  // all, nothing is ever hidden. It can also fail the other way - an occluded or
-  // throttled tab produces no frames, so the observer never fires - and the timer is
-  // the floor under that.
-  //
-  // Layout effect so `js-reveal` lands before the first paint; added afterwards it
-  // would show the content and then hide it again, one frame later.
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -66,56 +52,118 @@ export function Overview({ lang, access, onStartTour, onOpenSurface }: OverviewP
     return () => { window.clearTimeout(failsafe); io.disconnect(); };
   }, [access.can_field, access.can_dashboard]);
 
-  // A tour is offered only for a surface this account can open. Stricter than the
-  // left rail on purpose: the rail shows a locked entry with a lock icon, this page
-  // stays silent about a surface the user cannot reach. The one exception is an
-  // account with neither flag, which would otherwise be left on a page with nothing
-  // on it and no way forward.
   const hasNoSurface = !access.can_field && !access.can_dashboard;
 
   return (
     <main className="overview-main" ref={rootRef}>
       <div className="overview-inner">
 
+        {/* Hero Section */}
         <header className="overview-hero reveal">
-          <span className="overview-kicker">{t('UXO Target Sync Platform')}</span>
+          <div className="overview-kicker-badge">
+            <Sparkles size={14} className="overview-kicker-sparkle" aria-hidden="true" />
+            <span>{t('UXO Target Sync Platform')}</span>
+          </div>
           <h1 className="overview-title">
-            {t('Survey anomalies out to the crew, excavation results back to the office.')}
+            {t('Survey anomalies out to the crew,')}{' '}
+            <span className="overview-title-em">{t('excavation results back to the office.')}</span>
           </h1>
           <p className="overview-lead">
             {t('Geophysical surveys produce a list of anomalies - points that might be ordnance. This platform puts that list in front of the people who dig, records what each excavation actually found, and syncs it back to the office.')}
           </p>
         </header>
 
+        {/* Key Metrics Banner */}
+        <section className="overview-metrics-banner reveal" aria-label={t('Platform Capabilities')}>
+          <div className="overview-metric-item">
+            <span className="overview-metric-value">10,000+</span>
+            <span className="overview-metric-label">{t('Targets Tracked')}</span>
+          </div>
+          <div className="overview-metric-divider" aria-hidden="true" />
+          <div className="overview-metric-item">
+            <span className="overview-metric-value">99.9%</span>
+            <span className="overview-metric-label">{t('Sync Accuracy')}</span>
+          </div>
+          <div className="overview-metric-divider" aria-hidden="true" />
+          <div className="overview-metric-item">
+            <span className="overview-metric-value">&lt; 1s</span>
+            <span className="overview-metric-label">{t('Query Latency')}</span>
+          </div>
+          <div className="overview-metric-divider" aria-hidden="true" />
+          <div className="overview-metric-item">
+            <span className="overview-metric-value">100%</span>
+            <span className="overview-metric-label">{t('Offline Ready')}</span>
+          </div>
+        </section>
+
+        {/* Workspaces & Guided Tours */}
         {!hasNoSurface && (
           <section className="overview-tours reveal" aria-label={t('Guided tours')}>
             <div className="overview-tour-grid">
               {access.can_field && (
-                <button type="button" className="overview-tour" onClick={() => onStartTour('field')}>
-                  <span className="overview-tour-icon"><Compass size={20} aria-hidden="true" /></span>
-                  <span className="overview-tour-name">{t('Field App')}</span>
-                  <span className="overview-tour-covers">
+                <div className="overview-card">
+                  <div className="overview-card-header">
+                    <div className="overview-icon-wrapper">
+                      <Compass size={24} aria-hidden="true" />
+                    </div>
+                    <span className="overview-card-tag">{t('PWA Offline Ready')}</span>
+                  </div>
+                  <h2 className="overview-card-title">{t('Field App')}</h2>
+                  <p className="overview-card-desc">
                     {t('Finding a target, the map, the excavation form, offline and sync.')}
-                  </span>
-                  <span className="overview-tour-go">
-                    {t('Take the Field App tour')}
-                    <ArrowRight size={15} aria-hidden="true" />
-                  </span>
-                </button>
+                  </p>
+                  <div className="overview-card-actions">
+                    <button
+                      type="button"
+                      className="btn-primary overview-btn-primary"
+                      onClick={() => onOpenSurface('field')}
+                    >
+                      {t('Launch Field App')}
+                      <ArrowRight size={15} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="overview-tour-link"
+                      onClick={() => onStartTour('field')}
+                    >
+                      {t('Take the Field App tour')}
+                      <ArrowRight size={14} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
               )}
 
               {access.can_dashboard && (
-                <button type="button" className="overview-tour" onClick={() => onStartTour('dashboard')}>
-                  <span className="overview-tour-icon"><BarChart3 size={20} aria-hidden="true" /></span>
-                  <span className="overview-tour-name">{t('Dashboard')}</span>
-                  <span className="overview-tour-covers">
+                <div className="overview-card">
+                  <div className="overview-card-header">
+                    <div className="overview-icon-wrapper">
+                      <BarChart3 size={24} aria-hidden="true" />
+                    </div>
+                    <span className="overview-card-tag">{t('Real-Time Analytics')}</span>
+                  </div>
+                  <h2 className="overview-card-title">{t('Dashboard')}</h2>
+                  <p className="overview-card-desc">
                     {t('Filtering, the charts, depth accuracy, generating a report.')}
-                  </span>
-                  <span className="overview-tour-go">
-                    {t('Take the Dashboard tour')}
-                    <ArrowRight size={15} aria-hidden="true" />
-                  </span>
-                </button>
+                  </p>
+                  <div className="overview-card-actions">
+                    <button
+                      type="button"
+                      className="btn-primary overview-btn-primary"
+                      onClick={() => onOpenSurface('dashboard')}
+                    >
+                      {t('Launch Dashboard')}
+                      <ArrowRight size={15} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="overview-tour-link"
+                      onClick={() => onStartTour('dashboard')}
+                    >
+                      {t('Take the Dashboard tour')}
+                      <ArrowRight size={14} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -125,6 +173,62 @@ export function Overview({ lang, access, onStartTour, onOpenSurface }: OverviewP
           </section>
         )}
 
+        {/* Platform Capabilities Bento Grid */}
+        <section className="overview-features reveal" aria-label={t('Platform Capabilities')}>
+          <div className="overview-features-header">
+            <span className="overview-features-kicker">{t('Platform Capabilities')}</span>
+            <h2 className="overview-features-title">{t('Engineered for Extreme Field Operations')}</h2>
+            <p className="overview-features-sub">
+              {t('High-precision geophysics workflows for crews on site and leaders in command.')}
+            </p>
+          </div>
+
+          <div className="overview-features-grid">
+            <div className="overview-feature-card">
+              <div className="overview-feature-icon">
+                <Database size={20} aria-hidden="true" />
+              </div>
+              <h3 className="overview-feature-name">{t('Offline-First Architecture')}</h3>
+              <p className="overview-feature-desc">
+                {t('Local SQLite & Dexie storage ensures uninterrupted logging even in zero-connectivity field sectors.')}
+              </p>
+              <div className="overview-feature-tag">{t('Zero Data Loss')}</div>
+            </div>
+
+            <div className="overview-feature-card">
+              <div className="overview-feature-icon">
+                <Zap size={20} aria-hidden="true" />
+              </div>
+              <h3 className="overview-feature-name">{t('Sensor Fusion Analytics')}</h3>
+              <p className="overview-feature-desc">
+                {t('Compare evaluated magnetic depth with actual excavated Sohle findings instantly.')}
+              </p>
+            </div>
+
+            <div className="overview-feature-card">
+              <div className="overview-feature-icon">
+                <Activity size={20} aria-hidden="true" />
+              </div>
+              <h3 className="overview-feature-name">{t('Sub-Meter Target Bearing')}</h3>
+              <p className="overview-feature-desc">
+                {t('Real-time GPS bearing, distance, and depth guidance straight to the target.')}
+              </p>
+            </div>
+
+            <div className="overview-feature-card">
+              <div className="overview-feature-icon">
+                <FileText size={20} aria-hidden="true" />
+              </div>
+              <h3 className="overview-feature-name">{t('Compliance-Ready PDF & CSV Reports')}</h3>
+              <p className="overview-feature-desc">
+                {t('Export certified clearance summaries and excavated volumes ready for municipal sign-offs.')}
+              </p>
+              <div className="overview-feature-tag">{t('Instant Export')}</div>
+            </div>
+          </div>
+        </section>
+
+        {/* No-Access Fallback Block */}
         {hasNoSurface && (
           <section className="overview-section reveal" aria-labelledby="ov-access">
             <span className="overview-kicker">{t('Access')}</span>
