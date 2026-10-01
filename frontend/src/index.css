@@ -3632,3 +3632,266 @@ select.report-field {
     padding: var(--space-3);
   }
 }
+
+/* --- 3D Target & Excavation Pit View ------------------------------------- */
+
+.target-3d-container {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  border: 1px solid var(--surface-border);
+}
+
+.target-3d-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.target-3d-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  font-weight: var(--weight-semibold);
+  color: var(--surface-text-strong);
+}
+
+.target-3d-icon {
+  color: var(--accent-ink);
+}
+
+.target-3d-vol {
+  font-size: var(--text-caption);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  color: var(--surface-text-muted);
+}
+
+.target-3d-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-control);
+  border: none;
+  background: transparent;
+  color: var(--surface-text-muted);
+  font-size: var(--text-caption);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.target-3d-reset:hover {
+  background: var(--surface);
+  color: var(--surface-text-strong);
+}
+
+.target-3d-viewport {
+  position: relative;
+  width: 100%;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  background: radial-gradient(circle at 50% 50%, var(--surface-sunken) 0%, var(--surface) 100%);
+}
+
+.target-3d-viewport:active {
+  cursor: grabbing;
+}
+
+.target-3d-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.target-3d-hint {
+  position: absolute;
+  bottom: var(--space-2);
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 10px;
+  line-height: 12px;
+  opacity: 0.75;
+}
+
+.target-3d-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--surface-border);
+  font-size: var(--text-caption);
+}
+
+.target-3d-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: var(--weight-bold);
+}
+
+.target-3d-badge[data-clear='true'] {
+  color: rgb(var(--status-found-rgb));
+}
+
+.target-3d-badge[data-clear='false'] {
+  color: var(--danger-ink);
+}
+
+.target-3d-finding {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--surface-text-strong);
+}
+
+.target-3d-finding-label {
+  color: var(--surface-text-muted);
+}
+
+/* Media tabs in TargetPopup */
+.tp-media-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--surface-border);
+}
+
+.tp-media-tabs {
+  display: flex;
+  gap: var(--space-1);
+  background: var(--surface-sunken);
+  padding: 2px;
+  border-radius: var(--radius-control);
+}
+
+.tp-media-tab {
+  flex: 1;
+  padding: var(--space-1) var(--space-2);
+  border: none;
+  background: transparent;
+  color: var(--surface-text-muted);
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.tp-media-tab:hover {
+  color: var(--surface-text-strong);
+}
+
+.tp-media-tab.active {
+  background: var(--surface);
+  color: var(--surface-text-strong);
+  font-weight: var(--weight-semibold);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* 3D button on Target Card */
+.target-card-3d-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+  color: var(--surface-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.target-card-3d-btn:hover {
+  background: var(--surface-sunken);
+  color: var(--surface-text-strong);
+  border-color: var(--surface-border-strong);
+}
+
+/* 3D Inspection Modal */
+.target-3d-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: field-fade 0.2s ease-out;
+}
+
+.target-3d-modal {
+  width: 100%;
+  max-width: 580px;
+  background: var(--surface);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.target-3d-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--surface-border);
+  background: var(--surface-sunken);
+}
+
+.target-3d-modal-head h3 {
+  margin: 0;
+  font-size: var(--text-heading);
+  line-height: var(--lh-heading);
+  color: var(--surface-text-strong);
+}
+
+.target-3d-modal-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--surface-text-muted);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.target-3d-modal-close:hover {
+  background: var(--surface-border);
+  color: var(--surface-text-strong);
+}
+
+.target-3d-modal-body {
+  padding: var(--space-3);
+}
