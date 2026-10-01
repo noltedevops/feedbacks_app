@@ -150,7 +150,8 @@ CI runs all of this on every push and pull request to `main`
 ```powershell
 pip install -r requirements.txt -r requirements-dev.txt
 python -m unittest etl/tests/test_validation_and_alerts.py etl/tests/test_runner_robustness.py `
-    etl/tests/test_health_and_logging.py tests/test_server_startup.py tests/test_etl_run_endpoint.py
+    etl/tests/test_health_and_logging.py tests/test_server_startup.py tests/test_etl_run_endpoint.py `
+    tests/test_etl_read_endpoints.py
 ```
 
 The database tests (`tests/test_api.py`, `etl/tests/test_scd_audit.py`) need a PostGIS
