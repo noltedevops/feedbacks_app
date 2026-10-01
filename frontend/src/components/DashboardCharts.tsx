@@ -257,7 +257,16 @@ export function AccuracyBody({ data, hasExcavationData, kpis, emptyNote, instrum
  * Mean length, width and depth per finding, grouped; the volume rides in the tooltip.
  * A mean with no measurement behind it is null, not 0, and shows as N/A.
  */
-export function ProfilingChart({ data, t, c, size, animate }: ChartProps & { data: ProfilingRow[] }) {
+export interface VolumeKpis {
+  totalVolume: string;
+  meanPitVolume: string;
+  yieldRatio: string;
+}
+
+export function ProfilingChart({ data, volumeKpis, t, c, size, animate }: ChartProps & {
+  data: ProfilingRow[];
+  volumeKpis?: VolumeKpis;
+}) {
   const names = useMemo(() => data.map(d => d.name), [data]);
   const [ref, axis] = useCategoryAxis(names, tickPx(size));
   const bar = size === 'expanded' ? 16 : 10;
@@ -292,6 +301,22 @@ export function ProfilingChart({ data, t, c, size, animate }: ChartProps & { dat
           </BarChart>
         </ResponsiveContainer>
       </div>
+      {volumeKpis && (
+        <dl className="dash-kpis">
+          <div>
+            <dt>{t('TOTAL SPOIL VOLUME')}</dt>
+            <dd className="num">{volumeKpis.totalVolume}</dd>
+          </div>
+          <div>
+            <dt>{t('MEAN PIT VOLUME')}</dt>
+            <dd className="num">{volumeKpis.meanPitVolume}</dd>
+          </div>
+          <div>
+            <dt>{t('EXCAVATION YIELD')}</dt>
+            <dd className="num">{volumeKpis.yieldRatio}</dd>
+          </div>
+        </dl>
+      )}
     </>
   );
 }
