@@ -146,6 +146,7 @@
   --status-empty-rgb: 90 90 90;
   --status-scrap-rgb: 143 84 16;
   --status-alarm-rgb: 106 69 176;
+  --status-hazard-rgb: 217 119 6;
 
   --overlay: rgba(255, 255, 255, 0.96);
   --overlay-border: rgba(0, 30, 43, 0.12);
@@ -208,6 +209,7 @@ body.dark-theme {
   --status-empty-rgb: 163 163 163;
   --status-scrap-rgb: 240 169 79;
   --status-alarm-rgb: 182 156 246;
+  --status-hazard-rgb: 245 158 11;
 
   --overlay: rgba(6, 29, 39, 0.95);
   --overlay-border: rgba(0, 237, 100, 0.2);

@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Popup, useMap, CircleMarker } from 'react-leaf
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { type LocalPoint, getResolvedStatus } from '../db/indexedDb';
-import { Layers, FolderPlus, Home, ChevronLeft, ChevronRight, Download, X, Check, Plus, Minus, Navigation } from 'lucide-react';
+import { Layers, FolderPlus, Home, ChevronLeft, ChevronRight, Download, X, Check, Plus, Minus, Navigation, AlertTriangle } from 'lucide-react';
 import { makeT, type AppLang, type Translator } from '../i18n';
 import { useTheme } from '../useTheme';
 import { useTokenColors } from '../useTokenColors';
@@ -134,6 +134,13 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator; directions: bool
           {t(status === 'unvisited' ? 'Pending' : status).toUpperCase()}
         </span>
       </header>
+
+      {point.evaluated_depth != null && point.evaluated_depth > 0 && point.evaluated_depth < 0.40 && (
+        <div className="tp-hazard-banner">
+          <AlertTriangle size={14} aria-hidden="true" />
+          <span>{t('Shallow Hazard (<0.4m)')}: {point.evaluated_depth} m</span>
+        </div>
+      )}
 
       {directions && <TargetDirections point={point} t={t} />}
 

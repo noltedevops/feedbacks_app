@@ -322,6 +322,9 @@ export function TargetLogList({ points, selectedId, onSelect, t, className }: {
           >
             <span className="target-card-head">
               <span className="target-card-vm num">VM {point.vm_nr}</span>
+              {point.evaluated_depth != null && point.evaluated_depth > 0 && point.evaluated_depth < 0.40 && (
+                <span className="hazard-chip" title={t('Shallow Hazard (<0.4m)')}>⚠️ &lt;0.4m</span>
+              )}
               <span className="status-chip" data-status={status} title={statusText}>{statusText}</span>
             </span>
             <span className="target-card-meta">
