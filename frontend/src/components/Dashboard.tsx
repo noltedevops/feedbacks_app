@@ -348,6 +348,9 @@ const DashboardImpl: React.FC<DashboardProps> = ({
       value={filterProjectId}
       onChange={setFilterProjectId}
       ariaLabel={t('Project ID')}
+      searchable
+      searchPlaceholder={t('Search projects...')}
+      emptyText={t('No matching projects found')}
       options={[
         { value: 'all', label: t('All Projects') },
         ...projectOptions.map(p => ({ value: p.project_id, label: p.project_id, description: p.project_name || undefined, group: t('Projects') }))

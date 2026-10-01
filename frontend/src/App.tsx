@@ -1380,6 +1380,9 @@ export default function App() {
       value={fieldFilters.projectId}
       onChange={fieldFilters.setProjectId}
       ariaLabel={t('Project ID')}
+      searchable
+      searchPlaceholder={t('Search projects...')}
+      emptyText={t('No matching projects found')}
       options={[
         { value: 'all', label: t('All Projects') },
         ...uniqueProjectIds.map(id => ({ value: id, label: id, description: projectName(id), group: t('Projects') }))

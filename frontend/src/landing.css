@@ -1623,10 +1623,18 @@ body.dark-theme .mdb-metrics-banner {
   margin-top: var(--space-8);
   padding: var(--space-8) var(--space-6);
   border-radius: 24px;
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-raised) 100%);
+  border: 1px solid var(--surface-border-strong);
+  box-shadow: 0 16px 40px -12px rgba(0, 30, 43, 0.08);
+  text-align: center;
+  color: var(--surface-text);
+  transition: background var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+body.dark-theme .mdb-cta-banner {
   background: linear-gradient(135deg, #001e2b 0%, #003846 100%);
   border: 1px solid rgba(254, 206, 7, 0.3);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  text-align: center;
   color: #ffffff;
 }
 
@@ -1635,6 +1643,10 @@ body.dark-theme .mdb-metrics-banner {
   font-size: 2.25rem;
   line-height: 2.75rem;
   font-weight: var(--weight-bold);
+  color: var(--surface-text-strong);
+}
+
+body.dark-theme .mdb-cta-content h2 {
   color: #ffffff;
 }
 
@@ -1643,6 +1655,10 @@ body.dark-theme .mdb-metrics-banner {
   margin: 0 auto var(--space-6);
   font-size: var(--text-body-lg);
   line-height: var(--lh-body-lg);
+  color: var(--surface-text-muted);
+}
+
+body.dark-theme .mdb-cta-content p {
   color: #9fb1bc;
 }
 
@@ -1651,6 +1667,18 @@ body.dark-theme .mdb-metrics-banner {
   justify-content: center;
   gap: var(--space-4);
   flex-wrap: wrap;
+}
+
+body.dark-theme .mdb-cta-banner .mdb-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-theme .mdb-cta-banner .mdb-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: #fece07;
+  color: #ffffff;
 }
 
 /* --- Responsive Adaptations for MongoDB Components ----------------------- */

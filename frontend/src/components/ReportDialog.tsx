@@ -126,6 +126,9 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
             value={projectId}
             onChange={setChosenProjectId}
             ariaLabel={t('Project ID')}
+            searchable
+            searchPlaceholder={t('Search projects...')}
+            emptyText={t('No matching projects found')}
             title={selectedLabel ? `${projectId} — ${selectedLabel}` : projectId || t('All Projects')}
             options={[
               { value: '', label: t('All Projects') },
