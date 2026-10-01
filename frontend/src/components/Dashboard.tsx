@@ -10,7 +10,9 @@ import {
   Database,
   Clock,
   Briefcase,
-  FileText
+  FileText,
+  AlertTriangle,
+  ShieldCheck
 } from 'lucide-react';
 import {
   AccuracyBody,
@@ -138,18 +140,33 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   const excavationOnlyNote = t('Investigated targets only');
 
   // Calculate statistics
-  const { total, investigated, pending, projectsCount } = useMemo(() => {
+  const { total, investigated, pending, projectsCount, sohleComplianceRate, shallowHazardCount } = useMemo(() => {
     const totalCount = dashboardPoints.length;
     const investigatedCount = dashboardPoints.filter(p => !!p.local_status && p.local_status !== 'unvisited').length;
     // Unique Project IDs Count
     const projectIds = new Set(dashboardPoints.map(p => p.project_id || '11-24-2736'));
+
+    const sohleClearCount = excavatedPoints.filter(p => {
+      const s = (p.feedback?.sohle_status || '').toLowerCase().trim();
+      return s === 'frei' || s === 'clear';
+    }).length;
+    const sohleCompliance = excavatedPoints.length > 0
+      ? Math.round((sohleClearCount / excavatedPoints.length) * 100)
+      : null;
+
+    const shallowCount = dashboardPoints.filter(
+      p => p.evaluated_depth != null && p.evaluated_depth > 0 && p.evaluated_depth < 0.40
+    ).length;
+
     return {
       total: totalCount,
       investigated: investigatedCount,
       pending: totalCount - investigatedCount,
-      projectsCount: projectIds.size
+      projectsCount: projectIds.size,
+      sohleComplianceRate: sohleCompliance,
+      shallowHazardCount: shallowCount
     };
-  }, [dashboardPoints]);
+  }, [dashboardPoints, excavatedPoints]);
 
   // 1. Fundstück Status Chart (sorted low-to-high frequency of finding)
   const fundstueckChartData = useMemo(() => {
@@ -461,7 +478,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   // ---- Stat tiles ------------------------------------------------------------
   // Label, value, and an icon for recognition. The value is ink, not a status colour:
   // text wears text tokens, and the icon beside it carries the identity.
-  const statCard = (label: string, value: React.ReactNode, icon: React.ReactNode, tone?: 'found' | 'pending') => (
+  const statCard = (label: string, value: React.ReactNode, icon: React.ReactNode, tone?: 'found' | 'pending' | 'hazard' | 'clear') => (
     <div className="dash-stat" data-tone={tone}>
       <span className="dash-stat-icon" aria-hidden="true">{icon}</span>
       <span className="dash-stat-text">
@@ -477,6 +494,18 @@ const DashboardImpl: React.FC<DashboardProps> = ({
       {statCard(t('INVESTIGATED'), investigated, <CheckCircle2 size={16} />, 'found')}
       {statCard(t('PENDING'), pending, <Clock size={16} />, 'pending')}
       {statCard(t('SURVEY PROJECTS'), projectsCount, <Briefcase size={16} />)}
+      {statCard(
+        t('SOHLE COMPLIANCE'),
+        sohleComplianceRate !== null ? `${sohleComplianceRate}%` : t('N/A'),
+        <ShieldCheck size={16} />,
+        sohleComplianceRate !== null && sohleComplianceRate >= 80 ? 'clear' : undefined
+      )}
+      {statCard(
+        t('SHALLOW HAZARDS'),
+        shallowHazardCount,
+        <AlertTriangle size={16} />,
+        shallowHazardCount > 0 ? 'hazard' : undefined
+      )}
     </div>
   );
 

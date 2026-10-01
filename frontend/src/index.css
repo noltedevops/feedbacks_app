@@ -2549,6 +2549,21 @@ select.report-field {
   max-width: 55%;
 }
 
+.tp-hazard-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-control);
+  background: rgb(var(--status-hazard-rgb) / 0.12);
+  border: 1px solid rgb(var(--status-hazard-rgb) / 0.35);
+  color: rgb(var(--status-hazard-rgb));
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-semibold);
+}
+
 
 
 

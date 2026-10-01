@@ -295,6 +295,16 @@
   background: rgb(var(--status-pending-rgb) / 0.1);
 }
 
+.dash-stat[data-tone='hazard'] .dash-stat-icon {
+  color: rgb(var(--status-hazard-rgb));
+  background: rgb(var(--status-hazard-rgb) / 0.12);
+}
+
+.dash-stat[data-tone='clear'] .dash-stat-icon {
+  color: rgb(var(--status-found-rgb));
+  background: rgb(var(--status-found-rgb) / 0.12);
+}
+
 .dash-stat-text {
   display: flex;
   flex-direction: column;
@@ -523,6 +533,21 @@
 /* Two figures on a log row: evaluated and, once dug, excavated. */
 .dash-log-scroll .target-card-depth-label .target-card-depth-value {
   margin-left: var(--space-1);
+}
+
+.hazard-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-bold);
+  background: rgb(var(--status-hazard-rgb) / 0.15);
+  border: 1px solid rgb(var(--status-hazard-rgb) / 0.35);
+  color: rgb(var(--status-hazard-rgb));
+  white-space: nowrap;
 }
 
 /* --- Expand a panel into a large overlay (PanelExpand) -------------------- */
