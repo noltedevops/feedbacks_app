@@ -6,10 +6,10 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import text
+from sqlalchemy import func, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 import models
 from database import get_db
@@ -62,20 +62,33 @@ class SyncPayload(BaseModel):
 
 
 # API Endpoints
+def _latest_feedback_by_anomaly(db: Session) -> dict:
+    """anomaly_id -> its most recent feedback row, in one query.
+
+    The same pick as asking per anomaly for ORDER BY visit_date DESC LIMIT 1 - which this
+    replaced, at one query per target (2,659 for 2,658 targets on 2026-10-01) - including
+    the database's own NULL ordering (PostgreSQL puts NULLs first on DESC). Ties are broken
+    by id so the pick no longer depends on row order.
+    """
+    rank = func.row_number().over(
+        partition_by=models.Feedback.anomaly_id,
+        order_by=(models.Feedback.visit_date.desc(), models.Feedback.id),
+    ).label("rank")
+    ranked = db.query(models.Feedback, rank).subquery()
+    latest = aliased(models.Feedback, ranked)
+    return {fb.anomaly_id: fb for fb in db.query(latest).filter(ranked.c.rank == 1)}
+
+
 @router.get("/api/points")
 def get_points(
     db: Session = Depends(get_db),
     user: models.User = Depends(current_user),   # both surfaces read the points
 ):
     anomalies = db.query(models.Anomaly).all()
+    latest_by_anomaly = _latest_feedback_by_anomaly(db)
     result = []
     for p in anomalies:
-        latest_feedback = (
-            db.query(models.Feedback)
-            .filter(models.Feedback.anomaly_id == p.id)
-            .order_by(models.Feedback.visit_date.desc())
-            .first()
-        )
+        latest_feedback = latest_by_anomaly.get(p.id)
         
         feedback_data = None
         local_status = 'unvisited'

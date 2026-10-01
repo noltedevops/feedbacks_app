@@ -264,6 +264,49 @@ class TestPointsSyncReports(unittest.TestCase):
         self.assertIn("no-store", g.headers["cache-control"])
         self.assertEqual(client.get("/api/reports/bilder/unknown").status_code, 404)
 
+    def test_points_query_count_does_not_grow_with_targets(self):
+        """GET /api/points once asked the database once per target (2,659 queries for
+        2,658 targets). It must stay a fixed handful however many targets there are."""
+        from sqlalchemy import event
+
+        def count_queries():
+            seen = []
+            listener = lambda *a, **k: seen.append(1)  # noqa: E731
+            event.listen(database.engine, "before_cursor_execute", listener)
+            try:
+                self.assertEqual(client.get("/api/points", headers=headers).status_code, 200)
+            finally:
+                event.remove(database.engine, "before_cursor_execute", listener)
+            return len(seen)
+
+        headers = _auth("collector")
+        before = count_queries()
+        extra = [str(uuid.uuid4()) for _ in range(10)]
+        db = database.SessionLocal()
+        try:
+            for i, aid in enumerate(extra):
+                db.add(models.Anomaly(id=aid, project_id=PROJECT, instrument="georadar",
+                                      easting=441000.0 + i, northing=5936000.0, target_id=f"extra-{aid}"))
+            db.commit()
+            self.assertEqual(count_queries(), before)
+            self.assertLessEqual(before, 4)
+        finally:
+            db.query(models.Anomaly).filter(models.Anomaly.id.in_(extra)).delete(synchronize_session=False)
+            db.commit()
+            db.close()
+
+    def test_points_show_the_newest_of_several_feedback_records(self):
+        _, _, a3 = _anomaly_ids()
+        older, newer = str(uuid.uuid4()), str(uuid.uuid4())
+        for fid, when, note in ((newer, "2026-09-20T08:00:00Z", "second visit"),
+                                (older, "2026-09-10T08:00:00Z", "first visit")):  # older arrives last
+            r = client.post("/api/sync", headers=_auth("collector"), json={"feedback": [{
+                "id": fid, "point_id": a3, "visited": True, "status": "clear", "notes": note,
+                "logged_at": when}]})
+            self.assertEqual(r.status_code, 200)
+        point = {p["id"]: p for p in client.get("/api/points", headers=_auth("collector")).json()}[a3]
+        self.assertEqual((point["feedback"]["id"], point["feedback"]["notes"]), (newer, "second visit"))
+
     def test_stats_and_reports(self):
         stats = client.get("/api/stats", headers=_auth("analyst")).json()
         self.assertEqual(set(stats), {"total_points", "visited_points", "unvisited_points",
