@@ -2739,6 +2739,16 @@ select.report-field {
   background: var(--surface-sunken);
 }
 
+/* "Open in Maps": a link styled as the popup's button. Leaflet colours every <a> in a
+ * popup; the button's own text colour wins here, and no underline. Spaced from the
+ * distance/bearing block above it when that is shown. */
+.leaflet-popup-content a.tp-maps,
+.leaflet-popup-content a.tp-maps:hover {
+  color: var(--surface-text-strong);
+  text-decoration: none;
+}
+.tp-here + .tp-maps { margin-top: var(--space-2); }
+
 .tp-lightbox {
   position: fixed;
   inset: 0;
