@@ -360,8 +360,12 @@ is not a write count.
 Re-editing a target reuses the existing feedback id (`App.tsx:721`), which is what makes
 the second submission an update rather than a second row. There is therefore **no
 history**: `feedback` holds one row per anomaly, and a correction overwrites the
-previous values. `GET /api/points` still orders by `visit_date DESC` and takes the first
-(`routers/points.py`, `get_points`), so it would cope if that ever changed.
+previous values. `GET /api/points` still takes the most recent feedback per anomaly
+(`visit_date DESC`, ties by id), so it would cope if that ever changed. It does so in one
+window-function query for all anomalies (`_latest_feedback_by_anomaly`), not one query per
+anomaly as it did until 2026-10-01 - 2,659 queries and ~3.9 s for the live data then, 2
+queries and ~50 ms after. `POST /api/sync` and `GET /api/stats` return or use the same list.
+`tests/test_api.py` fails if the query count starts growing with the number of targets.
 
 One field is accepted and then dropped on the floor: `FeedbackCreate.status`
 (`routers/points.py`) is never written — it is absent from the values dict in `sync_data`. The
