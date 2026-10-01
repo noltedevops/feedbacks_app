@@ -494,25 +494,6 @@
 .map-legend-dot[data-status='found'] { background: rgb(var(--status-found-rgb)); }
 .map-legend-dot[data-status='pending'] { background: rgb(var(--status-pending-rgb)); }
 
-/* The location-edit marker: the target's status fill, the accent ring while dragged. */
-.marker-edit {
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--surface);
-  background: rgb(var(--status-pending-rgb));
-}
-
-.marker-edit[data-status='found'] {
-  background: rgb(var(--status-found-rgb));
-}
-
-.marker-edit span {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--surface);
-}
-
 /* The location-edit popup, a compact .tp. */
 .tp--compact {
   width: auto;
@@ -694,32 +675,6 @@
 .ff-close:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
-}
-
-/* Location-edit mode: an instruction, so the accent's wash and rule. */
-.ff-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  flex-shrink: 0;
-  padding: var(--space-3);
-  border-radius: var(--radius-control);
-  background: rgb(var(--accent-rgb) / 0.12);
-  border: 1px solid rgb(var(--accent-rgb) / 0.45);
-  border-left: 3px solid var(--accent);
-  font-size: var(--text-label);
-  line-height: var(--lh-label);
-  color: var(--surface-text);
-}
-
-.ff-banner svg {
-  flex-shrink: 0;
-  margin-top: 1px;
-  color: var(--accent-ink);
-}
-
-.ff-banner strong {
-  color: var(--surface-text-strong);
 }
 
 .ff-form {
