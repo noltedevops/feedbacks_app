@@ -427,6 +427,49 @@
   color: var(--surface-text-muted);
 }
 
+.accuracy-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-1);
+}
+
+.accuracy-inst-pills {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-pill);
+  padding: 2px;
+  gap: 2px;
+}
+
+.accuracy-inst-pills .pill-btn {
+  border: none;
+  background: transparent;
+  color: var(--surface-text-muted);
+  font-size: var(--text-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--weight-medium);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.accuracy-inst-pills .pill-btn:hover {
+  color: var(--surface-text-strong);
+}
+
+.accuracy-inst-pills .pill-btn.active {
+  background: var(--surface);
+  color: var(--surface-text-strong);
+  font-weight: var(--weight-semibold);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
 /* The accuracy measures under the curve, one per row: side by side, a third of a
    360px panel each, "SCHÄTZABWEICHUNG" and "Ausgeglichen (0.01m)" were cut to an
    ellipsis at every width. A row gives the label the width and the value its own end. */
@@ -694,10 +737,10 @@
   grid-column: 1 / -1;
 }
 
-/* The three accuracy measures side by side - the overlay has the width for them. */
+/* The accuracy measures side by side - the overlay has the width for them. */
 @media (min-width: 769px) {
   .panel-expand .dash-kpis {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
 
   .panel-expand .dash-kpis > div + div {

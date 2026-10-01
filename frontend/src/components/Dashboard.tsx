@@ -250,12 +250,19 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   // 4. Geophysics KPI Card calculation
   // Mean error, bias and FPR are evaluated-vs-excavated measures - undefined without an
   // excavation to compare against, so they never see a pending target.
-  const { meanDepthError, biasText, falsePositiveRate } = useMemo(() => {
+  const { meanDepthError, biasText, falsePositiveRate, velocityDriftText, velocityDriftLabel, velocityDriftTooltip } = useMemo(() => {
     let totalDiff = 0;
     let totalBias = 0;
     let validDepthPairs = 0;
     let investigatedCount = 0;
     let ohneFundCount = 0;
+
+    let gprActual = 0;
+    let gprEval = 0;
+    let gprPairs = 0;
+
+    let magDiff = 0;
+    let magPairs = 0;
 
     excavatedPoints.forEach(p => {
       investigatedCount++;
@@ -269,19 +276,60 @@ const DashboardImpl: React.FC<DashboardProps> = ({
         totalDiff += Math.abs(evalD - execD);
         totalBias += (evalD - execD);
         validDepthPairs++;
+
+        const inst = (p.instrument || '').toLowerCase();
+        if (inst.includes('radar')) {
+          if (evalD > 0 && execD > 0) {
+            gprActual += execD;
+            gprEval += evalD;
+            gprPairs++;
+          }
+        } else if (inst.includes('mag')) {
+          magDiff += Math.abs(evalD - execD);
+          magPairs++;
+        }
       }
     });
 
     const rawBias = validDepthPairs > 0 ? totalBias / validDepthPairs : 0;
+    const gprDrift = gprPairs > 0 && gprEval > 0
+      ? ((gprActual / gprEval) - 1) * 100
+      : null;
+
+    const velocityDriftLabel = filterInstrument === 'magnetic'
+      ? t('MAG ERROR')
+      : (filterInstrument === 'all' ? t('GPR VELOCITY (Δv)') : t('VELOCITY DRIFT'));
+    let velocityDriftText = t('N/A');
+    let velocityDriftTooltip = '';
+
+    if (filterInstrument === 'magnetic') {
+      velocityDriftText = magPairs > 0 ? `± ${(magDiff / magPairs).toFixed(2)} m` : t('N/A');
+      velocityDriftTooltip = t('Dipole gradient inversion error');
+    } else {
+
+      if (gprDrift !== null) {
+        velocityDriftText = `${gprDrift > 0 ? '+' : ''}${gprDrift.toFixed(1)}%`;
+        if (Math.abs(gprDrift) < 2) {
+          velocityDriftTooltip = t('Radar velocity accurately calibrated');
+        } else if (gprDrift > 0) {
+          velocityDriftTooltip = t('Radar velocity underestimated (soil permittivity lower than assumed)');
+        } else {
+          velocityDriftTooltip = t('Radar velocity overestimated (soil permittivity higher than assumed)');
+        }
+      }
+    }
 
     return {
       meanDepthError: validDepthPairs > 0 ? (totalDiff / validDepthPairs).toFixed(2) : '0.00',
       biasText: validDepthPairs > 0
         ? (rawBias > 0.02 ? `${t('Too Deep')} (+${fixed2(rawBias)}m)` : (rawBias < -0.02 ? `${t('Too Shallow')} (${fixed2(rawBias)}m)` : `${t('Balanced')} (${fixed2(rawBias)}m)`))
         : t('N/A'),
-      falsePositiveRate: investigatedCount > 0 ? Math.round((ohneFundCount / investigatedCount) * 100) : 0
+      falsePositiveRate: investigatedCount > 0 ? Math.round((ohneFundCount / investigatedCount) * 100) : 0,
+      velocityDriftText,
+      velocityDriftLabel,
+      velocityDriftTooltip
     };
-  }, [excavatedPoints, t]);
+  }, [excavatedPoints, filterInstrument, t]);
 
   // 5. Mean dimensions per finding. Every series is a measurement taken in the opening,
   // so this is the dug subset only. A measurement that was not taken is left out of its
@@ -545,8 +593,10 @@ const DashboardImpl: React.FC<DashboardProps> = ({
         <AccuracyBody
           data={depthShareData}
           hasExcavationData={hasExcavationData}
-          kpis={{ meanDepthError, biasText, falsePositiveRate }}
+          kpis={{ meanDepthError, biasText, falsePositiveRate, velocityDriftText, velocityDriftLabel, velocityDriftTooltip }}
           emptyNote={excavationOnlyNote}
+          instrument={filterInstrument}
+          onSelectInstrument={setFilterInstrument}
           size={size}
           {...chartCommon}
         />
