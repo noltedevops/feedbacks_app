@@ -210,6 +210,29 @@ Admins have equivalent controls in the app itself:
 A user who has been offline picks up permissions granted while they were away via
 `GET /api/auth/me`, which the client re-reads on login.
 
+## Schema migrations
+
+The app's tables in `public` are versioned with Alembic (`alembic.ini`, `migrations/`).
+The server applies whatever migration the database does not have yet when it starts;
+if one fails it raises and the server does not start, rather than running against a
+schema it does not expect. The ETL's own schemas (`etl`, `etl_approval`, `etl_admin`) are
+not here: they come from `etl/runner/run.py setup-sql`.
+
+To change the schema: edit `models.py`, then from the repository root
+
+```powershell
+.venv\Scripts\alembic revision --autogenerate -m "add x to y"   # writes migrations/versions/NNNN_...
+```
+
+Read the generated file before committing it: autogenerate does not see triggers,
+functions, renames or data changes, and those have to be written by hand. Try it on a
+copy (`DATABASE_URL=...nolte_<name>_test`) first. Restarting the server applies it; so does
+`alembic upgrade head`. `alembic current` shows where a database is, `alembic check`
+whether the models and the migrations agree.
+
+Never edit a migration that has run on the live database - add a new one. `0001` is the
+baseline: everything the schema was on 2026-10-01.
+
 ## Backups
 
 The database holds the `users` table, so dumps are sensitive. They are written outside

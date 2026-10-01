@@ -261,7 +261,8 @@ security.py             Passwords, session tokens, login/surface/admin dependenc
 routers/                The API, one module per area: auth, admin, permissions,
                         points (points, sync, projects, stats), reports, etl
 models.py               SQLAlchemy models: Project, Anomaly, Feedback, User, PermissionRequest
-database.py             Engine, retry/fallback, init_db, PostGIS trigger, UTM32N <-> WGS84
+database.py             Engine, retry/fallback, init_db (applies the migrations)
+alembic.ini, migrations/  Schema migrations (Alembic); 0001 is the 2026-10-01 baseline
 config.py               pydantic-settings; warns on password mismatch
 assistant.py            Landing-page assistant: POST /api/assistant, Mistral, limits
 report.py               CSV + PDF report generation (reportlab)

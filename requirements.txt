@@ -3,6 +3,7 @@
 # major release landing straight in Settings or in PDF generation.
 # To move a pin: bump it here, run the app, then commit the version that worked.
 fastapi==0.136.3
+alembic==1.20.0
 uvicorn==0.48.0
 SQLAlchemy==2.0.50
 psycopg[binary]==3.3.4
