@@ -9,6 +9,7 @@ import { useTheme } from '../useTheme';
 import { useTokenColors } from '../useTokenColors';
 import { haversineMetres, forwardAzimuth, formatDistance } from '../geo';
 import { useUserPosition } from '../useUserPosition';
+import { Target3DView } from './Target3DView';
 
 interface FieldMapProps {
   lang: AppLang;
@@ -94,12 +95,13 @@ const CompassRose: React.FC<{ bearing: number; label: string }> = ({ bearing, la
  *
  * Colours come from the theme tokens rather than the literals this popup used
  * before, so it is legible in light and dark alike. */
-const TargetPopup: React.FC<{ point: LocalPoint; t: Translator; directions: boolean }> = ({ point, t, directions }) => {
+const TargetPopup: React.FC<{ point: LocalPoint; lang: AppLang; t: Translator; directions: boolean }> = ({ point, lang, t, directions }) => {
   const feedbackPhotos = point.feedback?.photos;
   const photos = useMemo<string[]>(
     () => (Array.isArray(feedbackPhotos) ? feedbackPhotos : []),
     [feedbackPhotos]
   );
+  const [activeMedia, setActiveMedia] = useState<'photos' | '3d'>(photos.length > 0 ? 'photos' : '3d');
   // Starts at the first photo for each target: the popup is keyed per target (below),
   // so a different target mounts a fresh one rather than reusing this index.
   const [index, setIndex] = useState(0);
@@ -177,37 +179,64 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator; directions: bool
         </section>
       )}
 
-      {photos.length > 0 && (
-        <section className="tp-photos">
-          <div className="tp-photos-head">
-            <span>{t('Submitted Pictures')}</span>
-            {photos.length > 1 && <span className="tp-count">{index + 1} / {photos.length}</span>}
-          </div>
-
-          <div className="tp-stage">
-            <img
-              src={photos[index]}
-              alt={`${t('Submitted Pictures')} ${index + 1}`}
-              className="tp-img"
-              onClick={() => setLightbox(true)}
-            />
-
-            {photos.length > 1 && (
-              <>
-                <button type="button" className="tp-nav tp-nav-prev" onClick={() => step(-1)} aria-label={t('Previous')}>
-                  <ChevronLeft size={16} />
-                </button>
-                <button type="button" className="tp-nav tp-nav-next" onClick={() => step(1)} aria-label={t('Next')}>
-                  <ChevronRight size={16} />
-                </button>
-              </>
+      {(photos.length > 0 || feedback?.visited || point.evaluated_depth != null) && (
+        <section className="tp-media-section">
+          <div className="tp-media-tabs">
+            {photos.length > 0 && (
+              <button
+                type="button"
+                className={`tp-media-tab${activeMedia === 'photos' ? ' active' : ''}`}
+                onClick={() => setActiveMedia('photos')}
+              >
+                {t('Photos')} ({photos.length})
+              </button>
             )}
+            <button
+              type="button"
+              className={`tp-media-tab${activeMedia === '3d' ? ' active' : ''}`}
+              onClick={() => setActiveMedia('3d')}
+            >
+              {t('3D Pit View')}
+            </button>
           </div>
 
-          <button type="button" className="tp-download" onClick={downloadCurrent}>
-            <Download size={13} />
-            {photos.length > 1 ? t('Download this photo') : t('Download photo')}
-          </button>
+          {activeMedia === '3d' ? (
+            <Target3DView point={point} lang={lang} height={190} />
+          ) : (
+            photos.length > 0 && (
+              <div className="tp-photos">
+                <div className="tp-photos-head">
+                  <span>{t('Submitted Pictures')}</span>
+                  {photos.length > 1 && <span className="tp-count">{index + 1} / {photos.length}</span>}
+                </div>
+
+                <div className="tp-stage">
+                  <img
+                    src={photos[index]}
+                    alt={`${t('Submitted Pictures')} ${index + 1}`}
+                    className="tp-img"
+                    onClick={() => setLightbox(true)}
+                  />
+
+                  {photos.length > 1 && (
+                    <>
+                      <button type="button" className="tp-nav tp-nav-prev" onClick={() => step(-1)} aria-label={t('Previous')}>
+                        <ChevronLeft size={16} />
+                      </button>
+                      <button type="button" className="tp-nav tp-nav-next" onClick={() => step(1)} aria-label={t('Next')}>
+                        <ChevronRight size={16} />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                <button type="button" className="tp-download" onClick={downloadCurrent}>
+                  <Download size={13} />
+                  {photos.length > 1 ? t('Download this photo') : t('Download photo')}
+                </button>
+              </div>
+            )
+          )}
         </section>
       )}
 
@@ -737,7 +766,7 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
             autoPan={true}
             className="target-popup"
           >
-            <TargetPopup key={selectedPoint.id} point={selectedPoint} t={t} directions={viewMode === 'collector'} />
+            <TargetPopup key={selectedPoint.id} point={selectedPoint} lang={lang} t={t} directions={viewMode === 'collector'} />
           </Popup>
         )}
         

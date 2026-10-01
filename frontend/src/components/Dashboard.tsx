@@ -668,6 +668,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
         points={filteredPoints}
         selectedId={selectedPoint?.id ?? null}
         onSelect={onSelectPoint}
+        lang={lang}
         t={t}
         className="dash-log-scroll"
       />
@@ -711,6 +712,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
             points={filteredPoints}
             selectedId={selectedPoint?.id ?? null}
             onSelect={point => { onSelectPoint(point); closeExpanded(); }}
+            lang={lang}
             t={t}
             className="dash-log-scroll dash-log-scroll--grid"
           />

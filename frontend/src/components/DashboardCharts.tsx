@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type UIEvent } from 'react';
-import { Info } from 'lucide-react';
+import { Info, Box, X } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { LocalPoint } from '../db/indexedDb';
-import type { Translator } from '../i18n';
+import type { Translator, AppLang } from '../i18n';
 import { useCategoryAxis } from '../chartAxis';
 import { CategoryTick, ChartLegend } from './chartParts';
+import { Target3DView } from './Target3DView';
 
 /**
  * The Dashboard's charts and target log, each a component so the same chart can render
@@ -330,13 +331,15 @@ const LOG_PAGE_SIZE = 40;
  * The target log's list, windowed: in its panel, and as a grid of cards when expanded.
  * Each copy keeps its own window, reset whenever the selection changes.
  */
-export function TargetLogList({ points, selectedId, onSelect, t, className }: {
+export function TargetLogList({ points, selectedId, onSelect, lang, t, className }: {
   points: LocalPoint[];
   selectedId: string | null;
   onSelect: (point: LocalPoint) => void;
+  lang?: AppLang;
   t: Translator;
   className: string;
 }) {
+  const [viewing3DPoint, setViewing3DPoint] = useState<LocalPoint | null>(null);
   const [visibleCount, setVisibleCount] = useState(LOG_PAGE_SIZE);
   const [lastPoints, setLastPoints] = useState(points);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -364,56 +367,98 @@ export function TargetLogList({ points, selectedId, onSelect, t, className }: {
   const shown = useMemo(() => points.slice(0, visibleCount), [points, visibleCount]);
 
   return (
-    <div ref={scrollRef} onScroll={onScroll} className={className}>
-      {shown.map(point => {
-        const isInvestigated = point.local_status === 'investigated';
-        let statusText = t('PENDING');
-        // Same vocabulary as the field app's target list - see .status-chip.
-        let status: 'pending' | 'empty' | 'found' = 'pending';
+    <>
+      <div ref={scrollRef} onScroll={onScroll} className={className}>
+        {shown.map(point => {
+          const isInvestigated = point.local_status === 'investigated';
+          let statusText = t('PENDING');
+          // Same vocabulary as the field app's target list - see .status-chip.
+          let status: 'pending' | 'empty' | 'found' = 'pending';
 
-        if (isInvestigated && point.feedback) {
-          const fund = point.feedback.fundstueck || 'ohne Fund';
-          statusText = fund === 'Sonstige' ? (point.feedback.other || 'Sonstige') : fund;
-          status = fund === 'ohne Fund' ? 'empty' : 'found';
-        }
+          if (isInvestigated && point.feedback) {
+            const fund = point.feedback.fundstueck || 'ohne Fund';
+            statusText = fund === 'Sonstige' ? (point.feedback.other || 'Sonstige') : fund;
+            status = fund === 'ohne Fund' ? 'empty' : 'found';
+          }
 
-        const isSelected = selectedId === point.id;
-        const actual = point.feedback?.actual_depth;
-        return (
-          <button
-            type="button"
-            key={point.id}
-            className={`target-card${isSelected ? ' active' : ''}`}
-            aria-pressed={isSelected}
-            onClick={() => onSelect(point)}
-          >
-            <span className="target-card-head">
-              <span className="target-card-vm num">VM {point.vm_nr}</span>
-              {point.evaluated_depth != null && point.evaluated_depth > 0 && point.evaluated_depth < 0.40 && (
-                <span className="hazard-chip" title={t('Shallow Hazard (<0.4m)')}>⚠️ &lt;0.4m</span>
-              )}
-              <span className="status-chip" data-status={status} title={statusText}>{statusText}</span>
-            </span>
-            <span className="target-card-meta">
-              {point.instrument?.toUpperCase()} · {point.layer?.replace('Stoerkoerper ', '') || t('Target')}
-            </span>
-            {/* A depth is shown when it was recorded - a genuine 0 m included - and N/A
-                only when it was not. */}
-            <span className="target-card-depth">
-              <span className="target-card-depth-label">{t('EVAL')}: <span className="target-card-depth-value num">{point.evaluated_depth != null ? `${point.evaluated_depth} m` : t('N/A')}</span></span>
-              {isInvestigated && actual != null && (
-                <span className="target-card-depth-label">{t('EXCAV')}: <span className="target-card-depth-value num">{actual} m</span></span>
-              )}
-            </span>
+          const isSelected = selectedId === point.id;
+          const actual = point.feedback?.actual_depth;
+          return (
+            <button
+              type="button"
+              key={point.id}
+              className={`target-card${isSelected ? ' active' : ''}`}
+              aria-pressed={isSelected}
+              onClick={() => onSelect(point)}
+            >
+              <span className="target-card-head">
+                <span className="target-card-vm num">VM {point.vm_nr}</span>
+                {point.evaluated_depth != null && point.evaluated_depth > 0 && point.evaluated_depth < 0.40 && (
+                  <span className="hazard-chip" title={t('Shallow Hazard (<0.4m)')}>⚠️ &lt;0.4m</span>
+                )}
+                <span className="status-chip" data-status={status} title={statusText}>{statusText}</span>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className="target-card-3d-btn"
+                  title={t('3D Pit View')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setViewing3DPoint(point);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setViewing3DPoint(point);
+                    }
+                  }}
+                >
+                  <Box size={13} aria-hidden="true" />
+                </span>
+              </span>
+              <span className="target-card-meta">
+                {point.instrument?.toUpperCase()} · {point.layer?.replace('Stoerkoerper ', '') || t('Target')}
+              </span>
+              {/* A depth is shown when it was recorded - a genuine 0 m included - and N/A
+                  only when it was not. */}
+              <span className="target-card-depth">
+                <span className="target-card-depth-label">{t('EVAL')}: <span className="target-card-depth-value num">{point.evaluated_depth != null ? `${point.evaluated_depth} m` : t('N/A')}</span></span>
+                {isInvestigated && actual != null && (
+                  <span className="target-card-depth-label">{t('EXCAV')}: <span className="target-card-depth-value num">{actual} m</span></span>
+                )}
+              </span>
+            </button>
+          );
+        })}
+
+        {shown.length < points.length && (
+          <button type="button" className="btn-secondary list-more" onClick={() => setVisibleCount(n => n + LOG_PAGE_SIZE)}>
+            {t('Show more')} <span className="num">({points.length - shown.length})</span>
           </button>
-        );
-      })}
+        )}
+      </div>
 
-      {shown.length < points.length && (
-        <button type="button" className="btn-secondary list-more" onClick={() => setVisibleCount(n => n + LOG_PAGE_SIZE)}>
-          {t('Show more')} <span className="num">({points.length - shown.length})</span>
-        </button>
+      {viewing3DPoint && (
+        <div className="target-3d-modal-overlay" onClick={() => setViewing3DPoint(null)} role="dialog" aria-modal="true">
+          <div className="target-3d-modal" onClick={e => e.stopPropagation()}>
+            <div className="target-3d-modal-head">
+              <h3>VM {viewing3DPoint.vm_nr} · {t('3D Pit View')}</h3>
+              <button
+                type="button"
+                className="target-3d-modal-close"
+                onClick={() => setViewing3DPoint(null)}
+                aria-label={t('Close')}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="target-3d-modal-body">
+              <Target3DView point={viewing3DPoint} lang={lang ?? 'EN'} height={320} />
+            </div>
+          </div>
+        </div>
       )}
-    </div>
+    </>
   );
 }
