@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 're
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { type LocalPoint, getResolvedStatus } from '../db/indexedDb';
-import { Layers, FolderPlus, Home, ChevronLeft, ChevronRight, Download, X, Check, Plus, Minus } from 'lucide-react';
+import { Layers, FolderPlus, Home, ChevronLeft, ChevronRight, Download, X, Check, Plus, Minus, Navigation } from 'lucide-react';
 import { makeT, type AppLang, type Translator } from '../i18n';
 import { useTheme } from '../useTheme';
 import { useTokenColors } from '../useTokenColors';
@@ -96,7 +96,7 @@ const CompassRose: React.FC<{ bearing: number; label: string }> = ({ bearing, la
  *
  * Colours come from the theme tokens rather than the literals this popup used
  * before, so it is legible in light and dark alike. */
-const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t }) => {
+const TargetPopup: React.FC<{ point: LocalPoint; t: Translator; directions: boolean }> = ({ point, t, directions }) => {
   const feedbackPhotos = point.feedback?.photos;
   const photos = useMemo<string[]>(
     () => (Array.isArray(feedbackPhotos) ? feedbackPhotos : []),
@@ -110,23 +110,6 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t 
   const status = getResolvedStatus(point);
   const chipStatus = STATUS_CHIP[status] ?? 'empty';
   const feedback = point.feedback;
-
-  // Where the crew is, if the device will say. Null covers every failure - denied, no
-  // hardware, timed out, insecure context - and the section below is simply not
-  // rendered, rather than showing an error on every target opened.
-  //
-  // The target's own position is read straight off the point: the server writes
-  // latitude/longitude alongside the UTM easting/northing, so no conversion happens
-  // here and none is added.
-  const userPosition = useUserPosition();
-  const relative = useMemo(() => {
-    if (!userPosition) return null;
-    const target = { latitude: point.latitude, longitude: point.longitude };
-    return {
-      distance: formatDistance(haversineMetres(userPosition, target)),
-      bearing: forwardAzimuth(userPosition, target),
-    };
-  }, [userPosition, point.latitude, point.longitude]);
 
   const step = (delta: number) => {
     if (photos.length === 0) return;
@@ -154,20 +137,7 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t 
         </span>
       </header>
 
-      {relative && (
-        <section className="tp-here">
-          <CompassRose
-            bearing={relative.bearing}
-            label={`${t('Bearing')} ${Math.round(relative.bearing)}°`}
-          />
-          <div className="tp-here-text">
-            <span className="tp-here-dist">{relative.distance} {t('away')}</span>
-            <span className="tp-here-bearing">
-              {t('Bearing')} {Math.round(relative.bearing)}°
-            </span>
-          </div>
-        </section>
-      )}
+      {directions && <TargetDirections point={point} t={t} />}
 
       {/* No section title: the header directly above already says which target these
           belong to, and with the list this short another rule across the card is
@@ -798,7 +768,7 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
             autoPan={true}
             className="target-popup"
           >
-            <TargetPopup key={selectedPoint.id} point={selectedPoint} t={t} />
+            <TargetPopup key={selectedPoint.id} point={selectedPoint} t={t} directions={viewMode === 'collector'} />
           </Popup>
         )}
         
@@ -846,5 +816,59 @@ const Row: React.FC<{ label: string; value: React.ReactNode; stack?: boolean }> 
     <span className="tp-row-value">{value}</span>
   </div>
 );
+
+/** Directions to the target: distance and bearing from where the crew stands, and a
+ * hand-off to the phone's maps app. Field app only - the dashboard is not standing on
+ * site, so it neither shows this nor asks for the device's position.
+ *
+ * Distance and bearing need the device position, which browsers give only to a secure
+ * context (HTTPS or localhost). Over plain http on the site network it is refused, and
+ * the block is simply absent - see useUserPosition. "Open in Maps" needs no position:
+ * it hands the target's coordinates to the maps app, which locates the crew itself and
+ * routes them on foot, so it works over plain http as well. */
+const TargetDirections: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t }) => {
+  // Where the crew is, if the device will say. Null covers every failure - denied, no
+  // hardware, timed out, insecure context - and then only the maps link is shown.
+  //
+  // The target's own position is read straight off the point: the server writes
+  // latitude/longitude alongside the UTM easting/northing, so no conversion happens
+  // here and none is added.
+  const userPosition = useUserPosition();
+  const relative = useMemo(() => {
+    if (!userPosition) return null;
+    const target = { latitude: point.latitude, longitude: point.longitude };
+    return {
+      distance: formatDistance(haversineMetres(userPosition, target)),
+      bearing: forwardAzimuth(userPosition, target),
+    };
+  }, [userPosition, point.latitude, point.longitude]);
+
+  // Google Maps' cross-platform directions URL: opens the Google Maps app on Android
+  // (and on iOS when installed, else maps in the browser), walking mode, to the target.
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${point.latitude.toFixed(6)},${point.longitude.toFixed(6)}&travelmode=walking`;
+
+  return (
+    <>
+      {relative && (
+        <section className="tp-here">
+          <CompassRose
+            bearing={relative.bearing}
+            label={`${t('Bearing')} ${Math.round(relative.bearing)}°`}
+          />
+          <div className="tp-here-text">
+            <span className="tp-here-dist">{relative.distance} {t('away')}</span>
+            <span className="tp-here-bearing">
+              {t('Bearing')} {Math.round(relative.bearing)}°
+            </span>
+          </div>
+        </section>
+      )}
+      <a className="tp-download tp-maps" href={mapsUrl} target="_blank" rel="noopener noreferrer">
+        <Navigation size={13} aria-hidden="true" />
+        {t('Open in Maps')}
+      </a>
+    </>
+  );
+};
 
 

@@ -172,6 +172,7 @@ const de: Record<string, string> = {
   'Today': 'Heute',
   'away': 'entfernt',
   'Bearing': 'Peilung',
+  'Open in Maps': 'In Karten öffnen',
   'From': 'Von',
   'To': 'Bis',
   'Leave dates empty to include the whole period.': 'Datumsfelder leer lassen, um den gesamten Zeitraum einzuschließen.',
