@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  python:
+    name: Python - lint and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'          # the server's .venv
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Install pinned dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: pyflakes
+        run: >-
+          python -m pyflakes server.py security.py database.py models.py config.py report.py
+          assistant.py manage_access.py routers migrations tests etl/runner etl/tests scripts
+
+      - name: ETL configuration is valid
+        run: python etl/runner/run.py validate-config
+
+      - name: Unit tests (no database)
+        run: >-
+          python -m unittest
+          etl/tests/test_validation_and_alerts.py etl/tests/test_runner_robustness.py
+          etl/tests/test_health_and_logging.py tests/test_server_startup.py tests/test_etl_run_endpoint.py
+
+  database:
+    name: Python - migrations, audit and API tests (PostgreSQL + PostGIS)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4     # what docker-compose.yml runs
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nolte_ci_test        # the tests refuse a name not ending in _test
+        ports: [ '5432:5432' ]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/nolte_ci_test
+      POSTGRES_PASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Install pinned dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: The migrations build the schema from nothing
+        run: python -c "import database; database.init_db()"
+
+      - name: The models and the migrations agree
+        run: python -m alembic check
+
+      - name: anomaly_history audit tests
+        run: python -m unittest etl/tests/test_scd_audit.py
+
+      - name: API tests
+        run: python -m unittest tests/test_api.py
+
+  frontend:
+    name: Frontend - lint, build, committed bundle is current
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+
+      # Every file is linted except these five, which carried errors (mostly
+      # react-hooks rules) before CI checked them. Take a file off the list once it is
+      # clean; never add one.
+      - name: Lint
+        working-directory: frontend
+        run: >-
+          npx eslint .
+          --ignore-pattern src/App.tsx
+          --ignore-pattern src/components/Dashboard.tsx
+          --ignore-pattern src/components/FeedbackForm.tsx
+          --ignore-pattern src/components/FieldMap.tsx
+          --ignore-pattern src/components/ReportDialog.tsx
+
+      - name: Type-check and build
+        working-directory: frontend
+        run: npm run build
+
+      # static/ is served as committed. A source change without its rebuilt bundle (or
+      # a hand edit to the bundle) would ship something the source does not say.
+      - name: Committed static/ matches the build
+        run: |
+          git status --porcelain -- static
+          test -z "$(git status --porcelain -- static)"

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import unittest
-from etl.runner.validate_config import validate_config_data, validate_column_spec
+from etl.runner.validate_config import validate_config_data
 from etl.runner import notifier
 
 

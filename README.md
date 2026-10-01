@@ -142,6 +142,26 @@ The dev server binds `host: true`, so a tablet on the same network can reach it 
 real-device testing. `vite build` uses `emptyOutDir` — everything in `static/` is
 deleted and rewritten, so nothing that is not produced by the build may live there.
 
+## Tests
+
+CI runs all of this on every push and pull request to `main`
+(`.github/workflows/ci.yml`). Locally, from the repository root:
+
+```powershell
+pip install -r requirements.txt -r requirements-dev.txt
+python -m unittest etl/tests/test_validation_and_alerts.py etl/tests/test_runner_robustness.py `
+    etl/tests/test_health_and_logging.py tests/test_server_startup.py tests/test_etl_run_endpoint.py
+```
+
+The database tests (`tests/test_api.py`, `etl/tests/test_scd_audit.py`) need a PostGIS
+database whose name ends in `_test` - they refuse any other, and `test_api.py` wipes it:
+
+```powershell
+docker exec feedback_postgres_db psql -U postgres -c "create database nolte_api_test"
+$env:DATABASE_URL = "postgresql://postgres:<password>@127.0.0.1:5432/nolte_api_test"
+python -m unittest tests/test_api.py
+```
+
 ## Gotchas
 
 These are the things that have actually cost time here.

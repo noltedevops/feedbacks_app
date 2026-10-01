@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Float, Boolean, DateTime, Integer, BigInteger, ForeignKey, Index, JSON, create_engine, text
+from sqlalchemy import Column, String, Text, Float, Boolean, DateTime, Integer, BigInteger, ForeignKey, Index, JSON, text
 from sqlalchemy.orm import declarative_base, relationship
 from geoalchemy2 import Geometry
 import datetime
