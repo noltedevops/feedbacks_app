@@ -94,18 +94,9 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      # Every file is linted except these five, which carried errors (mostly
-      # react-hooks rules) before CI checked them. Take a file off the list once it is
-      # clean; never add one.
-      - name: Lint
+      - name: Lint (every file, no exceptions)
         working-directory: frontend
-        run: >-
-          npx eslint .
-          --ignore-pattern src/App.tsx
-          --ignore-pattern src/components/Dashboard.tsx
-          --ignore-pattern src/components/FeedbackForm.tsx
-          --ignore-pattern src/components/FieldMap.tsx
-          --ignore-pattern src/components/ReportDialog.tsx
+        run: npx eslint . --max-warnings 0
 
       - name: Type-check and build
         working-directory: frontend

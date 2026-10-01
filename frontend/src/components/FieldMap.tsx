@@ -97,16 +97,15 @@ const CompassRose: React.FC<{ bearing: number; label: string }> = ({ bearing, la
  * Colours come from the theme tokens rather than the literals this popup used
  * before, so it is legible in light and dark alike. */
 const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t }) => {
+  const feedbackPhotos = point.feedback?.photos;
   const photos = useMemo<string[]>(
-    () => (Array.isArray(point.feedback?.photos) ? point.feedback.photos : []),
-    [point.feedback?.photos]
+    () => (Array.isArray(feedbackPhotos) ? feedbackPhotos : []),
+    [feedbackPhotos]
   );
+  // Starts at the first photo for each target: the popup is keyed per target (below),
+  // so a different target mounts a fresh one rather than reusing this index.
   const [index, setIndex] = useState(0);
   const [lightbox, setLightbox] = useState(false);
-
-  // A different target can be selected while this stays mounted; without the
-  // reset the carousel would open on the previous point's photo number.
-  useEffect(() => { setIndex(0); }, [point.id]);
 
   const status = getResolvedStatus(point);
   const chipStatus = STATUS_CHIP[status] ?? 'empty';
@@ -144,16 +143,6 @@ const TargetPopup: React.FC<{ point: LocalPoint; t: Translator }> = ({ point, t 
     a.click();
     a.remove();
   };
-
-  // `stack` drops the value onto its own full-width line. Free text - notes, long
-  // names - has nothing useful to align against in a narrow value column, and
-  // squeezing it there is what forced it to wrap a character at a time.
-  const Row: React.FC<{ label: string; value: React.ReactNode; stack?: boolean }> = ({ label, value, stack }) => (
-    <div className={stack ? 'tp-row tp-row--stack' : 'tp-row'}>
-      <span className="tp-row-label">{label}</span>
-      <span className="tp-row-value">{value}</span>
-    </div>
-  );
 
   return (
     <div className="tp">
@@ -270,6 +259,10 @@ const MapController: React.FC<{
   // Declared first, so it is current before they run.
   const maxDetailZoomRef = useRef(maxDetailZoom);
   useEffect(() => { maxDetailZoomRef.current = maxDetailZoom; }, [maxDetailZoom]);
+  // Likewise the points themselves: the fit below runs when the set of targets changes
+  // (pointsKey), not when one of them moves - a drag must not re-frame the map.
+  const pointsRef = useRef(points);
+  useEffect(() => { pointsRef.current = points; }, [points]);
 
   // Track serialized points IDs to trigger bounds fitting only when the point set changes.
   // Memoized on the array identity: with ~1500 targets this join runs on every render
@@ -277,8 +270,9 @@ const MapController: React.FC<{
   const pointsKey = useMemo(() => points.map(p => p.id).join(','), [points]);
 
   useEffect(() => {
-    if (points.length > 0) {
-      const bounds = L.latLngBounds(points.map(p => [p.latitude, p.longitude]));
+    const current = pointsRef.current;
+    if (current.length > 0) {
+      const bounds = L.latLngBounds(current.map(p => [p.latitude, p.longitude]));
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: maxDetailZoomRef.current });
     }
   }, [pointsKey, map]);
@@ -603,14 +597,12 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
   // real transition. The counter makes every request distinct, which is what lets
   // the same target be re-opened.
   const [popupRequest, setPopupRequest] = useState<{ id: string; seq: number } | null>(null);
-  const popupSeq = useRef(0);
 
   // Re-keys the Popup, so react-leaflet builds a fresh Leaflet popup and opens it
   // even when Leaflet closed the previous one behind React's back - which is exactly
   // what the map's own close-popup-on-click does on the way into this handler.
   const openPopupFor = useCallback((id: string) => {
-    popupSeq.current += 1;
-    setPopupRequest({ id, seq: popupSeq.current });
+    setPopupRequest((current) => ({ id, seq: (current?.seq ?? 0) + 1 }));
   }, []);
 
   // On mobile the map is a block inside a scrolling page, so Leaflet's touch drag
@@ -644,18 +636,20 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
   // Selecting from the target list only ever arrives as a change of `selectedPoint`,
   // so that still has to open the popup. Holding the request steady when it already
   // points at this target keeps a marker click - which has asked for the popup itself,
-  // below - from re-keying it a second time and remounting for nothing.
-  useEffect(() => {
-    if (!selectedPoint) {
+  // below - from re-keying it a second time and remounting for nothing. Adjusted during
+  // render when the selected id changes, like lastIsMobile above, not in an effect.
+  const selectedId = selectedPoint?.id ?? null;
+  // null, not selectedId: mounting with a target already selected must open its popup,
+  // as the effect this replaced did on mount.
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
+  if (lastSelectedId !== selectedId) {
+    setLastSelectedId(selectedId);
+    if (selectedId === null) {
       setPopupRequest(null);
-      return;
+    } else if (popupRequest?.id !== selectedId) {
+      setPopupRequest({ id: selectedId, seq: (popupRequest?.seq ?? 0) + 1 });
     }
-    setPopupRequest((current) => {
-      if (current && current.id === selectedPoint.id) return current;
-      popupSeq.current += 1;
-      return { id: selectedPoint.id, seq: popupSeq.current };
-    });
-  }, [selectedPoint]);
+  }
 
   // react-leaflet reopens the popup whenever `position` changes identity, so a fresh
   // array literal would tear it down and rebuild it on every unrelated render of this
@@ -804,7 +798,7 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
             autoPan={true}
             className="target-popup"
           >
-            <TargetPopup point={selectedPoint} t={t} />
+            <TargetPopup key={selectedPoint.id} point={selectedPoint} t={t} />
           </Popup>
         )}
         
@@ -841,4 +835,16 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
 // Memoized: the dashboard and the field app both re-render on filter changes, language
 // switches and selection changes, and without this every one of those rebuilds the
 // whole marker layer.
-export const FieldMap = React.memo(FieldMapImpl);
+export const FieldMap = React.memo(FieldMapImpl);// One label/value line of the popup. `stack` drops the value onto its own full-width
+// line. Free text - notes, long names - has nothing useful to align against in a narrow
+// value column, and squeezing it there is what forced it to wrap a character at a time.
+// At module level: defined inside TargetPopup it was a new component type on every
+// render, so React remounted every row each time.
+const Row: React.FC<{ label: string; value: React.ReactNode; stack?: boolean }> = ({ label, value, stack }) => (
+  <div className={stack ? 'tp-row tp-row--stack' : 'tp-row'}>
+    <span className="tp-row-label">{label}</span>
+    <span className="tp-row-value">{value}</span>
+  </div>
+);
+
+

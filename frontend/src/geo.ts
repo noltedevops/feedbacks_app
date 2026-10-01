@@ -5,7 +5,7 @@
  * `latitude`/`longitude` alongside their UTM easting/northing - the server writes both
  * - so anything working from a point's position reads those directly. Nothing here
  * needs a UTM -> lat/lng step, and none is added: the only conversion in the frontend
- * is latLonToUtm32nJS in FeedbackForm, which runs the other way.
+ * is latLonToUtm32nJS in utm.ts, which runs the other way.
  *
  * Spherical, not ellipsoidal. Over the few hundred metres between a crew and a target
  * the difference from Vincenty is well under a metre, and the numbers here are rounded

@@ -6,48 +6,31 @@ import { Select } from './Select';
 // The findings a crew can record, in the order they are offered.
 const FUNDSTUECK_OPTIONS = ['ohne Fund', 'Eisenteil', 'Eisenstange / Eisenstab', 'Eisendraht', 'Eisenseil', 'Eisennägel', 'Steine', 'Sonstige'];
 import { makeT, type AppLang } from '../i18n';
+import { latLonToUtm32nJS } from '../utm';
 
-// High-precision coordinates converter from Lat/Lng to UTM Zone 32N (EPSG:32632)
-export function latLonToUtm32nJS(lat: number, lon: number): [number, number] {
-  const a = 6378137.0;
-  const f = 1.0 / 298.257223563;
-  const b = a * (1.0 - f);
-  
-  const e2 = (a**2 - b**2) / a**2;
-  const ep2 = (a**2 - b**2) / b**2;
-  
-  const k0 = 0.9996;
-  const lon0 = 9.0 * Math.PI / 180.0;
-  
-  const latRad = lat * Math.PI / 180.0;
-  const lonRad = lon * Math.PI / 180.0;
-  
-  const N = a / Math.sqrt(1.0 - e2 * Math.pow(Math.sin(latRad), 2));
-  const T = Math.pow(Math.tan(latRad), 2);
-  const C = ep2 * Math.pow(Math.cos(latRad), 2);
-  const A = (lonRad - lon0) * Math.cos(latRad);
-  
-  const M = a * (
-    (1.0 - e2/4.0 - 3.0*e2**2/64.0 - 5.0*e2**3/256.0) * latRad
-    - (3.0*e2/8.0 + 3.0*e2**2/32.0 + 45.0*e2**3/1024.0) * Math.sin(2.0*latRad)
-    + (15.0*e2**2/256.0 + 45.0*e2**3/1024.0) * Math.sin(4.0*latRad)
-    - (35.0*e2**3/3072.0) * Math.sin(6.0*latRad)
-  );
-  
-  const x = k0 * N * (
-    A + (1.0 - T + C) * Math.pow(A, 3) / 6.0
-    + (5.0 - 18.0*T + T**2 + 72.0*C - 58.0*ep2) * Math.pow(A, 5) / 120.0
-  ) + 500000.0;
-  
-  const y = k0 * (
-    M + N * Math.tan(latRad) * (
-      Math.pow(A, 2) / 2.0
-      + (5.0 - T + 9.0*C + 4.0*C**2) * Math.pow(A, 4) / 24.0
-      + (61.0 - 58.0*T + T**2 + 600.0*C - 330.0*ep2) * Math.pow(A, 6) / 720.0
-    )
-  );
-  
-  return [x, y];
+const optionalNumber = (v: number | null | undefined) => (v !== null && v !== undefined ? String(v) : '');
+
+// What the form opens with: the target's stored record, or - with none - an empty sheet
+// with the calculated depth. Teams & tools: the target's own, else the last crew/kit used
+// on the project; only when neither exists is the crew asked to type it in.
+function initialValues(point: LocalPoint, lastTeamsTools: TeamsTools | null) {
+  const fb = point.feedback;
+  const source = fb?.teams_tools || lastTeamsTools;
+  return {
+    laenge: fb ? optionalNumber(fb.laenge) : '',
+    breite: fb ? optionalNumber(fb.breite) : '',
+    tiefe: fb ? optionalNumber(fb.actual_depth) : optionalNumber(point.evaluated_depth),
+    fundstueck: fb?.fundstueck || 'ohne Fund',
+    other: fb?.other || '',
+    sohleStatus: fb?.sohle_status || 'Frei',
+    notes: fb?.notes || '',
+    photos: fb?.photos || [],
+    needUpdate: !source,
+    maschinenfuehrer: source?.maschinenfuehrer || '',
+    bezSuchfeld: source?.bez_suchfeld || '',
+    messgeraet: source?.messgeraet || '',
+    sondierer: source?.sondierer || '',
+  };
 }
 
 interface FeedbackFormProps {
@@ -59,7 +42,6 @@ interface FeedbackFormProps {
   // the section when the crew answers "No" to Need update?
   lastTeamsTools: TeamsTools | null;
   isEditLocationMode: boolean;
-  setIsEditLocationMode: (mode: boolean) => void;
   onSave: (feedbackData: {
     status: string;
     actual_depth: number | null;
@@ -93,29 +75,35 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   currentUserUsername,
   lastTeamsTools,
   isEditLocationMode,
-  setIsEditLocationMode: _setIsEditLocationMode,
   onSave, 
   onCancel
 }) => {
   const t = makeT(lang);
 
+  // The form is filled once, from the target it opens on, and then belongs to the crew.
+  // App remounts it (key) when a different target - or a blank sheet - is opened. It
+  // used to refill from an effect on every new `point` object, and App makes one on each
+  // marker drag and each sync, so a drag or a background sync wiped whatever the crew
+  // had typed but not yet saved.
+  const [initial] = useState(() => initialValues(point, lastTeamsTools));
+
   // Section 2 States
-  const [laenge, setLaenge] = useState<string>('');
-  const [breite, setBreite] = useState<string>('');
-  const [tiefe, setTiefe] = useState<string>('');
-  const [fundstueck, setFundstueck] = useState<string>('ohne Fund');
-  const [other, setOther] = useState<string>('');
-  const [sohleStatus, setSohleStatus] = useState<string>('Frei');
-  const [notes, setNotes] = useState('');
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [laenge, setLaenge] = useState<string>(initial.laenge);
+  const [breite, setBreite] = useState<string>(initial.breite);
+  const [tiefe, setTiefe] = useState<string>(initial.tiefe);
+  const [fundstueck, setFundstueck] = useState<string>(initial.fundstueck);
+  const [other, setOther] = useState<string>(initial.other);
+  const [sohleStatus, setSohleStatus] = useState<string>(initial.sohleStatus);
+  const [notes, setNotes] = useState(initial.notes);
+  const [photos, setPhotos] = useState<string[]>(initial.photos);
   const [compressing, setCompressing] = useState(false);
 
   // Teams & Tools states. Truppführer always mirrors the logged-in user.
-  const [needUpdate, setNeedUpdate] = useState<boolean>(true);
-  const [maschinenfuehrer, setMaschinenfuehrer] = useState<string>('');
-  const [bezSuchfeld, setBezSuchfeld] = useState<string>('');
-  const [messgeraet, setMessgeraet] = useState<string>('');
-  const [sondierer, setSondierer] = useState<string>('');
+  const [needUpdate, setNeedUpdate] = useState<boolean>(initial.needUpdate);
+  const [maschinenfuehrer, setMaschinenfuehrer] = useState<string>(initial.maschinenfuehrer);
+  const [bezSuchfeld, setBezSuchfeld] = useState<string>(initial.bezSuchfeld);
+  const [messgeraet, setMessgeraet] = useState<string>(initial.messgeraet);
+  const [sondierer, setSondierer] = useState<string>(initial.sondierer);
 
   // Camera Modal States
   const [showCameraModal, setShowCameraModal] = useState(false);
@@ -178,59 +166,15 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
     };
   }, [cameraStream]);
 
-  // High-precision coordinates states
-  const [easting, setEasting] = useState<number>(point.easting);
-  const [northing, setNorthing] = useState<number>(point.northing);
-  const [latitude, setLatitude] = useState<number>(point.latitude);
-  const [longitude, setLongitude] = useState<number>(point.longitude);
-
-  // Load existing feedback if present, or clear form
-  useEffect(() => {
-    setEasting(point.easting);
-    setNorthing(point.northing);
-    setLatitude(point.latitude);
-    setLongitude(point.longitude);
-
-    if (point.feedback) {
-      setLaenge(point.feedback.laenge !== null && point.feedback.laenge !== undefined ? String(point.feedback.laenge) : '');
-      setBreite(point.feedback.breite !== null && point.feedback.breite !== undefined ? String(point.feedback.breite) : '');
-      setTiefe(point.feedback.actual_depth !== null && point.feedback.actual_depth !== undefined ? String(point.feedback.actual_depth) : '');
-      setFundstueck(point.feedback.fundstueck || 'ohne Fund');
-      setOther(point.feedback.other || '');
-      setSohleStatus(point.feedback.sohle_status || 'Frei');
-      setNotes(point.feedback.notes || '');
-      setPhotos(point.feedback.photos || []);
-    } else {
-      setLaenge('');
-      setBreite('');
-      setTiefe(point.evaluated_depth !== null && point.evaluated_depth !== undefined ? String(point.evaluated_depth) : '');
-      setFundstueck('ohne Fund');
-      setOther('');
-      setSohleStatus('Frei');
-      setNotes('');
-      setPhotos([]);
-    }
-
-    // Prefer what this target already recorded, else carry over the last crew/kit
-    // used on the project. Only ask the crew to type it in when neither exists.
-    const source = point.feedback?.teams_tools || lastTeamsTools;
-    setNeedUpdate(!source);
-    setMaschinenfuehrer(source?.maschinenfuehrer || '');
-    setBezSuchfeld(source?.bez_suchfeld || '');
-    setMessgeraet(source?.messgeraet || '');
-    setSondierer(source?.sondierer || '');
-  }, [point, lastTeamsTools]);
-
-  // Listen for real-time marker dragging coordinates and convert them back to UTM
-  useEffect(() => {
-    if (point.latitude !== latitude || point.longitude !== longitude) {
-      setLatitude(point.latitude);
-      setLongitude(point.longitude);
-      const [newEasting, newNorthing] = latLonToUtm32nJS(point.latitude, point.longitude);
-      setEasting(Number(newEasting.toFixed(3)));
-      setNorthing(Number(newNorthing.toFixed(3)));
-    }
-  }, [point.latitude, point.longitude]);
+  // Coordinates follow the point. A marker drag changes only its latitude/longitude, so
+  // once they differ from where the target was when the form opened, easting/northing
+  // are computed from the new position; until then they are the stored values.
+  const [openedAt] = useState(() => ({ latitude: point.latitude, longitude: point.longitude }));
+  const { latitude, longitude } = point;
+  const moved = latitude !== openedAt.latitude || longitude !== openedAt.longitude;
+  const [easting, northing] = moved
+    ? latLonToUtm32nJS(latitude, longitude).map((v) => Number(v.toFixed(3)))
+    : [point.easting, point.northing];
 
   // Compress photo and append to photo list
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
