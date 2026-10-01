@@ -73,12 +73,10 @@ to the office database for analytics.
   (`etl/tests/acceptance.py`) against a copy of the database. Not covered: the browser
   UI (five frontend files are still excluded from lint for older errors), and the ETL
   runner end to end.
-- **Adding a project by configuration alone is untested** — two projects
-  (`11-24-2736` Wilhelmshaven, `11-26-5151` Köln) are loaded through the ETL config
-  (`etl/config/projects.yml`). What has not been exercised is bringing in a third one
-  purely by configuration, end to end: a new project schema, an entry in
-  `projects.yml`, a re-run of `setup-sql` for its grants, then the first run, the
-  targets in the app and a feedback round-trip.
+- **Adding a project by configuration** — done for Giessen Oberhof (`11_24_2704`) on
+  2026-09-29: a new project schema, its `projects.yml` entry, `setup-sql` re-applied
+  for the grants, a first run inserting its 316 targets, and feedback since received
+  from the field. The steps are in [etl/README.md](../etl/README.md), *Adding a project*.
 - **Restricted logins for editing project schemas** — the QGIS session that built
   the new Wilhelmshaven source tables on 2026-09-23 was connected as `postgres`, the
   superuser. People editing project schemas should use their own restricted logins

@@ -57,6 +57,33 @@ for its schema's grants. Changes to `runner/` or `dbt/` do need
 Scheduling: `docker compose --profile etl up -d etl` starts the `loop` command. It does
 nothing until `ETL_INTERVAL_SECONDS` is set above 0 in `.env`.
 
+## Adding a project
+
+Done this way for Giessen Oberhof (`11_24_2704`) on 2026-09-29: run 88 inserted its 316
+targets, and feedback has since come back from the field.
+
+1. **Source tables.** The survey's picks are in their own schema, `p_<project id> <name>`
+   (QGIS import). Note each table's key, coordinate and depth columns, and which rows
+   to leave out (for Giessen, `field_3 not in (0, 4)`).
+2. **Configuration.** Add the project to `config/projects.yml`: `project_id`,
+   `project_name`, `schema`, `srid`, `vm_prefix`, and one `sources` entry per table (the
+   header of that file documents every key). Then, without a database:
+   `python etl/runner/run.py validate-config`.
+3. **Grants.** Re-apply `setup-sql` as `postgres` (*One-time setup* above, step 2,
+   with the same passwords from `.env`): it grants the pipeline read on the new schema
+   and the right to create its `anomalie_1`. Skipping it fails the run on permissions.
+4. **Backup** (`docs/OPERATIONS.md`, *Backups*).
+5. **First run, for that project only:**
+   `docker compose --profile etl run --rm etl run --project <project id>`.
+   Read the report: `inserted` should be the number of targets you expect;
+   `duplicates` lists source rows that collapse onto one target; `excluded_rows` what
+   the `where` filtered out; `unconfigured_tables` tables in the schema the config does
+   not use. Wrong numbers: fix the config, the run is repeatable.
+6. **In the app:** the project appears in the project filter, its targets on the map
+   (devices must sync to fetch them); one feedback round-trip confirms the rest.
+
+Configuration edits need no rebuild: `config/` is mounted into the containers.
+
 ## Decisions
 
 A run stages; the approver decides; the next run carries out exactly that. Decisions are

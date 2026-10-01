@@ -8,7 +8,7 @@ import subprocess
 import threading
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -222,8 +222,9 @@ def get_etl_pipeline_status(admin: models.User = Depends(require_admin)):
                 "correction_pairs": correction_pairs,
                 "projects": projects_list
             }
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch ETL status: {exc}")
+    except Exception:
+        logging.getLogger("server").exception("Failed to fetch ETL status")
+        raise HTTPException(status_code=500, detail="Failed to fetch ETL status.")
 
 
 def _etl_decision_error(exc: Exception, what: str) -> HTTPException:
@@ -365,7 +366,7 @@ def get_anomaly_history(
     target_id: Optional[str] = None,
     vm_nr: Optional[str] = None,
     project_id: Optional[str] = None,
-    limit: int = 50,
+    limit: int = Query(50, ge=1, le=500),
     admin: models.User = Depends(require_admin)
 ):
     try:
@@ -408,5 +409,6 @@ def get_anomaly_history(
                 }
                 for r in rows
             ]
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch anomaly history: {exc}")
+    except Exception:
+        logging.getLogger("server").exception("Failed to fetch anomaly history")
+        raise HTTPException(status_code=500, detail="Failed to fetch anomaly history.")
