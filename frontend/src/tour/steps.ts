@@ -80,7 +80,7 @@ const dashboard: TourStep[] = [
   {
     anchors: ['dash.stats'],
     title: 'The headline numbers',
-    body: 'Total, investigated and pending targets, and how many survey projects the selection spans.',
+    body: 'Total, investigated and pending targets and the survey projects the selection spans. Sohle compliance is the share of dug targets left with a clear Sohle; shallow hazards are the targets under 0.4 m still in the ground.',
   },
   {
     anchors: ['dash.findings'],
@@ -90,12 +90,12 @@ const dashboard: TourStep[] = [
   {
     anchors: ['dash.accuracy'],
     title: 'How accurate the survey was',
-    body: 'Evaluated depth from the sensor against the depth actually excavated, with the mean error, the bias and the share of empty holes.',
+    body: 'Evaluated depth from the sensor against the depth actually excavated, with the mean error, the bias, the radar velocity drift (or the magnetics error) and the share of empty holes.',
   },
   {
     anchors: ['dash.log'],
     title: 'The target log',
-    body: 'Every target in the selection. Select one to find it on the map.',
+    body: 'Every target in the selection. Select one to find it on the map; the cube button on a dug target opens a 3D view of its pit.',
   },
   {
     anchors: ['dash.report', 'dash.filters'],
@@ -107,7 +107,7 @@ const dashboard: TourStep[] = [
     anchors: ['report-dialog'],
     interactive: true,
     title: 'Export the selection',
-    body: 'Choose a project and, if you like, a date range. Download PDF gives the landscape A4 site report, Download CSV the raw rows.',
+    body: 'Choose a project and, if you like, a date range. Download PDF gives the landscape A4 site report, KPI report the dashboard figures as a document, Download CSV the raw rows.',
   },
 ];
 

@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, type MouseEvent as ReactMouseEvent } fr
  * dialog, the Dashboard's expanded panels):
  *
  * - focus goes back to whatever opened the dialog when it closes;
+ * - with one dialog open over another (the 3D pit view over the expanded target log),
+ *   only the top one answers the keyboard, so Escape closes one layer at a time;
  * - Escape closes it, unless something inside already handled that Escape (an open
  *   dropdown closes itself first);
  * - Tab and Shift+Tab stay inside it;
@@ -16,6 +18,9 @@ import { useCallback, useEffect, useRef, type MouseEvent as ReactMouseEvent } fr
  *
  * Returns [ref for the dialog element, onMouseDown for the scrim].
  */
+
+// Open dialogs, innermost last. Only the last one handles keys.
+const openStack: object[] = [];
 
 const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
 
@@ -30,9 +35,17 @@ export function useModal<T extends HTMLElement = HTMLDivElement>(onClose: () => 
     return () => { if (opener?.isConnected) opener.focus(); };
   }, []);
 
+  // Pushed once per dialog, at mount, so the stack follows the order they opened in.
+  const tokenRef = useRef<object>({});
+  useEffect(() => {
+    const token = tokenRef.current;
+    openStack.push(token);
+    return () => { openStack.splice(openStack.indexOf(token), 1); };
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented) return;
+      if (e.defaultPrevented || openStack[openStack.length - 1] !== tokenRef.current) return;
       if (e.key === 'Escape') { e.preventDefault(); onClose(); return; }
       if (e.key !== 'Tab' || !dialogRef.current) return;
       const items = [...dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)];

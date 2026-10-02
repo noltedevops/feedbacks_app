@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type UIEvent } from 'react';
-import { Info, Box, X } from 'lucide-react';
+import { AlertTriangle, Info, Box } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { LocalPoint } from '../db/indexedDb';
 import type { Translator, AppLang } from '../i18n';
 import { useCategoryAxis } from '../chartAxis';
 import { CategoryTick, ChartLegend } from './chartParts';
 import { Target3DView } from './Target3DView';
+import { ExpandedPanel } from './PanelExpand';
+import { hasExcavation, isShallowHazard, SHALLOW_HAZARD_DEPTH_M } from '../dashboardStats';
 
 /**
  * The Dashboard's charts and target log, each a component so the same chart can render
@@ -147,7 +149,7 @@ export function AccuracyBody({ data, hasExcavationData, kpis, emptyNote, instrum
   kpis: {
     meanDepthError: string;
     biasText: string;
-    falsePositiveRate: number;
+    falsePositiveRate: string;
     velocityDriftText?: string;
     velocityDriftLabel?: string;
     velocityDriftTooltip?: string;
@@ -167,6 +169,7 @@ export function AccuracyBody({ data, hasExcavationData, kpis, emptyNote, instrum
             <button
               type="button"
               className={`pill-btn${instrument === 'all' ? ' active' : ''}`}
+              aria-pressed={instrument === 'all'}
               onClick={() => onSelectInstrument('all')}
             >
               {t('All')}
@@ -174,6 +177,7 @@ export function AccuracyBody({ data, hasExcavationData, kpis, emptyNote, instrum
             <button
               type="button"
               className={`pill-btn${instrument === 'georadar' ? ' active' : ''}`}
+              aria-pressed={instrument === 'georadar'}
               onClick={() => onSelectInstrument('georadar')}
             >
               {t('Georadar')}
@@ -181,6 +185,7 @@ export function AccuracyBody({ data, hasExcavationData, kpis, emptyNote, instrum
             <button
               type="button"
               className={`pill-btn${instrument === 'magnetic' ? ' active' : ''}`}
+              aria-pressed={instrument === 'magnetic'}
               onClick={() => onSelectInstrument('magnetic')}
             >
               {t('Magnetic')}
@@ -227,7 +232,7 @@ export function AccuracyBody({ data, hasExcavationData, kpis, emptyNote, instrum
         <dl className="dash-kpis">
           <div>
             <dt>{t('MEAN ERROR')}</dt>
-            <dd className="num">&plusmn; {kpis.meanDepthError} m</dd>
+            <dd className="num">{kpis.meanDepthError}</dd>
           </div>
           <div>
             <dt>{t('ESTIMATION BIAS')}</dt>
@@ -241,7 +246,7 @@ export function AccuracyBody({ data, hasExcavationData, kpis, emptyNote, instrum
           )}
           <div>
             <dt>{t('FPR (EMPTY)')}</dt>
-            <dd className="num">{kpis.falsePositiveRate}%</dd>
+            <dd className="num">{kpis.falsePositiveRate}</dd>
           </div>
         </dl>
       ) : (
@@ -261,7 +266,7 @@ export function AccuracyBody({ data, hasExcavationData, kpis, emptyNote, instrum
 export interface VolumeKpis {
   totalVolume: string;
   meanPitVolume: string;
-  yieldRatio: string;
+  findsPerM3: string;
 }
 
 export function ProfilingChart({ data, volumeKpis, t, c, size, animate }: ChartProps & {
@@ -313,8 +318,8 @@ export function ProfilingChart({ data, volumeKpis, t, c, size, animate }: ChartP
             <dd className="num">{volumeKpis.meanPitVolume}</dd>
           </div>
           <div>
-            <dt>{t('EXCAVATION YIELD')}</dt>
-            <dd className="num">{volumeKpis.yieldRatio}</dd>
+            <dt title={t('Finds (anything but ohne Fund) per m³ excavated, over pits with a recorded volume')}>{t('FINDS PER M³')}</dt>
+            <dd className="num">{volumeKpis.findsPerM3}</dd>
           </div>
         </dl>
       )}
@@ -339,7 +344,8 @@ export function TargetLogList({ points, selectedId, onSelect, lang, t, className
   t: Translator;
   className: string;
 }) {
-  const [viewing3DPoint, setViewing3DPoint] = useState<LocalPoint | null>(null);
+  const [viewing3D, setViewing3D] = useState<{ point: LocalPoint; opener: HTMLElement } | null>(null);
+  const close3D = useCallback(() => setViewing3D(null), []);
   const [visibleCount, setVisibleCount] = useState(LOG_PAGE_SIZE);
   const [lastPoints, setLastPoints] = useState(points);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -383,52 +389,53 @@ export function TargetLogList({ points, selectedId, onSelect, lang, t, className
 
           const isSelected = selectedId === point.id;
           const actual = point.feedback?.actual_depth;
+          // The card and its 3D button are siblings: a button may not hold another
+          // interactive element, and screen readers flatten one that does.
           return (
-            <button
-              type="button"
-              key={point.id}
-              className={`target-card${isSelected ? ' active' : ''}`}
-              aria-pressed={isSelected}
-              onClick={() => onSelect(point)}
-            >
-              <span className="target-card-head">
-                <span className="target-card-vm num">VM {point.vm_nr}</span>
-                {point.evaluated_depth != null && point.evaluated_depth > 0 && point.evaluated_depth < 0.40 && (
-                  <span className="hazard-chip" title={t('Shallow Hazard (<0.4m)')}>⚠️ &lt;0.4m</span>
-                )}
-                <span className="status-chip" data-status={status} title={statusText}>{statusText}</span>
-                <span
-                  role="button"
-                  tabIndex={0}
+            <div key={point.id} className="target-card-row">
+              <button
+                type="button"
+                className={`target-card${isSelected ? ' active' : ''}`}
+                aria-pressed={isSelected}
+                onClick={() => onSelect(point)}
+              >
+                <span className="target-card-head">
+                  <span className="target-card-vm num">VM {point.vm_nr}</span>
+                  {isShallowHazard(point) && (
+                    <span className="hazard-chip" title={t('Shallow Hazard (<0.4m)')}>
+                      <AlertTriangle size={11} aria-hidden="true" />
+                      &lt;{SHALLOW_HAZARD_DEPTH_M}m
+                    </span>
+                  )}
+                  <span className="status-chip" data-status={status} title={statusText}>{statusText}</span>
+                </span>
+                <span className="target-card-meta">
+                  {point.instrument?.toUpperCase()} · {point.layer?.replace('Stoerkoerper ', '') || t('Target')}
+                </span>
+                {/* A depth is shown when it was recorded - a genuine 0 m included - and N/A
+                    only when it was not. */}
+                <span className="target-card-depth">
+                  <span className="target-card-depth-label">{t('EVAL')}: <span className="target-card-depth-value num">{point.evaluated_depth != null ? `${point.evaluated_depth} m` : t('N/A')}</span></span>
+                  {isInvestigated && actual != null && (
+                    <span className="target-card-depth-label">{t('EXCAV')}: <span className="target-card-depth-value num">{actual} m</span></span>
+                  )}
+                </span>
+              </button>
+              {/* A pit exists only once a crew has dug it; for a pending target there is
+                  nothing measured to draw. */}
+              {hasExcavation(point) && (
+                <button
+                  type="button"
                   className="target-card-3d-btn"
+                  aria-label={`${t('3D Pit View')}: VM ${point.vm_nr}`}
+                  aria-haspopup="dialog"
                   title={t('3D Pit View')}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setViewing3DPoint(point);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setViewing3DPoint(point);
-                    }
-                  }}
+                  onClick={e => setViewing3D({ point, opener: e.currentTarget })}
                 >
                   <Box size={13} aria-hidden="true" />
-                </span>
-              </span>
-              <span className="target-card-meta">
-                {point.instrument?.toUpperCase()} · {point.layer?.replace('Stoerkoerper ', '') || t('Target')}
-              </span>
-              {/* A depth is shown when it was recorded - a genuine 0 m included - and N/A
-                  only when it was not. */}
-              <span className="target-card-depth">
-                <span className="target-card-depth-label">{t('EVAL')}: <span className="target-card-depth-value num">{point.evaluated_depth != null ? `${point.evaluated_depth} m` : t('N/A')}</span></span>
-                {isInvestigated && actual != null && (
-                  <span className="target-card-depth-label">{t('EXCAV')}: <span className="target-card-depth-value num">{actual} m</span></span>
-                )}
-              </span>
-            </button>
+                </button>
+              )}
+            </div>
           );
         })}
 
@@ -439,25 +446,16 @@ export function TargetLogList({ points, selectedId, onSelect, lang, t, className
         )}
       </div>
 
-      {viewing3DPoint && (
-        <div className="target-3d-modal-overlay" onClick={() => setViewing3DPoint(null)} role="dialog" aria-modal="true">
-          <div className="target-3d-modal" onClick={e => e.stopPropagation()}>
-            <div className="target-3d-modal-head">
-              <h3>VM {viewing3DPoint.vm_nr} · {t('3D Pit View')}</h3>
-              <button
-                type="button"
-                className="target-3d-modal-close"
-                onClick={() => setViewing3DPoint(null)}
-                aria-label={t('Close')}
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="target-3d-modal-body">
-              <Target3DView point={viewing3DPoint} lang={lang ?? 'EN'} height={320} />
-            </div>
-          </div>
-        </div>
+      {viewing3D && (
+        <ExpandedPanel
+          t={t}
+          kicker={t('3D Pit View')}
+          title={`VM ${viewing3D.point.vm_nr}`}
+          opener={viewing3D.opener}
+          onClose={close3D}
+        >
+          <Target3DView point={viewing3D.point} lang={lang ?? 'EN'} height="min(62vh, 640px)" />
+        </ExpandedPanel>
       )}
     </>
   );

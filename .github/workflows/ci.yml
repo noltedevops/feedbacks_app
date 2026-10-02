@@ -24,7 +24,7 @@ jobs:
 
       - name: pyflakes
         run: >-
-          python -m pyflakes server.py security.py database.py models.py config.py report.py
+          python -m pyflakes server.py security.py database.py models.py config.py report.py kpi_report.py
           assistant.py manage_access.py routers migrations tests etl/runner etl/tests scripts
 
       - name: ETL configuration is valid
@@ -35,7 +35,7 @@ jobs:
           python -m unittest
           etl/tests/test_validation_and_alerts.py etl/tests/test_runner_robustness.py
           etl/tests/test_health_and_logging.py tests/test_server_startup.py tests/test_etl_run_endpoint.py
-          tests/test_etl_read_endpoints.py
+          tests/test_etl_read_endpoints.py tests/test_kpi_report.py
 
   database:
     name: Python - migrations, audit and API tests (PostgreSQL + PostGIS)
@@ -86,7 +86,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'              # node --test runs the .ts tests natively from 22.6
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -97,6 +97,10 @@ jobs:
       - name: Lint (every file, no exceptions)
         working-directory: frontend
         run: npx eslint . --max-warnings 0
+
+      - name: Unit tests
+        working-directory: frontend
+        run: npm test
 
       - name: Type-check and build
         working-directory: frontend

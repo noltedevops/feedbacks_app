@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Table2, X, Loader2 } from 'lucide-react';
+import { BarChart3, FileText, Table2, X, Loader2 } from 'lucide-react';
 import { Select } from './Select';
 import { makeT, type AppLang } from '../i18n';
 import { authFetch } from '../auth';
@@ -14,7 +14,8 @@ interface ReportDialogProps {
   apiBase: string;
   /** Projects offered in the filter. Falls back to the API when empty. */
   projects: ProjectOption[];
-  /** The field app only exports CSV; the dashboard also renders the PDF report. */
+  /** The field app only exports CSV; the dashboard also renders the PDF protocol and
+   *  the KPI report. */
   allowPdf?: boolean;
   title?: string;
   onClose: () => void;
@@ -24,6 +25,15 @@ interface ReportDialogProps {
  * Filter dialog shared by the dashboard report button and the field app CSV
  * export, so both offer exactly the same project + date-range filters.
  */
+// pdf: the Öffnungen protocol laid out after reportTemplate.pdf. kpi: the dashboard's
+// figures as their own document (kpi_report.py). csv: the raw rows.
+type ExportKind = 'pdf' | 'kpi' | 'csv';
+const EXPORTS: Record<ExportKind, { path: string; file: string }> = {
+  pdf: { path: 'feedback.pdf', file: 'oeffnungsmassnahmen' },
+  kpi: { path: 'kennzahlen.pdf', file: 'kennzahlen' },
+  csv: { path: 'feedback.csv', file: 'feedback' }
+};
+
 export const ReportDialog: React.FC<ReportDialogProps> = ({
   lang,
   apiBase,
@@ -41,7 +51,7 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
   const projectId = chosenProjectId ?? projects[0]?.project_id ?? '';
   const [start, setStart] = useState<string>('');
   const [end, setEnd] = useState<string>('');
-  const [busy, setBusy] = useState<'pdf' | 'csv' | null>(null);
+  const [busy, setBusy] = useState<ExportKind | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const rangeInvalid = Boolean(start && end && start > end);
@@ -61,7 +71,8 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
     { id: 'today', label: t('Today'), from: today, to: today },
   ];
 
-  const download = async (kind: 'pdf' | 'csv') => {
+  const download = async (kind: ExportKind) => {
+    const { path, file } = EXPORTS[kind];
     if (rangeInvalid) return;
     setBusy(kind);
     setError(null);
@@ -71,7 +82,7 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
       if (start) params.set('start', start);
       if (end) params.set('end', end);
 
-      const res = await authFetch(`${apiBase}/api/reports/feedback.${kind}?${params.toString()}`);
+      const res = await authFetch(`${apiBase}/api/reports/${path}?${params.toString()}`);
       if (res.status === 403) {
         setError(t('You do not have permission to export reports.'));
         return;
@@ -84,7 +95,7 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${kind === 'pdf' ? 'oeffnungsmassnahmen' : 'feedback'}-${projectId || 'alle'}${start ? `-${start}` : ''}${end ? `-${end}` : ''}.${kind}`;
+      a.download = `${file}-${projectId || 'alle'}${start ? `-${start}` : ''}${end ? `-${end}` : ''}.${path.split('.').pop()}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -190,6 +201,17 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
             >
               {busy === 'pdf' ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <FileText size={16} aria-hidden="true" />}
               {t('Download PDF')}
+            </button>
+          )}
+          {allowPdf && (
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={busy !== null || rangeInvalid}
+              onClick={() => download('kpi')}
+            >
+              {busy === 'kpi' ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <BarChart3 size={16} aria-hidden="true" />}
+              {t('KPI report (PDF)')}
             </button>
           )}
           <button

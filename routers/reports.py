@@ -1,10 +1,11 @@
-"""Exports: the PDF report, the CSV, and the photo gallery page the PDF links to."""
+"""Exports: the PDF report, the KPI report, the CSV, and the photo gallery page the PDF links to."""
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, Response
 from sqlalchemy.orm import Session
 
+import kpi_report
 import models
 import report
 from database import get_db
@@ -13,13 +14,18 @@ from security import require_any_surface, require_surface
 router = APIRouter()
 
 
-def _report_rows(db, project_id, start, end):
+def _date_range(start, end):
     start_dt = report.parse_date(start)
     end_dt = report.parse_date(end, end_of_day=True)
     if start and start_dt is None:
         raise HTTPException(status_code=400, detail=f"Invalid start date: {start}")
     if end and end_dt is None:
         raise HTTPException(status_code=400, detail=f"Invalid end date: {end}")
+    return start_dt, end_dt
+
+
+def _report_rows(db, project_id, start, end):
+    start_dt, end_dt = _date_range(start, end)
     return report.fetch_rows(db, project_id, start_dt, end_dt), start_dt, end_dt
 
 
@@ -42,6 +48,25 @@ def report_feedback_pdf(
     gallery_base = str(request.base_url).rstrip("/")
     pdf = report.build_pdf(db, rows, project_id, start_dt, end_dt, gallery_base=gallery_base)
     filename = f"oeffnungsmassnahmen-{_stamp(project_id, start, end)}.pdf"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/api/reports/kennzahlen.pdf")
+def report_kpi_pdf(
+    project_id: Optional[str] = Query(None),
+    start: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
+    end: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(require_surface("dashboard")),
+):
+    """The dashboard's KPIs as a document, separate from the Öffnungen protocol."""
+    start_dt, end_dt = _date_range(start, end)
+    pdf = kpi_report.build_for(db, project_id, start_dt, end_dt)
+    filename = f"kennzahlen-{_stamp(project_id, start, end)}.pdf"
     return Response(
         content=pdf,
         media_type="application/pdf",

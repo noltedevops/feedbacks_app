@@ -10,6 +10,7 @@ import { useTokenColors } from '../useTokenColors';
 import { haversineMetres, forwardAzimuth, formatDistance } from '../geo';
 import { useUserPosition } from '../useUserPosition';
 import { Target3DView } from './Target3DView';
+import { hasExcavation, isShallowHazard } from '../dashboardStats';
 
 interface FieldMapProps {
   lang: AppLang;
@@ -102,6 +103,7 @@ const TargetPopup: React.FC<{ point: LocalPoint; lang: AppLang; t: Translator; d
     [feedbackPhotos]
   );
   const [activeMedia, setActiveMedia] = useState<'photos' | '3d'>(photos.length > 0 ? 'photos' : '3d');
+  const showPit = hasExcavation(point);
   // Starts at the first photo for each target: the popup is keyed per target (below),
   // so a different target mounts a fresh one rather than reusing this index.
   const [index, setIndex] = useState(0);
@@ -137,7 +139,7 @@ const TargetPopup: React.FC<{ point: LocalPoint; lang: AppLang; t: Translator; d
         </span>
       </header>
 
-      {point.evaluated_depth != null && point.evaluated_depth > 0 && point.evaluated_depth < 0.40 && (
+      {isShallowHazard(point) && (
         <div className="tp-hazard-banner">
           <AlertTriangle size={14} aria-hidden="true" />
           <span>{t('Shallow Hazard (<0.4m)')}: {point.evaluated_depth} m</span>
@@ -179,7 +181,9 @@ const TargetPopup: React.FC<{ point: LocalPoint; lang: AppLang; t: Translator; d
         </section>
       )}
 
-      {(photos.length > 0 || feedback?.visited || point.evaluated_depth != null) && (
+      {/* The pit view draws what the crew measured, so it is offered only once a target
+          has been dug - a pending target has no pit to show. */}
+      {(photos.length > 0 || showPit) && (
         <section className="tp-media-section">
           <div className="tp-media-tabs">
             {photos.length > 0 && (
@@ -191,16 +195,18 @@ const TargetPopup: React.FC<{ point: LocalPoint; lang: AppLang; t: Translator; d
                 {t('Photos')} ({photos.length})
               </button>
             )}
-            <button
-              type="button"
-              className={`tp-media-tab${activeMedia === '3d' ? ' active' : ''}`}
-              onClick={() => setActiveMedia('3d')}
-            >
-              {t('3D Pit View')}
-            </button>
+            {showPit && (
+              <button
+                type="button"
+                className={`tp-media-tab${activeMedia === '3d' ? ' active' : ''}`}
+                onClick={() => setActiveMedia('3d')}
+              >
+                {t('3D Pit View')}
+              </button>
+            )}
           </div>
 
-          {activeMedia === '3d' ? (
+          {activeMedia === '3d' && showPit ? (
             <Target3DView point={point} lang={lang} height={190} />
           ) : (
             photos.length > 0 && (

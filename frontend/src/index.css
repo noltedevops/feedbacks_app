@@ -746,6 +746,8 @@ select.report-field {
   color: var(--danger-ink);
 }
 
+/* Side by side while there are two exports; the dashboard's three stack, each on one
+   line, rather than squeezing their labels onto two (or past the dialog's edge). */
 .report-actions {
   display: flex;
   gap: var(--space-2);
@@ -753,6 +755,10 @@ select.report-field {
 
 .report-actions > * {
   flex: 1;
+}
+
+.report-actions:has(> :nth-child(3)) {
+  flex-direction: column;
 }
 
 @media (max-width: 420px) {
@@ -3832,66 +3838,25 @@ select.report-field {
   border-color: var(--surface-border-strong);
 }
 
-/* 3D Inspection Modal */
-.target-3d-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-4);
-  animation: field-fade 0.2s ease-out;
+/* A log card and its 3D button sit side by side as siblings - a button may not hold
+   another - with the 3D button laid over the card's top corner. The card's head keeps
+   clear of it. */
+.target-card-row {
+  position: relative;
+  flex-shrink: 0;
 }
 
-.target-3d-modal {
-  width: 100%;
-  max-width: 580px;
-  background: var(--surface);
-  border-radius: var(--radius-panel);
-  border: 1px solid var(--surface-border);
-  box-shadow: var(--shadow-float);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+.target-card-row > .target-card-3d-btn {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
 }
 
-.target-3d-modal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--surface-border);
-  background: var(--surface-sunken);
+.target-card-row:has(> .target-card-3d-btn) .target-card-head {
+  padding-right: calc(24px + var(--space-2));
 }
 
-.target-3d-modal-head h3 {
-  margin: 0;
-  font-size: var(--text-heading);
-  line-height: var(--lh-heading);
-  color: var(--surface-text-strong);
-}
-
-.target-3d-modal-close {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  color: var(--surface-text-muted);
-  border-radius: var(--radius-control);
-  cursor: pointer;
-}
-
-.target-3d-modal-close:hover {
-  background: var(--surface-border);
-  color: var(--surface-text-strong);
-}
-
-.target-3d-modal-body {
-  padding: var(--space-3);
+.target-card-3d-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
