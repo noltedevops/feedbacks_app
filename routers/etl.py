@@ -281,7 +281,7 @@ def decide_etl_correction(req: CorrectionDecisionRequest, admin: models.User = D
     return {"success": True, "pair_id": req.pair_id, "decision_id": row[0]}
 
 
-_REPO_DIR = os.path.dirname(os.path.abspath(__file__))
+_REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _ETL_CONFIG_PATH = os.path.join(_REPO_DIR, "etl", "config", "projects.yml")
 _COMPOSE_FILE = os.path.join(_REPO_DIR, "docker-compose.yml")
 _ETL_RUN_TIMEOUT_SECONDS = 180
