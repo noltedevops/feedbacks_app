@@ -144,6 +144,7 @@ class TestSurfacesAndAdmin(unittest.TestCase):
         self.assertEqual(no_field.json()["detail"]["surface"], "field")
         self.assertEqual(client.get("/api/stats", headers=_auth("collector")).status_code, 403)
         self.assertEqual(client.get("/api/reports/feedback.pdf", headers=_auth("collector")).status_code, 403)
+        self.assertEqual(client.get("/api/reports/kennzahlen.pdf", headers=_auth("collector")).status_code, 403)
         self.assertEqual(client.get("/api/reports/feedback.csv", headers=_auth("collector")).status_code, 200)
         self.assertEqual(client.get("/api/reports/feedback.csv", headers=_auth("analyst")).status_code, 200)
         csv_denied = client.get("/api/reports/feedback.csv", headers=_auth("nobody"))
@@ -324,6 +325,14 @@ class TestPointsSyncReports(unittest.TestCase):
         self.assertTrue(pdf.content.startswith(b"%PDF"))
         self.assertEqual(client.get("/api/reports/feedback.pdf", headers=_auth("analyst"),
                                     params={"start": "not-a-date"}).status_code, 400)
+
+        kpi = client.get("/api/reports/kennzahlen.pdf", headers=_auth("analyst"),
+                         params={"project_id": PROJECT, "start": "2026-01-01"})
+        self.assertEqual(kpi.status_code, 200)
+        self.assertTrue(kpi.content.startswith(b"%PDF"))
+        self.assertIn(f'filename="kennzahlen-{PROJECT}-2026-01-01.pdf"', kpi.headers["content-disposition"])
+        self.assertEqual(client.get("/api/reports/kennzahlen.pdf", headers=_auth("analyst"),
+                                    params={"end": "31.12.2026"}).status_code, 400)
 
 
 class TestPublicSurface(unittest.TestCase):

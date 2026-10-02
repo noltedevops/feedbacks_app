@@ -194,6 +194,7 @@ const de: Record<string, string> = {
   'Export CSV': 'CSV exportieren',
   'Download PDF': 'PDF herunterladen',
   'Download CSV': 'CSV herunterladen',
+  'KPI report (PDF)': 'Kennzahlenbericht (PDF)',
   'Quick select': 'Schnellauswahl',
   'Today': 'Heute',
   'away': 'entfernt',
@@ -527,8 +528,8 @@ const de: Record<string, string> = {
   'Open Generate Report. On a phone it is inside the Filter bar.':
     'Öffnen Sie „Bericht erstellen“. Auf dem Handy liegt es in der Filterleiste.',
   'Export the selection': 'Die Auswahl exportieren',
-  'Choose a project and, if you like, a date range. Download PDF gives the landscape A4 site report, Download CSV the raw rows.':
-    'Projekt und, wenn gewünscht, einen Zeitraum wählen. „PDF herunterladen“ liefert den Objektbericht im A4-Querformat, „CSV herunterladen“ die Rohdaten.',
+  'Choose a project and, if you like, a date range. Download PDF gives the landscape A4 site report, KPI report the dashboard figures as a document, Download CSV the raw rows.':
+    'Projekt und, wenn gewünscht, einen Zeitraum wählen. „PDF herunterladen“ liefert den Objektbericht im A4-Querformat, „Kennzahlenbericht“ die Kennzahlen des Dashboards als Dokument, „CSV herunterladen“ die Rohdaten.',
 
   // Category filter (anomalies.category)
   'Category': 'Kategorie',

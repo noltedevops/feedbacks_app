@@ -107,7 +107,7 @@ const dashboard: TourStep[] = [
     anchors: ['report-dialog'],
     interactive: true,
     title: 'Export the selection',
-    body: 'Choose a project and, if you like, a date range. Download PDF gives the landscape A4 site report, Download CSV the raw rows.',
+    body: 'Choose a project and, if you like, a date range. Download PDF gives the landscape A4 site report, KPI report the dashboard figures as a document, Download CSV the raw rows.',
   },
 ];
 
