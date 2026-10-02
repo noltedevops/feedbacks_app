@@ -27,6 +27,16 @@ import {
 import { ExpandButton, ExpandedPanel } from './PanelExpand';
 import { useHeaderRow } from '../useHeaderRow';
 import { DEPTH_BUCKETS, matchesDepthBucket } from '../depthBuckets';
+import {
+  accuracyStats,
+  hasExcavation,
+  isOpenShallowHazard,
+  isSohleClear,
+  sohleCompliance,
+  SHALLOW_HAZARD_DEPTH_M,
+  SOHLE_COMPLIANCE_TARGET_PCT,
+  volumeStats
+} from '../dashboardStats';
 
 function depthBucketLabel(bucket: { id: string; label: string }, t: (s: string) => string): string {
   return bucket.id === 'all' ? t(bucket.label) : bucket.label;
@@ -38,12 +48,6 @@ function fixed2(value: number): string {
   const text = value.toFixed(2);
   return text === '-0.00' ? '0.00' : text;
 }
-
-
-// A target counts as excavated once a field crew has filed its opening record. Sohle,
-// Fundstück and the actual measurements all live on that record, so nothing derived from
-// them exists before it.
-const hasExcavation = (p: LocalPoint) => !!p.local_status && p.local_status !== 'unvisited' && !!p.feedback;
 
 // The panels that expand into the large overlay (PanelExpand).
 type PanelId = 'findings' | 'sohle' | 'accuracy' | 'profiling' | 'log';
@@ -146,25 +150,15 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     // Unique Project IDs Count
     const projectIds = new Set(dashboardPoints.map(p => p.project_id || '11-24-2736'));
 
-    const sohleClearCount = excavatedPoints.filter(p => {
-      const s = (p.feedback?.sohle_status || '').toLowerCase().trim();
-      return s === 'frei' || s === 'clear';
-    }).length;
-    const sohleCompliance = excavatedPoints.length > 0
-      ? Math.round((sohleClearCount / excavatedPoints.length) * 100)
-      : null;
-
-    const shallowCount = dashboardPoints.filter(
-      p => p.evaluated_depth != null && p.evaluated_depth > 0 && p.evaluated_depth < 0.40
-    ).length;
-
     return {
       total: totalCount,
       investigated: investigatedCount,
       pending: totalCount - investigatedCount,
       projectsCount: projectIds.size,
-      sohleComplianceRate: sohleCompliance,
-      shallowHazardCount: shallowCount
+      // Same rule as the Sohle split chart: no recorded status is not a clearance.
+      sohleComplianceRate: sohleCompliance(excavatedPoints),
+      // Still in the ground: a shallow target stops being a hazard once it is dug.
+      shallowHazardCount: dashboardPoints.filter(isOpenShallowHazard).length
     };
   }, [dashboardPoints, excavatedPoints]);
 
@@ -194,11 +188,11 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     const sohleSplitMap: { [key: string]: { name: string; 'Frei': number; 'Nicht Frei': number } } = {};
     excavatedPoints.forEach(p => {
       const fund = p.feedback!.fundstueck || 'ohne Fund';
-      const sohle = p.feedback!.sohle_status || 'Frei';
       if (!sohleSplitMap[fund]) {
         sohleSplitMap[fund] = { name: fund, 'Frei': 0, 'Nicht Frei': 0 };
       }
-      if (sohle === 'Frei') {
+      // Same rule as the compliance tile: no recorded status is not a clearance.
+      if (isSohleClear(p.feedback!.sohle_status)) {
         sohleSplitMap[fund]['Frei']++;
       } else {
         sohleSplitMap[fund]['Nicht Frei']++;
@@ -251,80 +245,38 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   // Mean error, bias and FPR are evaluated-vs-excavated measures - undefined without an
   // excavation to compare against, so they never see a pending target.
   const { meanDepthError, biasText, falsePositiveRate, velocityDriftText, velocityDriftLabel, velocityDriftTooltip } = useMemo(() => {
-    let totalDiff = 0;
-    let totalBias = 0;
-    let validDepthPairs = 0;
-    let investigatedCount = 0;
-    let ohneFundCount = 0;
-
-    let gprActual = 0;
-    let gprEval = 0;
-    let gprPairs = 0;
-
-    let magDiff = 0;
-    let magPairs = 0;
-
-    excavatedPoints.forEach(p => {
-      investigatedCount++;
-      if (p.feedback!.fundstueck === 'ohne Fund') {
-        ohneFundCount++;
-      }
-
-      const evalD = p.evaluated_depth;
-      const execD = p.feedback!.actual_depth;
-      if (evalD !== null && execD !== null && evalD !== undefined && execD !== undefined) {
-        totalDiff += Math.abs(evalD - execD);
-        totalBias += (evalD - execD);
-        validDepthPairs++;
-
-        const inst = (p.instrument || '').toLowerCase();
-        if (inst.includes('radar')) {
-          if (evalD > 0 && execD > 0) {
-            gprActual += execD;
-            gprEval += evalD;
-            gprPairs++;
-          }
-        } else if (inst.includes('mag')) {
-          magDiff += Math.abs(evalD - execD);
-          magPairs++;
-        }
-      }
-    });
-
-    const rawBias = validDepthPairs > 0 ? totalBias / validDepthPairs : 0;
-    const gprDrift = gprPairs > 0 && gprEval > 0
-      ? ((gprActual / gprEval) - 1) * 100
-      : null;
+    const stats = accuracyStats(excavatedPoints);
+    const na = t('N/A');
 
     const velocityDriftLabel = filterInstrument === 'magnetic'
       ? t('MAG ERROR')
       : (filterInstrument === 'all' ? t('GPR VELOCITY (Δv)') : t('VELOCITY DRIFT'));
-    let velocityDriftText = t('N/A');
+    let velocityDriftText = na;
     let velocityDriftTooltip = '';
 
     if (filterInstrument === 'magnetic') {
-      velocityDriftText = magPairs > 0 ? `± ${(magDiff / magPairs).toFixed(2)} m` : t('N/A');
+      if (stats.magError !== null) velocityDriftText = `± ${fixed2(stats.magError)} m`;
       velocityDriftTooltip = t('Dipole gradient inversion error');
-    } else {
-
-      if (gprDrift !== null) {
-        velocityDriftText = `${gprDrift > 0 ? '+' : ''}${gprDrift.toFixed(1)}%`;
-        if (Math.abs(gprDrift) < 2) {
-          velocityDriftTooltip = t('Radar velocity accurately calibrated');
-        } else if (gprDrift > 0) {
-          velocityDriftTooltip = t('Radar velocity underestimated (soil permittivity lower than assumed)');
-        } else {
-          velocityDriftTooltip = t('Radar velocity overestimated (soil permittivity higher than assumed)');
-        }
+    } else if (stats.gprVelocityDrift !== null) {
+      const drift = stats.gprVelocityDrift;
+      velocityDriftText = `${drift > 0 ? '+' : ''}${drift.toFixed(1)}%`;
+      if (Math.abs(drift) < 2) {
+        velocityDriftTooltip = t('Radar velocity accurately calibrated');
+      } else if (drift > 0) {
+        velocityDriftTooltip = t('Radar velocity underestimated (soil permittivity lower than assumed)');
+      } else {
+        velocityDriftTooltip = t('Radar velocity overestimated (soil permittivity higher than assumed)');
       }
     }
 
+    const bias = stats.bias;
     return {
-      meanDepthError: validDepthPairs > 0 ? (totalDiff / validDepthPairs).toFixed(2) : '0.00',
-      biasText: validDepthPairs > 0
-        ? (rawBias > 0.02 ? `${t('Too Deep')} (+${fixed2(rawBias)}m)` : (rawBias < -0.02 ? `${t('Too Shallow')} (${fixed2(rawBias)}m)` : `${t('Balanced')} (${fixed2(rawBias)}m)`))
-        : t('N/A'),
-      falsePositiveRate: investigatedCount > 0 ? Math.round((ohneFundCount / investigatedCount) * 100) : 0,
+      meanDepthError: stats.meanDepthError !== null ? `± ${fixed2(stats.meanDepthError)} m` : na,
+      biasText: bias === null ? na
+        : bias > 0.02 ? `${t('Too Deep')} (+${fixed2(bias)}m)`
+        : bias < -0.02 ? `${t('Too Shallow')} (${fixed2(bias)}m)`
+        : `${t('Balanced')} (${fixed2(bias)}m)`,
+      falsePositiveRate: stats.falsePositiveRate !== null ? `${stats.falsePositiveRate}%` : na,
       velocityDriftText,
       velocityDriftLabel,
       velocityDriftTooltip
@@ -365,32 +317,16 @@ const DashboardImpl: React.FC<DashboardProps> = ({
     });
   }, [excavatedPoints]);
 
+  // Only pits whose volume was recorded count; with none, each figure is N/A.
   const volumeKpis = useMemo(() => {
-    let totalVolume = 0;
-    let volumeCount = 0;
-    let findingWithVolumeCount = 0;
-
-    excavatedPoints.forEach(p => {
-      const vol = p.feedback?.m_cube;
-      if (vol != null && vol > 0) {
-        totalVolume += vol;
-        volumeCount++;
-        if (p.feedback?.fundstueck && p.feedback.fundstueck !== 'ohne Fund') {
-          findingWithVolumeCount++;
-        }
-      }
-    });
-
-    const meanPitVolume = volumeCount > 0 ? (totalVolume / volumeCount).toFixed(2) : '0.00';
-    const totalVolumeFormatted = totalVolume.toFixed(1);
-    const yieldRatio = totalVolume > 0 ? (findingWithVolumeCount / totalVolume).toFixed(2) : '0.00';
-
+    const v = volumeStats(excavatedPoints);
+    const na = t('N/A');
     return {
-      totalVolume: `${totalVolumeFormatted} m³`,
-      meanPitVolume: `${meanPitVolume} m³`,
-      yieldRatio: `${yieldRatio} / m³`
+      totalVolume: v.total !== null ? `${v.total.toFixed(1)} m³` : na,
+      meanPitVolume: v.meanPit !== null ? `${fixed2(v.meanPit)} m³` : na,
+      findsPerM3: v.findsPerM3 !== null ? fixed2(v.findsPerM3) : na
     };
-  }, [excavatedPoints]);
+  }, [excavatedPoints, t]);
 
   // ---- Chart colours --------------------------------------------------------
   // Recharts writes series colours into SVG attributes, legends and tooltips, none of
@@ -553,8 +489,8 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   // ---- Stat tiles ------------------------------------------------------------
   // Label, value, and an icon for recognition. The value is ink, not a status colour:
   // text wears text tokens, and the icon beside it carries the identity.
-  const statCard = (label: string, value: React.ReactNode, icon: React.ReactNode, tone?: 'found' | 'pending' | 'hazard' | 'clear') => (
-    <div className="dash-stat" data-tone={tone}>
+  const statCard = (label: string, value: React.ReactNode, icon: React.ReactNode, tone?: 'found' | 'pending' | 'hazard' | 'clear', hint?: string) => (
+    <div className="dash-stat" data-tone={tone} title={hint}>
       <span className="dash-stat-icon" aria-hidden="true">{icon}</span>
       <span className="dash-stat-text">
         <span className="dash-stat-label">{label}</span>
@@ -573,13 +509,15 @@ const DashboardImpl: React.FC<DashboardProps> = ({
         t('SOHLE COMPLIANCE'),
         sohleComplianceRate !== null ? `${sohleComplianceRate}%` : t('N/A'),
         <ShieldCheck size={16} />,
-        sohleComplianceRate !== null && sohleComplianceRate >= 80 ? 'clear' : undefined
+        sohleComplianceRate !== null && sohleComplianceRate >= SOHLE_COMPLIANCE_TARGET_PCT ? 'clear' : undefined,
+        t('Excavated targets recorded with a clear Sohle. A record without a Sohle status counts as not clear.')
       )}
       {statCard(
         t('SHALLOW HAZARDS'),
         shallowHazardCount,
         <AlertTriangle size={16} />,
-        shallowHazardCount > 0 ? 'hazard' : undefined
+        shallowHazardCount > 0 ? 'hazard' : undefined,
+        `${t('Targets not yet excavated with a calculated depth under')} ${String(SHALLOW_HAZARD_DEPTH_M).replace('.', lang === 'DE' ? ',' : '.')} m`
       )}
     </div>
   );

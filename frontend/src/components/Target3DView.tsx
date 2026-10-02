@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { type LocalPoint } from '../db/indexedDb';
 import { makeT, type AppLang } from '../i18n';
 import { RotateCcw, AlertTriangle, ShieldCheck, Box } from 'lucide-react';
+import { isSohleClear as isSohleClearStatus } from '../dashboardStats';
 
 interface Target3DViewProps {
   point: LocalPoint;
@@ -24,16 +25,22 @@ export const Target3DView: React.FC<Target3DViewProps> = ({ point, lang, height 
   const t = useMemo(() => makeT(lang), [lang]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Pit dimensions in meters with sensible physical fallbacks
+  // Pit dimensions in metres. A dimension the crew did not record still needs a size to
+  // draw, so it falls back to a typical pit - but its label says "≈" and the volume
+  // says "est.", so a stand-in is never read as a measurement.
   const feedback = point.feedback;
   const length = Math.max(feedback?.laenge ?? 0.8, 0.2); // X axis
   const width = Math.max(feedback?.breite ?? 0.5, 0.2); // Y axis
   const actualDepth = Math.max(feedback?.actual_depth ?? point.evaluated_depth ?? 0.6, 0.1); // Z axis (downward)
+  const lengthTag = feedback?.laenge != null ? '' : '≈ ';
+  const widthTag = feedback?.breite != null ? '' : '≈ ';
+  const depthTag = feedback?.actual_depth != null ? '' : '≈ ';
   const evaluatedDepth = point.evaluated_depth != null && point.evaluated_depth > 0 ? point.evaluated_depth : null;
-  const volume = feedback?.m_cube != null ? `${feedback.m_cube} m³` : `${(length * width * actualDepth).toFixed(2)} m³`;
+  const volume = feedback?.m_cube != null
+    ? `${feedback.m_cube} m³`
+    : `≈ ${(length * width * actualDepth).toFixed(2)} m³ (${t('est.')})`;
   const finding = feedback?.fundstueck || (feedback?.visited ? 'ohne Fund' : t('N/A'));
-  const isSohleClear = (feedback?.sohle_status || '').toLowerCase().trim() === 'frei' ||
-                       (feedback?.sohle_status || '').toLowerCase().trim() === 'clear';
+  const isSohleClear = isSohleClearStatus(feedback?.sohle_status);
 
   // Camera angles in radians
   const [azimuth, setAzimuth] = useState<number>(0.65); // ~37 degrees
@@ -272,7 +279,7 @@ export const Target3DView: React.FC<Target3DViewProps> = ({ point, lang, height 
     ctx.fillStyle = sohleColor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(isSohleClear ? `✓ Sohle: Frei (${actualDepth} m)` : `⚠ Sohle: Nicht Frei (${actualDepth} m)`, btmCenter.x, btmCenter.y);
+    ctx.fillText(isSohleClear ? `✓ Sohle: Frei (${depthTag}${actualDepth} m)` : `⚠ Sohle: Nicht Frei (${depthTag}${actualDepth} m)`, btmCenter.x, btmCenter.y);
     ctx.restore();
 
     // 5. Draw Pit Frame Struts (Corner Edges)
@@ -374,23 +381,23 @@ export const Target3DView: React.FC<Target3DViewProps> = ({ point, lang, height 
     const midLen = { x: (top2D[0].x + top2D[1].x) / 2, y: (top2D[0].y + top2D[1].y) / 2 };
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(`L: ${length} m`, midLen.x, midLen.y - 4);
+    ctx.fillText(`L: ${lengthTag}${length} m`, midLen.x, midLen.y - 4);
 
     // Width annotation along top side edge (top2D[1] to top2D[2])
     const midWid = { x: (top2D[1].x + top2D[2].x) / 2, y: (top2D[1].y + top2D[2].y) / 2 };
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`W: ${width} m`, midWid.x + 6, midWid.y);
+    ctx.fillText(`W: ${widthTag}${width} m`, midWid.x + 6, midWid.y);
 
     // Depth ruler on the front-left corner (top2D[0] to btm2D[0])
     const midDep = { x: (top2D[0].x + btm2D[0].x) / 2, y: (top2D[0].y + btm2D[0].y) / 2 };
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`D: ${actualDepth} m`, midDep.x - 6, midDep.y);
+    ctx.fillText(`D: ${depthTag}${actualDepth} m`, midDep.x - 6, midDep.y);
 
     ctx.restore();
     ctx.restore();
-  }, [length, width, actualDepth, evaluatedDepth, isSohleClear, finding, azimuth, elevation, zoom, t]);
+  }, [length, width, actualDepth, lengthTag, widthTag, depthTag, evaluatedDepth, isSohleClear, finding, azimuth, elevation, zoom, t]);
 
   return (
     <div className="target-3d-container">

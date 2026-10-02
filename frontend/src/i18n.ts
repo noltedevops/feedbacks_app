@@ -151,7 +151,13 @@ const de: Record<string, string> = {
   'Target Dimensions (Stacked Serial Chart)': 'Zielabmessungen (gestapeltes Diagramm)',
   'TOTAL SPOIL VOLUME': 'GESAMTAUSHUBVOLUMEN',
   'MEAN PIT VOLUME': 'MITTLERES GRUBENVOLUMEN',
-  'EXCAVATION YIELD': 'AUSHUBAUSBEUTE',
+  'FINDS PER M³': 'FUNDE JE M³',
+  'Finds (anything but ohne Fund) per m³ excavated, over pits with a recorded volume':
+    'Funde (alles außer ohne Fund) je m³ Aushub, über Gruben mit erfasstem Volumen',
+  'Excavated targets recorded with a clear Sohle. A record without a Sohle status counts as not clear.':
+    'Ausgehobene Ziele mit freier Sohle. Ein Eintrag ohne Sohle-Status zählt als nicht frei.',
+  'Targets not yet excavated with a calculated depth under': 'Noch nicht ausgehobene Ziele mit errechneter Tiefe unter',
+  'est.': 'geschätzt',
   'Depth (m)': 'Tiefe (m)',
   'Length (m)': 'Länge (m)',
   'Width (m)': 'Breite (m)',
@@ -506,17 +512,17 @@ const de: Record<string, string> = {
   'Narrow by project, instrument, category, depth and status. Every number, chart, the target log and the map follow the selection.':
     'Nach Projekt, Instrument, Kategorie, Tiefe und Status eingrenzen. Jede Zahl, jedes Diagramm, das Zielprotokoll und die Karte folgen der Auswahl.',
   'The headline numbers': 'Die Kennzahlen',
-  'Total, investigated and pending targets, and how many survey projects the selection spans.':
-    'Ziele gesamt, untersucht und offen – und wie viele Messprojekte die Auswahl umfasst.',
+  'Total, investigated and pending targets and the survey projects the selection spans. Sohle compliance is the share of dug targets left with a clear Sohle; shallow hazards are the targets under 0.4 m still in the ground.':
+    'Ziele gesamt, untersucht und offen sowie die Messprojekte der Auswahl. Die Sohle-Freigabe ist der Anteil ausgehobener Ziele mit freier Sohle; Flachlieger sind die noch nicht ausgehobenen Ziele unter 0,4 m.',
   'What was found': 'Was gefunden wurde',
   'Findings grouped by type. Below it, the Sohle split shows which excavations were left clear.':
     'Funde nach Art gruppiert. Darunter zeigt die Sohle-Aufteilung, welche Aushübe frei hinterlassen wurden.',
   'How accurate the survey was': 'Wie genau die Messung war',
-  'Evaluated depth from the sensor against the depth actually excavated, with the mean error, the bias and the share of empty holes.':
-    'Errechnete Tiefe des Sensors gegen die tatsächlich ausgehobene Tiefe, mit mittlerem Fehler, Tendenz und dem Anteil leerer Löcher.',
+  'Evaluated depth from the sensor against the depth actually excavated, with the mean error, the bias, the radar velocity drift (or the magnetics error) and the share of empty holes.':
+    'Errechnete Tiefe des Sensors gegen die tatsächlich ausgehobene Tiefe, mit mittlerem Fehler, Tendenz, Radar-Geschwindigkeitsdrift (bzw. Magnetik-Fehler) und dem Anteil leerer Löcher.',
   'The target log': 'Das Zielprotokoll',
-  'Every target in the selection. Select one to find it on the map.':
-    'Jedes Ziel der Auswahl. Wählen Sie eines aus, um es auf der Karte zu finden.',
+  'Every target in the selection. Select one to find it on the map; the cube button on a dug target opens a 3D view of its pit.':
+    'Jedes Ziel der Auswahl. Wählen Sie eines aus, um es auf der Karte zu finden; der Würfel-Knopf an einem ausgehobenen Ziel öffnet eine 3D-Ansicht der Grube.',
   'Try it: generate a report': 'Ausprobieren: einen Bericht erstellen',
   'Open Generate Report. On a phone it is inside the Filter bar.':
     'Öffnen Sie „Bericht erstellen“. Auf dem Handy liegt es in der Filterleiste.',
