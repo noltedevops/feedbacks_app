@@ -275,22 +275,26 @@ def photo_gallery_html(fb, an) -> str:
 """
 
 
-def rows_to_csv(rows) -> str:
+def rows_to_csv(rows, exclude=()) -> str:
+    """exclude: CSV_HEADER names to leave out (the field app drops the columns its
+    crews do not use)."""
+    keep = [i for i, name in enumerate(CSV_HEADER) if name not in set(exclude)]
     buf = io.StringIO()
     # Excel on a German locale needs the separator hint to split on ';'
     buf.write("sep=;\r\n")
     writer = csv.writer(buf, delimiter=";", lineterminator="\r\n")
-    writer.writerow(CSV_HEADER)
+    writer.writerow([CSV_HEADER[i] for i in keep])
     for fb, an in rows:
         tt = _team_tools(fb.teams_tools)
-        writer.writerow([
+        values = [
             an.vm_nr, an.target_id, an.project_id, an.easting, an.northing,
             an.evaluated_depth, fb.laenge, fb.breite, fb.tief, fb.m_cube,
             fb.fundstueck, fb.sohle_status, fb.notes, fb.investigator,
             fb.visit_date.isoformat() if fb.visit_date else None, fb.bilder_n,
             tt.get("truppfuehrer"), tt.get("maschinenfuehrer"), tt.get("bez_suchfeld"),
             tt.get("messgeraet"), tt.get("sondierer"),
-        ])
+        ]
+        writer.writerow([values[i] for i in keep])
     return buf.getvalue()
 
 
