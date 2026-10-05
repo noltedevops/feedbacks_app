@@ -83,6 +83,7 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
 
   const themeLabel = theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode');
   const shot = `/landing/${experience}-${theme}-${lang === 'DE' ? 'de' : 'en'}.jpg`;
+  const mobileShot = `/landing/${experience}-mobile-${theme}-${lang === 'DE' ? 'de' : 'en'}.jpg`;
 
   return (
     <div className="landing-root">
@@ -177,9 +178,53 @@ export function Landing({ lang, onLangChange, theme, onToggleTheme, onSignIn, on
             </div>
 
             <section className="xp-section mdb-workbench-body" key={`xp-${experience}`} aria-labelledby={headingId}>
-              <figure className="xp-shot mdb-frame-shot">
-                <img src={shot} alt={t(xp.shotAlt)} width={1440} height={900} />
-              </figure>
+              <div className="xp-device-showcase">
+                {/* Desktop Monitor Frame */}
+                <div className="device-monitor">
+                  <div className="device-monitor-bezel">
+                    <div className="device-monitor-camera" aria-hidden="true" />
+                    <div className="device-monitor-screen">
+                      <img
+                        src={shot}
+                        alt={t(xp.shotAlt)}
+                        width={1440}
+                        height={900}
+                        className="device-screen-img"
+                      />
+                      <div className="device-screen-glare" aria-hidden="true" />
+                    </div>
+                  </div>
+                  <div className="device-monitor-stand" aria-hidden="true">
+                    <div className="device-stand-neck" />
+                    <div className="device-stand-base" />
+                  </div>
+                </div>
+
+                {/* Floating Animated Smartphone Frame */}
+                <div className="device-phone">
+                  <div className="device-phone-case">
+                    <div className="device-phone-notch" aria-hidden="true">
+                      <span className="device-phone-lens" />
+                    </div>
+                    <div className="device-phone-screen">
+                      <img
+                        src={mobileShot}
+                        alt={`${t(xp.shotAlt)} (Mobile)`}
+                        width={390}
+                        height={844}
+                        className="device-screen-img"
+                      />
+                      <div className="device-phone-glare" aria-hidden="true" />
+                    </div>
+                    <div className="device-phone-chin" aria-hidden="true" />
+                  </div>
+                  {/* Floating live sync pill */}
+                  <div className="device-sync-badge" aria-hidden="true">
+                    <span className="device-sync-dot" />
+                    <span>{t('Live Mobile & Web Sync')}</span>
+                  </div>
+                </div>
+              </div>
               <div className="xp-copy mdb-copy-card">
                 <p className="xp-kicker">{t(xp.kicker)}</p>
                 <h2 className="xp-heading" id={headingId}>{t(xp.heading)}</h2>

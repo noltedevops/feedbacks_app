@@ -129,6 +129,9 @@
     left: calc(var(--dash-side-now) + 3 * var(--panel-gap));
     max-width: calc(100% - 2 * (var(--dash-side-now) + 3 * var(--panel-gap)));
   }
+  .map-legend--dashboard {
+    left: calc(var(--dash-side-now) + 3 * var(--panel-gap) + 48px);
+  }
 }
 
 /* The side columns scroll over the map rather than squeezing their panels to fit the
@@ -867,7 +870,67 @@
        and the summary ellipsises as it does in the Field App. */
     flex-wrap: nowrap;
     align-items: stretch;
+    gap: var(--space-3);
     box-shadow: var(--shadow-panel);
+  }
+
+  /* --- 3-Cockpit Segmented Switcher --- */
+  .dash-mobile-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: var(--surface-sunken);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-control);
+    padding: 3px;
+    gap: 3px;
+  }
+
+  .dash-mobile-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: var(--space-2) var(--space-1);
+    min-height: 48px;
+    border-radius: calc(var(--radius-control) - 2px);
+    border: none;
+    background: transparent;
+    color: var(--surface-text-muted);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    line-height: 1.1;
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+    text-align: center;
+    transition: all var(--transition-fast);
+  }
+
+  .dash-mobile-tab.active {
+    background: var(--surface);
+    color: var(--surface-text-strong);
+    font-weight: var(--weight-semibold);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .dash-mobile-tab:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -1px;
+  }
+
+  .dash-mobile-tab-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    width: 100%;
+    animation: profile-fade 0.2s ease-out;
+  }
+
+  .dash-mobile-switch-btn {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    font-weight: var(--weight-semibold);
   }
 
   .dash-header--mobile .dash-report,

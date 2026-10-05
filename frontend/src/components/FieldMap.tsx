@@ -499,6 +499,8 @@ const MapToolbar: React.FC<{
   t
 }) => {
   const map = useMap();
+  const basemapAnchorRef = useRef<HTMLDivElement>(null);
+  const [legendCompact, setLegendCompact] = useState(false);
 
   const handleZoomIn = () => map.zoomIn();
   const handleZoomOut = () => map.zoomOut();
@@ -509,78 +511,109 @@ const MapToolbar: React.FC<{
     }
   };
 
-  // Everything here is styled by the map-toolbar classes in field.css; the only thing
-  // that varies by caller is which side of the dashboard column the stack clears.
+  const investigatedCount = points.filter(p => p.local_status === 'investigated').length;
+  const pendingCount = points.length - investigatedCount;
+
+  // Close basemap menu on outside click/touch or Escape key
+  useEffect(() => {
+    if (!basemapOpen) return;
+    const onOutside = (e: MouseEvent | TouchEvent) => {
+      if (basemapAnchorRef.current && !basemapAnchorRef.current.contains(e.target as Node)) {
+        setBasemapOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setBasemapOpen(false);
+    };
+    document.addEventListener('mousedown', onOutside);
+    document.addEventListener('touchstart', onOutside);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onOutside);
+      document.removeEventListener('touchstart', onOutside);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [basemapOpen, setBasemapOpen]);
+
   return (
-    <div className={`map-toolbar${viewMode === 'dashboard' ? ' map-toolbar--dashboard' : ''}`}>
-
-      {/* Basemap switcher popout. The active option is marked by a tick as well as by
-          colour. */}
-      <div className="map-toolbar-anchor">
-        {basemapOpen && (
-          <div className="basemap-menu" role="group" aria-label={t('Basemap')}>
-            <div className="basemap-menu-caption">{t('Basemap')}</div>
-            {BASEMAP_OPTIONS.map(({ key, label }) => {
-              const isActive = activeBasemap === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className="basemap-option"
-                  aria-pressed={isActive}
-                  onClick={() => { setActiveBasemap(key); setBasemapOpen(false); }}
-                >
-                  <span className="basemap-option-label">{t(label)}</span>
-                  {isActive && <Check size={14} strokeWidth={3} aria-hidden="true" />}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="map-controls">
-        <button type="button" className="map-control" onClick={handleZoomIn} title={t('Zoom In')} aria-label={t('Zoom In')}>
-          <Plus size={16} aria-hidden="true" />
-        </button>
-        <button type="button" className="map-control" onClick={handleZoomOut} title={t('Zoom Out')} aria-label={t('Zoom Out')}>
-          <Minus size={16} aria-hidden="true" />
-        </button>
-        <button type="button" className="map-control" onClick={handleHome} title={t('Fit bounds')} aria-label={t('Fit bounds')}>
-          <Home size={16} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          className="map-control"
-          onClick={() => setBasemapOpen(!basemapOpen)}
-          aria-expanded={basemapOpen}
-          title={t('Basemap switcher')}
-          aria-label={t('Basemap switcher')}
-        >
-          <Layers size={16} aria-hidden="true" />
-        </button>
-        {viewMode === 'dashboard' && onAddDataClick && (
-          <button type="button" className="map-control" onClick={onAddDataClick} title={t('Add Data Layer')} aria-label={t('Add Data Layer')}>
-            <FolderPlus size={16} aria-hidden="true" />
+    <>
+      <div className={`map-toolbar${viewMode === 'dashboard' ? ' map-toolbar--dashboard' : ''}`}>
+        <div className="map-controls">
+          <button type="button" className="map-control" onClick={handleZoomIn} title={t('Zoom In')} aria-label={t('Zoom In')}>
+            <Plus size={16} aria-hidden="true" />
           </button>
-        )}
+          <button type="button" className="map-control" onClick={handleZoomOut} title={t('Zoom Out')} aria-label={t('Zoom Out')}>
+            <Minus size={16} aria-hidden="true" />
+          </button>
+          <button type="button" className="map-control" onClick={handleHome} title={t('Fit bounds')} aria-label={t('Fit bounds')}>
+            <Home size={16} aria-hidden="true" />
+          </button>
+          <div className="map-control-anchor" ref={basemapAnchorRef}>
+            <button
+              type="button"
+              className={`map-control${basemapOpen ? ' active' : ''}`}
+              onClick={() => setBasemapOpen(!basemapOpen)}
+              aria-expanded={basemapOpen}
+              title={t('Basemap switcher')}
+              aria-label={t('Basemap switcher')}
+            >
+              <Layers size={16} aria-hidden="true" />
+            </button>
+
+            {basemapOpen && (
+              <div className="basemap-menu" role="group" aria-label={t('Basemap')}>
+                <div className="basemap-menu-caption">{t('Basemap')}</div>
+                {BASEMAP_OPTIONS.map(({ key, label }) => {
+                  const isActive = activeBasemap === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className="basemap-option"
+                      aria-pressed={isActive}
+                      onClick={() => { setActiveBasemap(key); setBasemapOpen(false); }}
+                    >
+                      <span className="basemap-option-label">{t(label)}</span>
+                      {isActive && <Check size={14} strokeWidth={3} aria-hidden="true" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          {viewMode === 'dashboard' && onAddDataClick && (
+            <button type="button" className="map-control" onClick={onAddDataClick} title={t('Add Data Layer')} aria-label={t('Add Data Layer')}>
+              <FolderPlus size={16} aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Legend. The caption is the first thing to go on a phone - the two swatches
-          next to it already say what it says. */}
-      <div className="map-legend">
-        {!isMobile && <span className="map-legend-caption">{t('Map Legend')}</span>}
+      {/* Flexible, interactive map legend */}
+      <div
+        className={`map-legend${viewMode === 'dashboard' ? ' map-legend--dashboard' : ''}${legendCompact ? ' map-legend--compact' : ''}`}
+        onClick={() => setLegendCompact(prev => !prev)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setLegendCompact(prev => !prev); }}
+        title={t('Click to toggle compact view')}
+        aria-label={t('Map Legend')}
+      >
+        {!isMobile && !legendCompact && <span className="map-legend-caption">{t('Map Legend')}</span>}
         <span className="map-legend-item">
           <span className="map-legend-dot" data-status="found" aria-hidden="true" />
-          {t('Investigated')}
+          <span className="map-legend-text">
+            {legendCompact ? investigatedCount : isMobile ? `${t('Investigated')} (${investigatedCount})` : t('Investigated')}
+          </span>
         </span>
         <span className="map-legend-item">
           <span className="map-legend-dot" data-status="pending" aria-hidden="true" />
-          {t('Pending')}
+          <span className="map-legend-text">
+            {legendCompact ? pendingCount : isMobile ? `${t('Pending')} (${pendingCount})` : t('Pending')}
+          </span>
         </span>
       </div>
-
-    </div>
+    </>
   );
 };
 
@@ -613,12 +646,11 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
     setPopupRequest((current) => ({ id, seq: (current?.seq ?? 0) + 1 }));
   }, []);
 
-  // On mobile the map is a block inside a scrolling page, so Leaflet's touch drag
-  // would swallow every vertical swipe that starts on it and trap the scroll. The
-  // map stays inert until the user taps it, which is also what makes the 55vh block
-  // scrollable past.
+  // On mobile the map is directly interactive in the field app ('collector'), as it sits
+  // in a spatial container with a bottom sheet. In dashboard mode, where it lives in a
+  // vertical scrolling flow, the shield prevents vertical swipes from being trapped until tapped.
   const [touchActivated, setTouchActivated] = useState(false);
-  const mapInteractive = !isMobile || touchActivated;
+  const mapInteractive = !isMobile || viewMode === 'collector' || touchActivated;
 
   // Going back to a narrow viewport re-arms the shield. Adjusted during render rather
   // than in an effect, so it costs no extra render pass.
@@ -789,10 +821,9 @@ const FieldMapImpl: React.FC<FieldMapProps> = ({
         />
       </MapContainer>
 
-      {/* Tap-to-activate shield. Until it is dismissed a vertical swipe over the map
-          scrolls the page instead of panning the map, so a 55vh map block cannot trap
-          the user mid-page. Desktop never sees it. */}
-      {isMobile && !touchActivated && (
+      {/* Tap-to-activate shield. Shown only in dashboard mode on mobile to prevent
+          trapping page scroll; field app has a full-bleed spatial workbench with a bottom sheet. */}
+      {isMobile && viewMode !== 'collector' && !touchActivated && (
         <button
           type="button"
           className="map-shield"

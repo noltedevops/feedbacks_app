@@ -419,6 +419,18 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           {/* Fundstück */}
           <div className="form-group">
             <label className="form-label" htmlFor="ff-fundstueck">Fundstück *</label>
+            <div className="ff-chips-grid" role="group" aria-label="Fundstück options">
+              {FUNDSTUECK_OPTIONS.map(opt => (
+                <button
+                  type="button"
+                  key={opt}
+                  className={`ff-chip${fundstueck === opt ? ' is-active' : ''}`}
+                  onClick={() => setFundstueck(opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
             <Select
               id="ff-fundstueck"
               value={fundstueck}

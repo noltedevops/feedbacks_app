@@ -295,12 +295,79 @@
 
 /* Floating chrome over the map, so it takes the overlay tokens the map's own
    controls use. */
-.quick-summary-panel {
+.quick-summary-container {
   position: absolute;
   top: var(--space-4);
   right: var(--space-4);
   z-index: 1000;
+  pointer-events: auto;
   transition: opacity var(--transition-normal), transform var(--transition-normal);
+}
+
+/* Steps aside while a target's popup is open. No z-index can slot it between the
+   markers and the popup: Leaflet moves the map with a transform, so its panes form
+   their own stacking context and the popup's 700 only counts inside it. */
+.map-container-section[data-popup-open] .quick-summary-container {
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+}
+
+/* Compact HUD chip when collapsed */
+.quick-summary-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-floating);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--overlay-border);
+  box-shadow: var(--shadow-float);
+  color: var(--surface-text-strong);
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.quick-summary-chip:hover {
+  background: var(--surface-hover);
+  border-color: rgba(var(--accent-rgb), 0.4);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.quick-summary-chip-icon {
+  color: rgb(var(--status-found-rgb));
+}
+
+.quick-summary-chip-title {
+  color: var(--surface-text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-overline);
+}
+
+.quick-summary-chip-stat {
+  font-weight: var(--weight-bold);
+  color: var(--surface-text-strong);
+}
+
+.quick-summary-chip-pct {
+  color: rgb(var(--status-found-rgb));
+  font-weight: var(--weight-bold);
+}
+
+.quick-summary-chip-chevron {
+  color: var(--surface-text-muted);
+  margin-left: 2px;
+}
+
+.quick-summary-panel {
   width: 272px;
   display: flex;
   flex-direction: column;
@@ -311,15 +378,49 @@
   border: 1px solid var(--overlay-border);
   box-shadow: var(--shadow-float);
   color: var(--overlay-text);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: fadeInDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Steps aside while a target's popup is open. No z-index can slot it between the
-   markers and the popup: Leaflet moves the map with a transform, so its panes form
-   their own stacking context and the popup's 700 only counts inside it. */
-.map-container-section[data-popup-open] .quick-summary-panel {
-  opacity: 0;
-  transform: translateY(-4px);
-  pointer-events: none;
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.quick-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--overlay-border);
+  user-select: none;
+}
+
+.quick-summary-header .quick-summary-title {
+  padding-bottom: 0;
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.quick-summary-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: rgba(var(--overlay-hover-rgb) / 0.08);
+  color: var(--surface-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.quick-summary-toggle-btn:hover {
+  background: rgba(var(--overlay-hover-rgb) / 0.18);
+  color: var(--surface-text-strong);
 }
 
 .quick-summary-title {
@@ -414,11 +515,25 @@
 .map-controls {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
   border-radius: var(--radius-control);
   background: var(--overlay);
   border: 1px solid var(--overlay-border);
   box-shadow: var(--shadow-float);
+}
+
+.map-controls > :first-child,
+.map-controls > :first-child.map-control {
+  border-top-left-radius: calc(var(--radius-control) - 1px);
+  border-top-right-radius: calc(var(--radius-control) - 1px);
+}
+
+.map-controls > :last-child,
+.map-controls > :last-child .map-control,
+.map-controls > :last-child.map-control {
+  border-bottom-left-radius: calc(var(--radius-control) - 1px);
+  border-bottom-right-radius: calc(var(--radius-control) - 1px);
 }
 
 .map-control {
@@ -436,6 +551,7 @@
   transition: background-color var(--transition-fast);
 }
 
+.map-controls > :last-child .map-control,
 .map-control:last-child {
   border-bottom: none;
 }
@@ -451,11 +567,15 @@
 }
 
 .map-legend {
+  position: absolute;
+  bottom: var(--space-4);
+  left: calc(var(--space-4) + 48px);
+  z-index: 1000;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-3);
-  max-width: 100%;
+  max-width: calc(100% - 64px);
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
   background: var(--overlay);
@@ -465,6 +585,14 @@
   line-height: var(--lh-caption);
   font-weight: var(--weight-semibold);
   color: var(--surface-text-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--transition-fast);
+}
+
+.map-legend:hover {
+  background: rgba(var(--overlay-hover-rgb) / 0.14);
+  transform: translateY(-1px);
 }
 
 .map-legend-caption {
@@ -798,6 +926,42 @@
   cursor: not-allowed;
 }
 
+/* Tactile Fundstück touch chips */
+.ff-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.ff-chip {
+  padding: 6px 12px;
+  min-height: 38px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--surface-border-strong);
+  background: var(--surface);
+  color: var(--surface-text);
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  line-height: var(--lh-label);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.ff-chip:hover {
+  background: var(--surface-sunken);
+  border-color: var(--surface-text-muted);
+}
+
+.ff-chip.is-active {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+  font-weight: var(--weight-bold);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
 .ff-hint {
   display: block;
   margin-top: var(--space-1);
@@ -1086,35 +1250,276 @@
 
 /* --- Phone (<=768) ------------------------------------------------------ */
 @media (max-width: 768px) {
-  /* One column; the bottom padding keeps the last field clear of the fixed bar. */
+  /* Spatial container: Map is full-bleed workbench; Sidebar is an animated bottom sheet. */
   .collector-main {
-    flex-direction: column;
-    height: auto;
-    overflow: visible;
-    padding: var(--space-2) var(--space-2) calc(var(--mobile-nav-total) + var(--space-4));
-    gap: var(--space-3);
+    position: relative;
+    width: 100%;
+    height: calc(100dvh - var(--mobile-nav-total));
+    max-height: calc(100dvh - var(--mobile-nav-total));
+    overflow: hidden;
+    padding: 0;
+    gap: 0;
+    display: block;
   }
 
+  /* Full-bleed Map Layer */
+  .map-container-section {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100% !important;
+    z-index: 1;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    overflow: hidden;
+  }
+
+  .collector-map-wrap {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+  }
+
+  /* Quick Summary on mobile: Top-right HUD */
+  .quick-summary-container {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    z-index: 1000 !important;
+  }
+
+  .quick-summary-chip {
+    padding: 5px 10px;
+    font-size: 11px;
+    gap: 5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+
+  .quick-summary-chip-title {
+    display: none;
+  }
+
+  .quick-summary-panel {
+    width: 190px;
+    max-width: 48vw;
+    padding: var(--space-2);
+    background: var(--surface-floating);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+  }
+
+  .quick-summary-title {
+    font-size: var(--text-overline);
+    margin-bottom: 2px;
+  }
+
+  .quick-summary-row {
+    margin-top: 2px;
+  }
+
+  .quick-summary-row-head {
+    font-size: 10px;
+  }
+
+  /* Map Controls on Mobile: Floating top-left with z-index 1000 above Leaflet panes */
+  .map-toolbar,
+  .map-toolbar--dashboard {
+    position: absolute;
+    top: var(--space-2);
+    left: var(--space-2);
+    bottom: auto;
+    right: auto;
+    z-index: 1000 !important;
+    pointer-events: auto;
+  }
+
+  /* Map Legend on Mobile: Flexible positioning, dynamically adapting to sheet state! */
+  .map-legend {
+    position: absolute;
+    bottom: calc(58px + var(--space-2));
+    left: var(--space-2);
+    z-index: 950 !important;
+    max-width: calc(100vw - 32px);
+    font-size: 11px;
+    padding: 4px 10px;
+    gap: var(--space-2);
+    background: var(--surface-floating);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-pill);
+    pointer-events: auto;
+    cursor: pointer;
+    user-select: none;
+    transition: bottom 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  /* When bottom sheet in Field App is peek (Map mode), legend sits right above the peek handle */
+  .collector-sidebar[data-sheet="peek"] ~ .map-container-section .map-legend {
+    bottom: calc(58px + var(--space-2));
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  /* When bottom sheet in Field App is half (Split mode), legend glides up above the 52vh sheet */
+  .collector-sidebar[data-sheet="half"] ~ .map-container-section .map-legend {
+    bottom: calc(52vh + var(--space-2));
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  /* When bottom sheet in Field App is full (List/Form mode), legend fades out as map is hidden */
+  .collector-sidebar[data-sheet="full"] ~ .map-container-section .map-legend {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+  }
+
+  /* Dashboard mobile map legend: positioned at bottom-left above Leaflet attribution */
+  .map-legend--dashboard {
+    bottom: 24px !important;
+    left: var(--space-2) !important;
+    z-index: 1000 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: none !important;
+  }
+
+  .map-legend--compact {
+    padding: 3px 8px;
+    gap: 6px;
+  }
+
+  /* Tri-State Interactive Bottom Sheet */
   .collector-sidebar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
     max-width: 100%;
-    height: auto;
-    overflow: visible;
+    z-index: 20;
+    background: var(--surface);
+    border-top: 1px solid var(--surface-border);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    transition: height 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+
+  .collector-sidebar[data-sheet="peek"] {
+    height: 58px;
+  }
+
+  .collector-sidebar[data-sheet="peek"] .collector-panel-body,
+  .collector-sidebar[data-sheet="peek"] .ff,
+  .collector-sidebar[data-sheet="peek"] .submit-done {
+    display: none !important;
+  }
+
+  .collector-sidebar[data-sheet="half"] {
+    height: 52vh;
+  }
+
+  .collector-sidebar[data-sheet="full"] {
+    height: calc(100dvh - var(--mobile-nav-total) - 16px);
+  }
+
+  /* Bottom sheet grab handle and mode switcher pills */
+  .sheet-handle-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-2) var(--space-3) var(--space-1);
+    background: var(--surface);
+    user-select: none;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--surface-border-subtle, rgba(0,0,0,0.06));
+    cursor: pointer;
+  }
+
+  .sheet-handle {
+    width: 38px;
+    height: 4px;
+    border-radius: 9999px;
+    background: var(--surface-border-strong, #cbd5e1);
+    border: none;
+    padding: 0;
+    margin-bottom: var(--space-2);
+    cursor: pointer;
+  }
+
+  .sheet-pills {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    background: var(--surface-sunken);
+    padding: 2px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--surface-border);
+  }
+
+  .sheet-pill-btn {
+    border: none;
+    background: transparent;
+    font-size: var(--text-caption);
+    font-weight: var(--weight-medium);
+    color: var(--surface-text-muted);
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .sheet-pill-btn.active {
+    background: var(--surface);
+    color: var(--accent-ink);
+    font-weight: var(--weight-semibold);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Panel body inside the sheet */
+  .collector-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: var(--space-3);
   }
 
-  /* The form is the page on a phone, not a box that scrolls inside the page. */
-  .ff,
-  .collector-panel-body,
-  .collector-list-wrap {
-    height: auto;
-    overflow: visible;
+  .collector-area {
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--surface-border-subtle, rgba(0,0,0,0.06));
   }
 
-  /* The target list keeps its own scroller so it cannot grow to 1500 rows tall, but
-     contains its overscroll so it does not swallow the page's momentum. */
+  .collector-list-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   .collector-list-scroll {
-    max-height: 60vh;
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
 
@@ -1126,51 +1531,44 @@
     border-color: var(--surface-border);
   }
 
-  .map-container-section {
+  /* Form inside the sheet */
+  .ff {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-    height: auto;
-    flex-grow: 0;
-    padding: var(--space-2);
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
   }
 
-  /* Out of the overlay and into the flow: a floating card would cover most of a
-     380px-wide map. */
-  .quick-summary-panel,
-  .map-container-section[data-popup-open] .quick-summary-panel {
-    position: static;
-    opacity: 1;
-    transform: none;
-    pointer-events: auto;
-    width: 100%;
-    box-shadow: none;
-    background: var(--surface-sunken);
-    border-color: var(--surface-border);
+  .ff-head {
+    padding: var(--space-2) var(--space-3);
+    flex-shrink: 0;
   }
 
-  .collector-map-wrap {
-    height: 55vh;
-    min-height: 300px;
+  .ff-form {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: var(--space-3);
   }
 
-  /* The map is a block in the flow on a phone, with nothing floating over it. */
-  .map-toolbar,
-  .map-toolbar--dashboard {
-    bottom: var(--space-2);
-    left: var(--space-2);
-    right: var(--space-2);
+  /* Submission confirmation inside the sheet */
+  .submit-done {
+    height: 100%;
+    overflow-y: auto;
+    padding: var(--space-4);
   }
 
-  /* Länge / Breite / Tiefe stack rather than squeezing three number fields into a
-     row; so do the teams fields. */
+  /* Länge / Breite / Tiefe stack rather than squeezing three number fields into a row */
   .form-grid-2,
   .form-grid-3 {
     grid-template-columns: 1fr;
     gap: var(--space-3);
   }
 
-  /* Take Photo / Upload stay side by side - buttons, not inputs, and both fit. */
   .photo-actions {
     grid-template-columns: 1fr 1fr;
     gap: var(--space-2);
@@ -1189,15 +1587,16 @@
     min-height: 44px;
   }
 
-  /* Submit and Cancel ride along at the bottom of the form. A solid surface with a
-     hairline, not a fade: the fade had to name a colour to fade from. */
+  /* Sticky actions at sheet bottom */
   .form-actions {
     position: sticky;
     bottom: 0;
     z-index: 50;
-    padding: var(--space-3) 0 var(--space-1);
-    margin-top: var(--space-1);
+    padding: var(--space-2) var(--space-3);
     background: var(--surface);
     border-top: 1px solid var(--surface-border);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
   }
 }

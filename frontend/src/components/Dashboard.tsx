@@ -12,7 +12,10 @@ import {
   Briefcase,
   FileText,
   AlertTriangle,
-  ShieldCheck
+  ShieldCheck,
+  Activity,
+  MapPin,
+  Gauge
 } from 'lucide-react';
 import {
   AccuracyBody,
@@ -527,6 +530,7 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   // to go back to.
   const [expanded, setExpanded] = useState<{ id: PanelId; opener: HTMLElement } | null>(null);
   const closeExpanded = useCallback(() => setExpanded(null), []);
+  const [mobileTab, setMobileTab] = useState<'kpis' | 'map' | 'accuracy'>('kpis');
 
   const panelTitles: Record<PanelId, [kicker: string, title: string]> = {
     findings: [t('Findings Status'), t('Findings by type')],
@@ -660,14 +664,48 @@ const DashboardImpl: React.FC<DashboardProps> = ({
   );
 
   // ==========================================================================
-  // PHONE: one scrolling column. Reading order is controls -> headline numbers
-  // -> the two findings charts -> the map -> the log and the accuracy panels.
+  // PHONE: 3-Cockpit Segmented Mobile Dashboard
+  // Eliminates the 4,000px death scroll with instantaneous tab switching.
   // ==========================================================================
   if (isMobile) {
     return (
       <div className="dashboard-mobile">
         <div className="glass-panel dash-header dash-header--mobile" data-tour="dash.filters">
           {headerTitle}
+
+          {/* 3-Cockpit Segmented Switcher */}
+          <div className="dash-mobile-tabs" role="tablist" aria-label={t('Dashboard Sections')}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mobileTab === 'kpis'}
+              className={`dash-mobile-tab${mobileTab === 'kpis' ? ' active' : ''}`}
+              onClick={() => setMobileTab('kpis')}
+            >
+              <Activity size={15} aria-hidden="true" />
+              <span>{t('Executive KPIs')}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mobileTab === 'map'}
+              className={`dash-mobile-tab${mobileTab === 'map' ? ' active' : ''}`}
+              onClick={() => setMobileTab('map')}
+            >
+              <MapPin size={15} aria-hidden="true" />
+              <span>{t('Map & Target Log')}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mobileTab === 'accuracy'}
+              className={`dash-mobile-tab${mobileTab === 'accuracy' ? ' active' : ''}`}
+              onClick={() => setMobileTab('accuracy')}
+            >
+              <Gauge size={15} aria-hidden="true" />
+              <span>{t('Sensor Quality')}</span>
+            </button>
+          </div>
 
           {/* Folded by default so the dashboard opens on the numbers and charts rather
               than on a screenful of dropdowns. The bar carries the active selection,
@@ -697,19 +735,39 @@ const DashboardImpl: React.FC<DashboardProps> = ({
           </FilterBar>
         </div>
 
-        {statCards}
-        {fundstueckPanel}
-        {sohlePanel}
-
-        {mapSlot && (
-          <div className="glass-panel dashboard-mobile-map">
-            {mapSlot}
+        {mobileTab === 'kpis' && (
+          <div className="dash-mobile-tab-content">
+            {statCards}
+            {fundstueckPanel}
+            {sohlePanel}
+            <button 
+              type="button" 
+              className="btn-secondary dash-mobile-switch-btn" 
+              onClick={() => setMobileTab('map')}
+            >
+              <MapPin size={15} aria-hidden="true" />
+              {t('Explore Targets on Map')} →
+            </button>
           </div>
         )}
 
-        {logPanel}
-        {accuracyPanel}
-        {profilingPanel}
+        {mobileTab === 'map' && (
+          <div className="dash-mobile-tab-content">
+            {mapSlot && (
+              <div className="glass-panel dashboard-mobile-map">
+                {mapSlot}
+              </div>
+            )}
+            {logPanel}
+          </div>
+        )}
+
+        {mobileTab === 'accuracy' && (
+          <div className="dash-mobile-tab-content">
+            {accuracyPanel}
+            {profilingPanel}
+          </div>
+        )}
 
         {expandedView}
       </div>

@@ -106,10 +106,14 @@ function serve() {
 }
 
 // ---------------------------------------------------------------- browser helpers
-async function newPage(browser, base, { theme, lang, width, height }) {
+async function newPage(browser, base, { theme, lang, width, height, isMobile = false }) {
   const context = await browser.newContext({
-    viewport: { width, height }, serviceWorkers: 'block',
-    geolocation: OBSERVER, permissions: ['geolocation'],
+    viewport: { width, height },
+    isMobile: !!isMobile,
+    hasTouch: !!isMobile,
+    serviceWorkers: 'block',
+    geolocation: OBSERVER,
+    permissions: ['geolocation'],
   });
   await context.addInitScript(([th, lg]) => {
     try { localStorage.setItem('theme', th); localStorage.setItem('nolte_lang', lg); } catch { /* ok */ }
@@ -176,6 +180,18 @@ async function openDashboard(page) {
   await tilesSettled(page);
 }
 
+async function openFieldMobile(page) {
+  await page.locator('.rail-icon--field').locator('..').click();
+  await page.locator('.leaflet-container').waitFor();
+  await tilesSettled(page);
+}
+
+async function openDashboardMobile(page) {
+  await page.locator('.rail-icon--dashboard').locator('..').click();
+  await page.locator('.dashboard-mobile').waitFor();
+  await page.waitForTimeout(600);
+}
+
 /**
  * Opens the map popup of an investigated target, as a crew member would: by clicking
  * its marker. The markers are painted on one canvas, so there is no element to click;
@@ -238,14 +254,25 @@ async function landingShots(browser, base) {
   for (const theme of ['light', 'dark']) {
     for (const lang of ['EN', 'DE']) {
       const suffix = `${theme}-${lang.toLowerCase()}`;
+      // Desktop shots (1440x900)
       const page = await newPage(browser, base, { theme, lang, width: 1440, height: 900 });
       await signIn(page);
       await openField(page);
       await shoot(page, path.join(LANDING_OUT, `collector-${suffix}.jpg`), { type: 'jpeg', quality: 82 });
       await openDashboard(page);
       await shoot(page, path.join(LANDING_OUT, `decision-${suffix}.jpg`), { type: 'jpeg', quality: 82 });
-      report(page, `landing ${suffix}`);
+      report(page, `landing desktop ${suffix}`);
       await page.context().close();
+
+      // Mobile shots (390x844)
+      const mobilePage = await newPage(browser, base, { theme, lang, width: 390, height: 844, isMobile: true });
+      await signIn(mobilePage);
+      await openFieldMobile(mobilePage);
+      await shoot(mobilePage, path.join(LANDING_OUT, `collector-mobile-${suffix}.jpg`), { type: 'jpeg', quality: 82 });
+      await openDashboardMobile(mobilePage);
+      await shoot(mobilePage, path.join(LANDING_OUT, `decision-mobile-${suffix}.jpg`), { type: 'jpeg', quality: 82 });
+      report(mobilePage, `landing mobile ${suffix}`);
+      await mobilePage.context().close();
     }
   }
 }

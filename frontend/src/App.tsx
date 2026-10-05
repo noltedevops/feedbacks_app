@@ -12,6 +12,7 @@ import { AuthDialog, type AuthView } from './components/AuthDialog';
 import { Landing } from './components/Landing';
 import { LangSwitch } from './components/LangSwitch';
 import { EtlPanel } from './components/EtlPanel';
+import { MoreSheet } from './components/MoreSheet';
 import { TourHost } from './tour/TourHost';
 import { TourLaunchers } from './tour/TourLaunchers';
 import type { TourId } from './tour/steps';
@@ -40,7 +41,11 @@ import {
   ShieldCheck,
   Users,
   Tag,
-  Database
+  Database,
+  Home,
+  ChevronDown,
+  ChevronUp,
+  Activity
 } from 'lucide-react';
 import {
   authFetch, getAccess, setSession, clearSession, NO_ACCESS,
@@ -424,6 +429,8 @@ export default function App() {
   // media query can do stays in index.css; this drives only the parts CSS cannot reach -
   // chiefly moving the dashboard map out of its background layer and into the flow.
   const isMobile = useIsMobile();
+  // Tri-state bottom sheet for the field app on mobile: 'peek' (map focused), 'half' (list/map balanced), 'full' (form/list full screen)
+  const [mobileFieldSheet, setMobileFieldSheet] = useState<'peek' | 'half' | 'full'>('half');
 
   // The tokens key off body.dark-theme; light is :root and needs no class. A layout
   // effect so the class is on before the first paint: light is the default, and a
@@ -1245,6 +1252,22 @@ export default function App() {
     if (selectedPoint) setSubmission(null);
   }
 
+  // On mobile, selecting a target expands the bottom sheet to full so the form or details
+  // are immediately visible and workable.
+  useEffect(() => {
+    if (isMobile && selectedPoint) {
+      setMobileFieldSheet('full');
+    }
+  }, [isMobile, selectedPoint]);
+
+  // On mobile, starting the field app tour automatically expands the sheet to half so
+  // the highlighted controls (area, filters, list) are immediately visible.
+  useEffect(() => {
+    if (isMobile && tour === 'field' && mobileFieldSheet === 'peek') {
+      setMobileFieldSheet('half');
+    }
+  }, [isMobile, tour, mobileFieldSheet]);
+
   // The point handed to the form. "Open Field Application Form" asks for a blank sheet
   // on the target just filed, and hiding its feedback puts FeedbackForm on its own
   // empty-form branch rather than duplicating that reset logic here. Keyed by id so
@@ -1482,6 +1505,27 @@ export default function App() {
     { label: t('GEORADAR TARGETS'), done: georadarPoints.filter(isInvestigatedPoint).length, total: georadarPoints.length },
   ];
 
+  // Quick Summary widget minimize/expand state
+  const [summaryCollapsed, setSummaryCollapsed] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('quick_summary_collapsed');
+      if (saved !== null) return saved === 'true';
+    } catch {}
+    return isMobile; // Default to collapsed on mobile to maximize map space, expanded on desktop
+  });
+
+  const toggleSummary = (val?: boolean) => {
+    setSummaryCollapsed(prev => {
+      const next = typeof val === 'boolean' ? val : !prev;
+      try { localStorage.setItem('quick_summary_collapsed', String(next)); } catch {}
+      return next;
+    });
+  };
+
+  const summaryInvestigated = filteredPoints.filter(isInvestigatedPoint).length;
+  const summaryTotal = filteredPoints.length;
+  const summaryPct = summaryTotal > 0 ? Math.round((summaryInvestigated / summaryTotal) * 100) : 0;
+
   return (
     <div className="app-root">
       
@@ -1534,31 +1578,28 @@ export default function App() {
             onPointerOver={restoreRailTips}
             onFocus={restoreRailTips}
           >
-            <div className="sidebar-top">
+            {isMobile ? (
+              <nav className="sidebar-menu sidebar-menu--mobile" aria-label={t('Main navigation')}>
+                <button
+                  type="button"
+                  className={`sidebar-item${view === 'overview' ? ' active' : ''}`}
+                  onClick={() => changeView('overview')}
+                  aria-label={t('Overview')}
+                  aria-current={view === 'overview' ? 'page' : undefined}
+                >
+                  <Home size={20} aria-hidden="true" />
+                  <span className="sidebar-item-label">{t('Overview')}</span>
+                </button>
 
-              {/* The logo is the way to the Overview - there is no nav item for it. Never
-                  locked: the overview needs no permission and calls no API. */}
-              <button
-                type="button"
-                className={`sidebar-logo${view === 'overview' ? ' active' : ''}`}
-                onClick={() => changeView('overview')}
-                aria-label={t('Overview')}
-                aria-current={view === 'overview' ? 'page' : undefined}
-              >
-                <img src="/logo.png" alt="" />
-                <span className="rail-tip" aria-hidden="true">{t('Overview')}</span>
-              </button>
-
-              <nav className="sidebar-menu">
                 <button
                   type="button"
                   className={`sidebar-item${view === 'field' ? ' active' : ''}${access.can_field ? '' : ' locked'}`}
                   onClick={() => openSurface('field')}
                   aria-current={view === 'field' ? 'page' : undefined}
+                  aria-label={t('Field App')}
                 >
                   <span className="rail-icon rail-icon--field" aria-hidden="true" />
-                  <span className="sidebar-item-label">{access.can_field ? t('Field App') : t('Field App - permission required')}</span>
-                  <span className="rail-tip" aria-hidden="true">{access.can_field ? t('Field App') : t('Field App - permission required')}</span>
+                  <span className="sidebar-item-label">{t('Field App')}</span>
                   {!access.can_field && <Lock size={12} className="sidebar-item-lock" aria-hidden="true" />}
                 </button>
 
@@ -1567,125 +1608,176 @@ export default function App() {
                   className={`sidebar-item${view === 'dashboard' ? ' active' : ''}${access.can_dashboard ? '' : ' locked'}`}
                   onClick={() => openSurface('dashboard')}
                   aria-current={view === 'dashboard' ? 'page' : undefined}
+                  aria-label={t('Dashboard')}
                 >
                   <span className="rail-icon rail-icon--dashboard" aria-hidden="true" />
-                  <span className="sidebar-item-label">{access.can_dashboard ? t('Dashboard') : t('Dashboard - permission required')}</span>
-                  <span className="rail-tip" aria-hidden="true">{access.can_dashboard ? t('Dashboard') : t('Dashboard - permission required')}</span>
+                  <span className="sidebar-item-label">{t('Dashboard')}</span>
                   {!access.can_dashboard && <Lock size={12} className="sidebar-item-lock" aria-hidden="true" />}
                 </button>
 
-                {access.is_admin && (
-                  <button
-                    type="button"
-                    className="sidebar-item"
-                    onClick={() => setShowAdminPanel(true)}
-                  >
-                    <ShieldCheck size={20} aria-hidden="true" />
-                    <span className="sidebar-item-label">{t('Permission requests')}</span>
-                    <span className="rail-tip" aria-hidden="true">{t('Permission requests')}</span>
-                    {pendingRequests.length > 0 && (
-                      <span className="sidebar-item-badge">{pendingRequests.length}</span>
-                    )}
-                  </button>
-                )}
-
-                {access.is_admin && (
-                  <button
-                    type="button"
-                    className="sidebar-item"
-                    onClick={() => setShowUsersPanel(true)}
-                  >
-                    <Users size={20} aria-hidden="true" />
-                    <span className="sidebar-item-label">{t('Users')}</span>
-                    <span className="rail-tip" aria-hidden="true">{t('Users')}</span>
-                  </button>
-                )}
-
-                {access.is_admin && (
-                  <button
-                    type="button"
-                    className="sidebar-item"
-                    onClick={() => setShowEtlPanel(true)}
-                  >
-                    <Database size={20} aria-hidden="true" />
-                    <span className="sidebar-item-label">{t('ETL Pipeline')}</span>
-                    <span className="rail-tip" aria-hidden="true">{t('ETL Pipeline')}</span>
-                    {etlPendingCount > 0 && (
-                      <span className="sidebar-item-badge">{etlPendingCount}</span>
-                    )}
-                  </button>
-                )}
-
                 <button
                   type="button"
-                  className="sidebar-item"
-                  data-tour="field.sync"
-                  onClick={() => handleSync()}
-                  disabled={syncing}
+                  className={`sidebar-item sidebar-item--more${showUserModal ? ' active' : ''}`}
+                  onClick={() => setShowUserModal(!showUserModal)}
+                  aria-label={t('More')}
                 >
-                  <RefreshCw size={20} className={syncing ? 'animate-spin' : ''} aria-hidden="true" />
-                  <span className="sidebar-item-label">{t('Sync Data')}</span>
-                  <span className="rail-tip" aria-hidden="true">{t('Sync Data')}</span>
-                  {pendingSyncCount > 0 && (
-                    <span className="sidebar-item-badge">{pendingSyncCount}</span>
+                  <span className="sidebar-avatar sidebar-avatar--mobile">
+                    {initialsFor(currentUserFullName || currentUser)}
+                  </span>
+                  <span className="sidebar-item-label">{t('More')}</span>
+                  {(pendingRequests.length > 0 || pendingSyncCount > 0 || etlPendingCount > 0) && (
+                    <span className="sidebar-item-badge">
+                      {pendingRequests.length + pendingSyncCount + etlPendingCount}
+                    </span>
                   )}
                 </button>
-
-                {/* Connection state: not a control, so not a button. The state is in the
-                    colour and the word and the icon, never the colour alone. */}
-                <div
-                  className="sidebar-item sidebar-status"
-                  data-online={isOnline ? 'true' : 'false'}
-                  role="status"
-                >
-                  {isOnline ? <Wifi size={20} aria-hidden="true" /> : <WifiOff size={20} aria-hidden="true" />}
-                  <span className="sidebar-item-label">{isOnline ? t('Network Connection: Online') : t('Network Connection: Offline')}</span>
-                  <span className="rail-tip" aria-hidden="true">{isOnline ? t('Network Connection: Online') : t('Network Connection: Offline')}</span>
-                </div>
               </nav>
-            </div>
+            ) : (
+              <>
+                <div className="sidebar-top">
+                  {/* The logo is the way to the Overview - there is no nav item for it. Never
+                      locked: the overview needs no permission and calls no API. */}
+                  <button
+                    type="button"
+                    className={`sidebar-logo${view === 'overview' ? ' active' : ''}`}
+                    onClick={() => changeView('overview')}
+                    aria-label={t('Overview')}
+                    aria-current={view === 'overview' ? 'page' : undefined}
+                  >
+                    <img src="/logo.png" alt="" />
+                    <span className="rail-tip" aria-hidden="true">{t('Overview')}</span>
+                  </button>
 
-            <div className="sidebar-bottom">
-              <div className="sidebar-profile">
-                <button
-                  type="button"
-                  className="sidebar-avatar"
-                  onClick={() => setShowUserModal(!showUserModal)}
-                  aria-haspopup="dialog"
-                  aria-expanded={showUserModal}
-                  aria-label={`${t('User')}: ${currentUserFullName || currentUser}`}
-                >
-                  {initialsFor(currentUserFullName || currentUser)}
-                  <span className="rail-tip" aria-hidden="true">{`${t('User')}: ${currentUserFullName || currentUser}`}</span>
-                </button>
+                  <nav className="sidebar-menu">
+                    <button
+                      type="button"
+                      className={`sidebar-item${view === 'field' ? ' active' : ''}${access.can_field ? '' : ' locked'}`}
+                      onClick={() => openSurface('field')}
+                      aria-current={view === 'field' ? 'page' : undefined}
+                    >
+                      <span className="rail-icon rail-icon--field" aria-hidden="true" />
+                      <span className="sidebar-item-label">{access.can_field ? t('Field App') : t('Field App - permission required')}</span>
+                      <span className="rail-tip" aria-hidden="true">{access.can_field ? t('Field App') : t('Field App - permission required')}</span>
+                      {!access.can_field && <Lock size={12} className="sidebar-item-lock" aria-hidden="true" />}
+                    </button>
 
-                {/* Desktop keeps the anchored pop-up next to the avatar. On a phone the
-                    rail is a fixed bottom bar, so the menu renders as a sheet outside this
-                    subtree instead. */}
-                {showUserModal && !isMobile && (
-                  <div className="profile-popover" role="dialog" aria-label={t('Profile and settings')}>
-                    <ProfileMenu
-                      t={t}
-                      lang={lang}
-                      onLangChange={setLang}
-                      theme={theme}
-                      onToggleTheme={toggleTheme}
-                      fullName={currentUserFullName}
-                      username={currentUser}
-                      role={userRole}
-                      access={access}
-                      onStartTour={startTour}
-                      onSignOut={() => { setShowUserModal(false); handleSignOut(); }}
-                      withSettings={false}
-                    />
+                    <button
+                      type="button"
+                      className={`sidebar-item${view === 'dashboard' ? ' active' : ''}${access.can_dashboard ? '' : ' locked'}`}
+                      onClick={() => openSurface('dashboard')}
+                      aria-current={view === 'dashboard' ? 'page' : undefined}
+                    >
+                      <span className="rail-icon rail-icon--dashboard" aria-hidden="true" />
+                      <span className="sidebar-item-label">{access.can_dashboard ? t('Dashboard') : t('Dashboard - permission required')}</span>
+                      <span className="rail-tip" aria-hidden="true">{access.can_dashboard ? t('Dashboard') : t('Dashboard - permission required')}</span>
+                      {!access.can_dashboard && <Lock size={12} className="sidebar-item-lock" aria-hidden="true" />}
+                    </button>
+
+                    {access.is_admin && (
+                      <button
+                        type="button"
+                        className="sidebar-item"
+                        onClick={() => setShowAdminPanel(true)}
+                      >
+                        <ShieldCheck size={20} aria-hidden="true" />
+                        <span className="sidebar-item-label">{t('Permission requests')}</span>
+                        <span className="rail-tip" aria-hidden="true">{t('Permission requests')}</span>
+                        {pendingRequests.length > 0 && (
+                          <span className="sidebar-item-badge">{pendingRequests.length}</span>
+                        )}
+                      </button>
+                    )}
+
+                    {access.is_admin && (
+                      <button
+                        type="button"
+                        className="sidebar-item"
+                        onClick={() => setShowUsersPanel(true)}
+                      >
+                        <Users size={20} aria-hidden="true" />
+                        <span className="sidebar-item-label">{t('Users')}</span>
+                        <span className="rail-tip" aria-hidden="true">{t('Users')}</span>
+                      </button>
+                    )}
+
+                    {access.is_admin && (
+                      <button
+                        type="button"
+                        className="sidebar-item"
+                        onClick={() => setShowEtlPanel(true)}
+                      >
+                        <Database size={20} aria-hidden="true" />
+                        <span className="sidebar-item-label">{t('ETL Pipeline')}</span>
+                        <span className="rail-tip" aria-hidden="true">{t('ETL Pipeline')}</span>
+                        {etlPendingCount > 0 && (
+                          <span className="sidebar-item-badge">{etlPendingCount}</span>
+                        )}
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      className="sidebar-item"
+                      data-tour="field.sync"
+                      onClick={() => handleSync()}
+                      disabled={syncing}
+                    >
+                      <RefreshCw size={20} className={syncing ? 'animate-spin' : ''} aria-hidden="true" />
+                      <span className="sidebar-item-label">{t('Sync Data')}</span>
+                      <span className="rail-tip" aria-hidden="true">{t('Sync Data')}</span>
+                      {pendingSyncCount > 0 && (
+                        <span className="sidebar-item-badge">{pendingSyncCount}</span>
+                      )}
+                    </button>
+
+                    {/* Connection state: not a control, so not a button. The state is in the
+                        colour and the word and the icon, never the colour alone. */}
+                    <div
+                      className="sidebar-item sidebar-status"
+                      data-online={isOnline ? 'true' : 'false'}
+                      role="status"
+                    >
+                      {isOnline ? <Wifi size={20} aria-hidden="true" /> : <WifiOff size={20} aria-hidden="true" />}
+                      <span className="sidebar-item-label">{isOnline ? t('Network Connection: Online') : t('Network Connection: Offline')}</span>
+                      <span className="rail-tip" aria-hidden="true">{isOnline ? t('Network Connection: Online') : t('Network Connection: Offline')}</span>
+                    </div>
+                  </nav>
+                </div>
+
+                <div className="sidebar-bottom">
+                  <div className="sidebar-profile">
+                    <button
+                      type="button"
+                      className="sidebar-avatar"
+                      onClick={() => setShowUserModal(!showUserModal)}
+                      aria-haspopup="dialog"
+                      aria-expanded={showUserModal}
+                      aria-label={`${t('User')}: ${currentUserFullName || currentUser}`}
+                    >
+                      {initialsFor(currentUserFullName || currentUser)}
+                      <span className="rail-tip" aria-hidden="true">{`${t('User')}: ${currentUserFullName || currentUser}`}</span>
+                    </button>
+
+                    {showUserModal && (
+                      <div className="profile-popover" role="dialog" aria-label={t('Profile and settings')}>
+                        <ProfileMenu
+                          t={t}
+                          lang={lang}
+                          onLangChange={setLang}
+                          theme={theme}
+                          onToggleTheme={toggleTheme}
+                          fullName={currentUserFullName}
+                          username={currentUser}
+                          role={userRole}
+                          access={access}
+                          onStartTour={startTour}
+                          onSignOut={() => { setShowUserModal(false); handleSignOut(); }}
+                          withSettings={false}
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Language and theme sit in the rail on desktop. On a phone they move into
-                  the profile sheet behind the avatar - the bar has no room for them. */}
-              {!isMobile && (
-                <>
                   <LangSwitch lang={lang} onChange={setLang} compact />
                   <button
                     type="button"
@@ -1696,9 +1788,9 @@ export default function App() {
                     {theme === 'dark' ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
                     <span className="rail-tip" aria-hidden="true">{theme === 'dark' ? t('Switch to Light mode') : t('Switch to Dark mode')}</span>
                   </button>
-                </>
-              )}
-            </div>
+                </div>
+              </>
+            )}
           </aside>
 
           {/* Collapse handle. It follows the rail's edge by CSS (the adjacent-sibling rule
@@ -1725,8 +1817,46 @@ export default function App() {
             <main className="collector-main">
 
               {/* The working panel: the target list, or the form for the open target,
-                  or the confirmation once it is filed. */}
-              <section className="glass-panel collector-sidebar">
+                  or the confirmation once it is filed. Acts as interactive bottom sheet on mobile. */}
+              <section
+                className="glass-panel collector-sidebar"
+                data-sheet={formPoint ? (mobileFieldSheet === 'peek' ? 'peek' : 'full') : mobileFieldSheet}
+              >
+                {isMobile && (
+                  <div className="sheet-handle-bar">
+                    <button
+                      type="button"
+                      className="sheet-handle"
+                      aria-label={t('Toggle bottom sheet')}
+                      onClick={() => {
+                        setMobileFieldSheet(prev => (prev === 'peek' ? 'half' : prev === 'half' ? 'full' : 'peek'));
+                      }}
+                    />
+                    <div className="sheet-pills">
+                      <button
+                        type="button"
+                        className={`sheet-pill-btn${mobileFieldSheet === 'peek' ? ' active' : ''}`}
+                        onClick={() => setMobileFieldSheet('peek')}
+                      >
+                        {t('Map')}
+                      </button>
+                      <button
+                        type="button"
+                        className={`sheet-pill-btn${mobileFieldSheet === 'half' ? ' active' : ''}`}
+                        onClick={() => setMobileFieldSheet('half')}
+                      >
+                        {t('Split')}
+                      </button>
+                      <button
+                        type="button"
+                        className={`sheet-pill-btn${mobileFieldSheet === 'full' ? ' active' : ''}`}
+                        onClick={() => setMobileFieldSheet('full')}
+                      >
+                        {formPoint ? t('Log Form') : t('List')}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {formPoint ? (
                   <FeedbackForm
@@ -1738,10 +1868,14 @@ export default function App() {
                     currentUser={currentUserFullName}
                     currentUserUsername={currentUser}
                     lastTeamsTools={lastTeamsTools}
-                    onSave={handleSaveFeedback}
+                    onSave={(data) => {
+                      handleSaveFeedback(data);
+                      if (isMobile) setMobileFieldSheet('half');
+                    }}
                     onCancel={() => {
                       setSelectedPoint(null);
                       setBlankFormPointId(null);
+                      if (isMobile) setMobileFieldSheet('half');
                     }}
                   />
                 ) : submission ? (
@@ -1753,8 +1887,12 @@ export default function App() {
                       setBlankFormPointId(submission.point.id);
                       setSelectedPoint(submission.point);
                       setSubmission(null);
+                      if (isMobile) setMobileFieldSheet('full');
                     }}
-                    onBackToList={() => setSubmission(null)}
+                    onBackToList={() => {
+                      setSubmission(null);
+                      if (isMobile) setMobileFieldSheet('half');
+                    }}
                   />
                 ) : (
                   <div className="collector-panel-body">
@@ -1885,21 +2023,59 @@ export default function App() {
                   drops out of the overlay and stacks above the map - at 380px a floating
                   card would cover most of the map it floats over. */}
               <section className="glass-panel map-container-section" data-popup-open={selectedPoint ? '' : undefined}>
-                <div className="quick-summary-panel">
-                  <span className="quick-summary-title">{t('Quick Summary')}</span>
-                  {quickSummaryRows.map(row => (
-                    <div className="quick-summary-row" key={row.label}>
-                      <div className="quick-summary-row-head">
-                        <span>{row.label}</span>
-                        <span className="num">{row.done} / {row.total}</span>
+                <div className={`quick-summary-container${summaryCollapsed ? ' is-collapsed' : ''}`}>
+                  {summaryCollapsed ? (
+                    <button
+                      type="button"
+                      className="quick-summary-chip"
+                      onClick={() => toggleSummary(false)}
+                      aria-expanded={false}
+                      title={t('Expand Quick Summary')}
+                      aria-label={t('Expand Quick Summary')}
+                    >
+                      <Activity size={14} className="quick-summary-chip-icon" aria-hidden="true" />
+                      <span className="quick-summary-chip-title">{t('Summary')}</span>
+                      <span className="quick-summary-chip-stat num">
+                        {summaryInvestigated} / {summaryTotal}
+                      </span>
+                      <span className="quick-summary-chip-pct num">({summaryPct}%)</span>
+                      <ChevronDown size={14} className="quick-summary-chip-chevron" aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <div className="quick-summary-panel">
+                      <div
+                        className="quick-summary-header"
+                        onClick={() => toggleSummary(true)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSummary(true); }}
+                        title={t('Minimize Quick Summary')}
+                      >
+                        <span className="quick-summary-title">{t('Quick Summary')}</span>
+                        <button
+                          type="button"
+                          className="quick-summary-toggle-btn"
+                          onClick={(e) => { e.stopPropagation(); toggleSummary(true); }}
+                          aria-expanded={true}
+                          title={t('Minimize Quick Summary')}
+                          aria-label={t('Minimize Quick Summary')}
+                        >
+                          <ChevronUp size={16} aria-hidden="true" />
+                        </button>
                       </div>
-                      {/* One colour for all three: each bar is the same measure - the
-                          share investigated - of a different slice. */}
-                      <div className="quick-summary-bar" aria-hidden="true">
-                        <span style={{ width: `${(row.done / Math.max(1, row.total)) * 100}%` }} />
-                      </div>
+                      {quickSummaryRows.map(row => (
+                        <div className="quick-summary-row" key={row.label}>
+                          <div className="quick-summary-row-head">
+                            <span>{row.label}</span>
+                            <span className="num">{row.done} / {row.total}</span>
+                          </div>
+                          <div className="quick-summary-bar" aria-hidden="true">
+                            <span style={{ width: `${(row.done / Math.max(1, row.total)) * 100}%` }} />
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
 
                 <div className="collector-map-wrap" data-tour="field.map">
@@ -1989,34 +2165,33 @@ export default function App() {
         </>
       )}
 
-      {/* Phone profile sheet. Rendered here, outside .app-sidebar, so it anchors to the
-          viewport rather than to the fixed bar. Holds everything the desktop rail shows
-          around the avatar - profile, language, theme, tours, sign out. */}
+      {/* Phone "More" sheet. Rendered outside .app-sidebar, anchors to the
+          viewport. Combines profile, admin panels, data sync diagnostics,
+          language, theme, tours, and sign out. */}
       {isLoggedIn && isMobile && showUserModal && (
-        <>
-          <div
-            className="profile-sheet-backdrop"
-            onClick={() => setShowUserModal(false)}
-            aria-hidden="true"
-          />
-          <div className="profile-sheet" role="dialog" aria-label={t('Profile and settings')}>
-            <ProfileMenu
-              t={t}
-              lang={lang}
-              onLangChange={setLang}
-              theme={theme}
-              onToggleTheme={toggleTheme}
-              fullName={currentUserFullName}
-              username={currentUser}
-              role={userRole}
-              access={access}
-              onStartTour={startTour}
-              onSignOut={() => { setShowUserModal(false); handleSignOut(); }}
-              onClose={() => setShowUserModal(false)}
-              withSettings
-            />
-          </div>
-        </>
+        <MoreSheet
+          t={t}
+          lang={lang}
+          onLangChange={setLang}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          fullName={currentUserFullName}
+          username={currentUser}
+          role={userRole}
+          access={access}
+          onStartTour={startTour}
+          onSignOut={() => { setShowUserModal(false); handleSignOut(); }}
+          onClose={() => setShowUserModal(false)}
+          onOpenAdminPanel={() => { setShowUserModal(false); setShowAdminPanel(true); }}
+          pendingRequestsCount={pendingRequests.length}
+          onOpenUsersPanel={() => { setShowUserModal(false); setShowUsersPanel(true); }}
+          onOpenEtlPanel={() => { setShowUserModal(false); setShowEtlPanel(true); }}
+          etlPendingCount={etlPendingCount}
+          isOnline={isOnline}
+          syncing={syncing}
+          pendingSyncCount={pendingSyncCount}
+          onSync={() => { void handleSync(); }}
+        />
       )}
 
       {/* Guided tour over the live surface. Ends by itself if that surface leaves the

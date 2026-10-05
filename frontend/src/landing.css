@@ -1416,6 +1416,319 @@ body.dark-theme .mdb-workbench-container {
   border: 1px solid var(--surface-border);
 }
 
+/* --- Dual-Device Multi-Platform Showcase (Desktop + Floating Animated Mobile) --- */
+.xp-device-showcase {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  perspective: 1200px;
+  padding: var(--space-2) 0 var(--space-5);
+  user-select: none;
+}
+
+/* 1. Desktop Monitor Frame */
+.device-monitor {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.device-monitor-bezel {
+  position: relative;
+  width: 100%;
+  background: #14171f;
+  border-radius: 14px;
+  padding: 10px 10px 14px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 48px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+body:not(.dark-theme) .device-monitor-bezel {
+  background: #eaedf2;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 18px 42px -10px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.device-monitor-camera {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #090c10;
+  box-shadow: inset 0 0 1.5px #00e1ff, 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+body:not(.dark-theme) .device-monitor-camera {
+  background: #475569;
+  box-shadow: inset 0 0 1px #38bdf8;
+}
+
+.device-monitor-screen {
+  position: relative;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 16 / 10;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.device-screen-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  animation: xpCrossfade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.device-screen-glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 35%, transparent 60%);
+}
+
+.device-monitor-stand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: -1px;
+}
+
+.device-stand-neck {
+  width: 64px;
+  height: 24px;
+  background: linear-gradient(to right, #1f242d, #363d4a, #1f242d);
+  clip-path: polygon(18% 0%, 82% 0%, 100% 100%, 0% 100%);
+}
+
+body:not(.dark-theme) .device-stand-neck {
+  background: linear-gradient(to right, #b4b9c4, #dce0e8, #b4b9c4);
+}
+
+.device-stand-base {
+  width: 150px;
+  height: 7px;
+  background: linear-gradient(to bottom, #363d4a, #1a1e27);
+  border-radius: 3px 3px 6px 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+body:not(.dark-theme) .device-stand-base {
+  background: linear-gradient(to bottom, #dce0e8, #a8afbb);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+
+/* 2. Floating Animated Smartphone Frame */
+.device-phone {
+  position: absolute;
+  right: -10px;
+  bottom: 8px;
+  width: 27%;
+  min-width: 125px;
+  max-width: 210px;
+  z-index: 10;
+  transform-origin: center bottom;
+  animation: deviceFloat 5s ease-in-out infinite;
+  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1), filter 0.4s ease;
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.6)) drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+  cursor: pointer;
+}
+
+.device-phone:hover {
+  animation-play-state: paused;
+  transform: translateY(-12px) scale(1.03) rotate(-0.5deg);
+  filter: drop-shadow(0 24px 38px rgba(0, 0, 0, 0.75)) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
+}
+
+.device-phone-case {
+  position: relative;
+  width: 100%;
+  border-radius: 26px;
+  background: #11141a;
+  padding: 6px;
+  border: 2px solid #282f3a;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+}
+
+.device-phone-notch {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32%;
+  height: 9px;
+  background: #000;
+  border-radius: 8px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 5px;
+}
+
+.device-phone-lens {
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: #081a26;
+  box-shadow: inset 0 0 1px #00aaff;
+}
+
+.device-phone-screen {
+  position: relative;
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  aspect-ratio: 390 / 844;
+  background: #000;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.device-phone-chin {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 35%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 3px;
+  z-index: 15;
+}
+
+.device-phone-glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 30%, transparent 60%);
+  z-index: 12;
+}
+
+/* 3. Floating Live Sync Pill */
+.device-sync-badge {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  background: rgba(13, 18, 26, 0.94);
+  border: 1px solid rgba(254, 206, 7, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), 0 0 12px rgba(254, 206, 7, 0.12);
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fece07;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  z-index: 16;
+}
+
+body:not(.dark-theme) .device-sync-badge {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(217, 119, 6, 0.35);
+  color: #b45309;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.device-sync-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+/* Keyframes */
+@keyframes deviceFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-0.6deg);
+  }
+}
+
+@keyframes pulseDot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.65;
+  }
+}
+
+@keyframes xpCrossfade {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .device-phone {
+    width: 30%;
+    right: -6px;
+    bottom: 6px;
+  }
+}
+
+@media (max-width: 640px) {
+  .device-phone {
+    width: 33%;
+    min-width: 105px;
+    right: 0;
+    bottom: 4px;
+  }
+  .device-stand-neck {
+    width: 48px;
+    height: 18px;
+  }
+  .device-stand-base {
+    width: 120px;
+    height: 5px;
+  }
+  .device-sync-badge {
+    font-size: 8.5px;
+    padding: 2px 7px;
+    bottom: -9px;
+  }
+}
+
+@media (max-width: 420px) {
+  .device-phone {
+    width: 35%;
+    min-width: 90px;
+  }
+  .device-sync-badge {
+    display: none;
+  }
+}
+
 .mdb-copy-card {
   padding: var(--space-4);
 }
