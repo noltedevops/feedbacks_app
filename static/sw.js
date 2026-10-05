@@ -2,14 +2,15 @@
 // install below never completed. Renaming lets the activate handler drop it.
 // v4: the Google Fonts stylesheet left the precache when Montserrat moved into the
 // bundle, and the rename is what drops the copy v3 holds on installed devices.
-const CACHE_NAME = 'uxo-tracker-v4';
+// v5: the tab icon became the sidebar logo; the rename drops the cached Vite placeholder.
+const CACHE_NAME = 'uxo-tracker-v5';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  // index.html has always shipped an SVG favicon; there has never been a
-  // favicon.ico in this repo. The .ico path was inherited boilerplate.
-  '/favicon.svg'
+  // The tab icons, made from the sidebar logo (public/logo.png).
+  '/favicon-32.png',
+  '/favicon.ico'
 ];
 // The typeface is not listed: it is a hashed same-origin asset from the bundle, so the
 // fetch handler below caches it on first use like the rest of the build.
