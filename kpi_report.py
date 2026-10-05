@@ -32,7 +32,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import (
-    BaseDocTemplate, Frame, KeepTogether, PageBreak, PageTemplate, Paragraph, Spacer, Table, TableStyle,
+    BaseDocTemplate, Frame, KeepTogether, PageTemplate, Paragraph, Spacer, Table, TableStyle,
 )
 from sqlalchemy.orm import Session
 
@@ -340,8 +340,6 @@ def _story(stats, meta):
          f"noch nicht ausgehoben, errechnete Tiefe unter {_num(SHALLOW_HAZARD_DEPTH_M, 1, 'm')}",
          RED if hazards else None),
     ], cols=2))
-    if hazards:
-        story.append(_p("Einzeln aufgeführt im Anhang.", SMALL))
 
     # 3. Sensorgenauigkeit.
     rows = []
@@ -383,14 +381,6 @@ def _story(stats, meta):
     ):
         story.append(_p(line, SMALL))
 
-    # Anhang: the open hazards one by one. Last, because on a large project it runs to
-    # hundreds of rows (472 on 11-24-2736 on 2026-10-02) and would bury the summary.
-    if hazards:
-        story += [PageBreak(), _p(f"Anhang: offene Flachlieger ({_int(len(hazards))})", H2), Spacer(0, 2 * mm),
-                  _table(["VM Nr.", "Projekt", "Instrument", "errechnete Tiefe"],
-                         [[an.vm_nr or "---", an.project_id, instrument_group(an.instrument),
-                           _num(an.evaluated_depth, unit="m")] for an in hazards],
-                         [CONTENT_W * f for f in (0.3, 0.25, 0.25, 0.2)], numeric_from=3)]
     return story
 
 

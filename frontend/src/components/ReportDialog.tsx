@@ -17,6 +17,8 @@ interface ReportDialogProps {
   /** The field app only exports CSV; the dashboard also renders the PDF protocol and
    *  the KPI report. */
   allowPdf?: boolean;
+  /** CSV columns the server should leave out (the field export drops a few). */
+  csvExclude?: string[];
   title?: string;
   onClose: () => void;
 }
@@ -39,6 +41,7 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
   apiBase,
   projects,
   allowPdf = false,
+  csvExclude = [],
   title,
   onClose
 }) => {
@@ -81,6 +84,7 @@ export const ReportDialog: React.FC<ReportDialogProps> = ({
       if (projectId) params.set('project_id', projectId);
       if (start) params.set('start', start);
       if (end) params.set('end', end);
+      if (kind === 'csv') csvExclude.forEach((col) => params.append('exclude', col));
 
       const res = await authFetch(`${apiBase}/api/reports/${path}?${params.toString()}`);
       if (res.status === 403) {

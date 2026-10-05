@@ -21,6 +21,21 @@ interface Point2D {
   y: number;
 }
 
+type FindingShape = 'rod' | 'stone' | 'nails' | 'wire' | 'rope' | 'iron' | 'other';
+
+/** Which solid stands in for a Fundstück. Free text is matched loosely, so "Steine" and
+ *  "großer Stein" both draw a rock; anything unrecognised draws a plain block. */
+const findingShape = (finding: string): FindingShape => {
+  const f = finding.toLowerCase();
+  if (f.includes('eisenstange') || f.includes('eisenstab')) return 'rod';
+  if (f.includes('stein')) return 'stone';
+  if (f.includes('nägel') || f.includes('nagel') || f.includes('naegel')) return 'nails';
+  if (f.includes('draht')) return 'wire';
+  if (f.includes('seil')) return 'rope';
+  if (f.includes('eisen')) return 'iron';
+  return 'other';
+};
+
 export const Target3DView: React.FC<Target3DViewProps> = ({ point, lang, height = 320 }) => {
   const t = useMemo(() => makeT(lang), [lang]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -301,74 +316,143 @@ export const Target3DView: React.FC<Target3DViewProps> = ({ point, lang, height 
     ctx.closePath();
     ctx.stroke();
 
-    // 6. Draw Finding Procedural 3D Mesh
+    // 6. Draw the finding as a solid resting on the pit floor. Every shape is built in
+    // pit metres and goes through project(), so it turns and zooms with the pit, and its
+    // faces are shaded by a fixed light so they read as volumes, not flat cut-outs.
     if (finding && finding !== 'ohne Fund' && finding !== t('N/A')) {
-      const objZ = actualDepth - 0.08;
-      const objCenter = project({ x: 0, y: 0, z: objZ });
+      const kind = findingShape(finding);
+      const floorZ = actualDepth;
+      type RGB = [number, number, number];
+      const faces: { pts: Point3D[]; color: RGB }[] = [];
+      const lines: { pts: Point3D[]; width: number; color: string }[] = [];
 
-      ctx.save();
-      if (finding.includes('Eisenstange') || finding.includes('Eisenstab')) {
-        // Metallic rod
-        const rodLength = Math.min(length * 0.7, 0.6);
-        const pA = project({ x: -rodLength / 2, y: 0, z: objZ });
-        const pB = project({ x: rodLength / 2, y: 0, z: objZ });
-        ctx.strokeStyle = '#94a3b8';
-        ctx.lineWidth = 8;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(pA.x, pA.y);
-        ctx.lineTo(pB.x, pB.y);
-        ctx.stroke();
-        // Highlight
-        ctx.strokeStyle = '#f8fafc';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(pA.x, pA.y - 2);
-        ctx.lineTo(pB.x, pB.y - 2);
-        ctx.stroke();
-      } else if (finding.includes('Stein')) {
-        // Faceted boulder
-        ctx.fillStyle = '#78716c';
-        ctx.strokeStyle = '#44403c';
-        ctx.lineWidth = 1.5;
-        const stoneR = 14;
-        ctx.beginPath();
-        ctx.moveTo(objCenter.x - stoneR, objCenter.y);
-        ctx.lineTo(objCenter.x - stoneR * 0.4, objCenter.y - stoneR * 0.8);
-        ctx.lineTo(objCenter.x + stoneR * 0.7, objCenter.y - stoneR * 0.6);
-        ctx.lineTo(objCenter.x + stoneR, objCenter.y + stoneR * 0.2);
-        ctx.lineTo(objCenter.x + stoneR * 0.2, objCenter.y + stoneR * 0.8);
-        ctx.lineTo(objCenter.x - stoneR * 0.7, objCenter.y + stoneR * 0.6);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-      } else {
-        // General metallic iron object / scrap box
-        const sL = Math.min(length * 0.35, 0.25);
-        const sW = Math.min(width * 0.4, 0.2);
-        const sH = 0.08;
-        const oTop = [
-          project({ x: -sL, y: -sW, z: objZ - sH }),
-          project({ x: sL, y: -sW, z: objZ - sH }),
-          project({ x: sL, y: sW, z: objZ - sH }),
-          project({ x: -sL, y: sW, z: objZ - sH })
+      const addBox = (c: Point3D, bx: number, by: number, bz: number, color: RGB) => {
+        const v = ([sx, sy, sz]: number[]): Point3D => ({ x: c.x + sx * bx, y: c.y + sy * by, z: c.z + sz * bz });
+        const quads = [
+          [[-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1]], // top (z points down)
+          [[-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]], // bottom
+          [[-1, -1, -1], [1, -1, -1], [1, -1, 1], [-1, -1, 1]],
+          [[-1, 1, -1], [1, 1, -1], [1, 1, 1], [-1, 1, 1]],
+          [[-1, -1, -1], [-1, 1, -1], [-1, 1, 1], [-1, -1, 1]],
+          [[1, -1, -1], [1, 1, -1], [1, 1, 1], [1, -1, 1]]
         ];
-        ctx.fillStyle = isDark ? '#64748b' : '#475569';
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(oTop[0].x, oTop[0].y);
-        for (let i = 1; i < 4; i++) ctx.lineTo(oTop[i].x, oTop[i].y);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+        quads.forEach(q => faces.push({ pts: q.map(v), color }));
+      };
+
+      // Low-poly rock: an octahedron with uneven radii, lumpy but still convex.
+      const addRock = (c: Point3D, r: number, color: RGB) => {
+        const top = { x: c.x + r * 0.1, y: c.y - r * 0.05, z: c.z - r * 0.85 };
+        const btm = { x: c.x, y: c.y, z: c.z + r * 0.7 };
+        const ring = [
+          { x: c.x + r * 1.1, y: c.y + r * 0.1, z: c.z },
+          { x: c.x + r * 0.1, y: c.y + r * 0.9, z: c.z - r * 0.1 },
+          { x: c.x - r * 1.0, y: c.y - r * 0.05, z: c.z + r * 0.05 },
+          { x: c.x - r * 0.05, y: c.y - r * 0.8, z: c.z }
+        ];
+        for (let k = 0; k < 4; k++) {
+          const a = ring[k];
+          const b = ring[(k + 1) % 4];
+          faces.push({ pts: [top, a, b], color });
+          faces.push({ pts: [btm, b, a], color });
+        }
+      };
+
+      const iron: RGB = isDark ? [148, 163, 184] : [100, 116, 139];
+      const rust: RGB = [154, 88, 48];
+      const stone: RGB = [120, 113, 108];
+      let objTopZ: number;
+
+      if (kind === 'rod') {
+        const r = 0.025;
+        addBox({ x: 0, y: 0, z: floorZ - r }, Math.min(length * 0.75, 0.7) / 2, r, r, iron);
+        objTopZ = floorZ - 2 * r;
+      } else if (kind === 'stone') {
+        const r = Math.min(length, width) * 0.18;
+        addRock({ x: 0, y: 0, z: floorZ - r * 0.7 }, r, stone);
+        objTopZ = floorZ - r * 1.55;
+      } else if (kind === 'nails') {
+        // A few nails lying at different angles: a thin shank with a small head.
+        [[-0.12, -0.05, 0.3], [0.02, 0.06, -0.6], [0.14, -0.04, 1.1], [-0.02, -0.1, 2.0]].forEach(([nx, ny, ang]) => {
+          const dx = Math.cos(ang) * 0.05;
+          const dy = Math.sin(ang) * 0.05;
+          lines.push({ pts: [{ x: nx - dx, y: ny - dy, z: floorZ - 0.01 }, { x: nx + dx, y: ny + dy, z: floorZ - 0.01 }], width: 0.012, color: '#64748b' });
+          addBox({ x: nx - dx, y: ny - dy, z: floorZ - 0.012 }, 0.012, 0.012, 0.006, iron);
+        });
+        objTopZ = floorZ - 0.03;
+      } else if (kind === 'wire' || kind === 'rope') {
+        // A loose coil along the floor; rope is drawn thicker than wire.
+        const span = Math.min(length * 0.6, 0.5);
+        const pts: Point3D[] = [];
+        for (let k = 0; k <= 40; k++) {
+          const u = k / 40;
+          pts.push({
+            x: -span / 2 + u * span + Math.sin(u * Math.PI * 6) * 0.03,
+            y: Math.cos(u * Math.PI * 6) * Math.min(width * 0.2, 0.08),
+            z: floorZ - 0.015 - Math.max(0, Math.sin(u * Math.PI * 6)) * 0.02
+          });
+        }
+        lines.push({ pts, width: kind === 'rope' ? 0.022 : 0.008, color: kind === 'rope' ? '#78716c' : '#94a3b8' });
+        objTopZ = floorZ - 0.04;
+      } else {
+        // Any other find (Eisenteil, Sonstige, free text): a solid block, rusty if iron.
+        const sH = 0.06;
+        addBox({ x: 0, y: 0, z: floorZ - sH }, Math.min(length * 0.3, 0.22), Math.min(width * 0.3, 0.16), sH, kind === 'iron' ? rust : iron);
+        objTopZ = floorZ - 2 * sH;
       }
 
-      // Finding Badge text
+      // Distance towards the camera, for back-to-front (painter's) ordering of faces.
+      const towardCamera = (p: Point3D) => -((p.x * sinA + p.y * cosA) * cosE + p.z * sinE);
+      const centroid = (pts: Point3D[]): Point3D => ({
+        x: pts.reduce((a, p) => a + p.x, 0) / pts.length,
+        y: pts.reduce((a, p) => a + p.y, 0) / pts.length,
+        z: pts.reduce((a, p) => a + p.z, 0) / pts.length
+      });
+      // Light from above and slightly in front; up is -z because z points down.
+      const light = { x: 0.3, y: -0.4, z: -0.87 };
+
+      ctx.save();
+      ctx.lineJoin = 'round';
+      faces
+        .map(f => ({ ...f, depth: towardCamera(centroid(f.pts)) }))
+        .sort((a, b) => a.depth - b.depth)
+        .forEach(f => {
+          const [a, b, d] = f.pts;
+          const u = { x: b.x - a.x, y: b.y - a.y, z: b.z - a.z };
+          const v = { x: d.x - a.x, y: d.y - a.y, z: d.z - a.z };
+          const n = { x: u.y * v.z - u.z * v.y, y: u.z * v.x - u.x * v.z, z: u.x * v.y - u.y * v.x };
+          const lambert = Math.abs(n.x * light.x + n.y * light.y + n.z * light.z) / (Math.hypot(n.x, n.y, n.z) || 1);
+          const shade = 0.45 + 0.55 * lambert;
+          const [r, g, bl] = f.color.map(ch => Math.round(ch * shade));
+          const p2 = f.pts.map(project);
+          ctx.fillStyle = `rgb(${r}, ${g}, ${bl})`;
+          ctx.strokeStyle = 'rgba(15, 23, 42, 0.35)';
+          ctx.lineWidth = 0.75;
+          ctx.beginPath();
+          ctx.moveTo(p2[0].x, p2[0].y);
+          for (let k = 1; k < p2.length; k++) ctx.lineTo(p2[k].x, p2[k].y);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        });
+
+      lines.forEach(line => {
+        const p2 = line.pts.map(project);
+        ctx.strokeStyle = line.color;
+        ctx.lineWidth = Math.max(1, line.width * scale);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(p2[0].x, p2[0].y);
+        for (let k = 1; k < p2.length; k++) ctx.lineTo(p2[k].x, p2[k].y);
+        ctx.stroke();
+      });
+
+      // Finding Badge text, just above the object
+      const labelPos = project({ x: 0, y: 0, z: objTopZ });
       ctx.font = '600 10px Montserrat, sans-serif';
       ctx.fillStyle = textColor;
       ctx.textAlign = 'center';
-      ctx.fillText(finding, objCenter.x, objCenter.y - 14);
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(finding, labelPos.x, labelPos.y - 8);
       ctx.restore();
     }
 

@@ -318,6 +318,19 @@ class TestPointsSyncReports(unittest.TestCase):
         self.assertEqual(csv.status_code, 200)
         self.assertTrue(csv.content.startswith("﻿".encode("utf-8")))
         self.assertIn(f'filename="feedback-{PROJECT}.csv"', csv.headers["content-disposition"])
+        self.assertIn("bez_suchfeld", csv.text.splitlines()[1])
+
+        # The field app's export leaves out target_id and bez_suchfeld; nothing else moves.
+        trimmed = client.get("/api/reports/feedback.csv", headers=_auth("collector"),
+                             params={"project_id": PROJECT, "exclude": ["target_id", "bez_suchfeld"]})
+        self.assertEqual(trimmed.status_code, 200)
+        header = trimmed.text.splitlines()[1].split(";")
+        self.assertNotIn("target_id", header)
+        self.assertNotIn("bez_suchfeld", header)
+        self.assertEqual(len(header), len(csv.text.splitlines()[1].split(";")) - 2)
+        self.assertTrue(all(len(line.split(";")) == len(header) for line in trimmed.text.splitlines()[2:]))
+        self.assertEqual(client.get("/api/reports/feedback.csv", headers=_auth("analyst"),
+                                    params={"exclude": "no_such_column"}).status_code, 400)
 
         pdf = client.get("/api/reports/feedback.pdf", headers=_auth("analyst"),
                          params={"start": "2026-01-01", "end": "2026-12-31"})

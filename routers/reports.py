@@ -1,5 +1,5 @@
 """Exports: the PDF report, the KPI report, the CSV, and the photo gallery page the PDF links to."""
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, Response
@@ -79,15 +79,19 @@ def report_feedback_csv(
     project_id: Optional[str] = Query(None),
     start: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
     end: Optional[str] = Query(None, description="YYYY-MM-DD, inclusive"),
+    exclude: List[str] = Query([], description="CSV columns to leave out"),
     db: Session = Depends(get_db),
     # Both apps offer the CSV export; the PDF report stays dashboard-only.
     user: models.User = Depends(require_any_surface("field", "dashboard")),
 ):
+    unknown = set(exclude) - set(report.CSV_HEADER)
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"Unbekannte Spalte(n): {', '.join(sorted(unknown))}")
     rows, _, _ = _report_rows(db, project_id, start, end)
     filename = f"feedback-{_stamp(project_id, start, end)}.csv"
     return Response(
         # BOM so Excel opens the German umlauts correctly
-        content=("﻿" + report.rows_to_csv(rows)).encode("utf-8"),
+        content=("﻿" + report.rows_to_csv(rows, exclude)).encode("utf-8"),
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

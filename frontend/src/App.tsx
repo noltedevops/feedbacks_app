@@ -53,6 +53,8 @@ import {
 // instead of pointing at their own localhost. `npm run dev` relies on the proxy in
 // vite.config.ts to forward /api to the backend.
 const API_BASE = '';
+// Columns the field crews' CSV leaves out; the dashboard export keeps every column.
+const FIELD_CSV_EXCLUDE = ['target_id', 'bez_suchfeld'];
 
 // Feedback ids key the update-vs-insert branch on the server, so a collision would
 // overwrite another target's findings. crypto.randomUUID() is only defined in secure
@@ -2271,6 +2273,7 @@ export default function App() {
           apiBase={API_BASE}
           projects={projectOptions}
           allowPdf={reportDialog === 'dashboard'}
+          csvExclude={reportDialog === 'field' ? FIELD_CSV_EXCLUDE : undefined}
           title={reportDialog === 'field' ? t('Export CSV') : undefined}
           onClose={() => setReportDialog(false)}
         />
