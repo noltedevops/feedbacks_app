@@ -103,6 +103,7 @@ export const MoreSheet: React.FC<MoreSheetProps> = ({
             <button
               type="button"
               className="btn-secondary more-sync-btn"
+              data-tour="field.sync"
               onClick={onSync}
               disabled={syncing || !isOnline}
             >

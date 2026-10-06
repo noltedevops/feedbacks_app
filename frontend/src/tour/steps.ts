@@ -65,7 +65,7 @@ const field: TourStep[] = [
     body: 'Fundstück, Sohle-Status, actual depth, Länge/Breite/m³, photos and the Trupp & Geräte block. Nothing is saved until you press Submit - Cancel goes back to the list.',
   },
   {
-    anchors: ['field.sync'],
+    anchors: ['field.sync', 'nav.more'],
     title: 'Offline and sync',
     body: 'The Field App keeps working with no network. Submissions wait on the device, counted by a badge on Sync - press it once you are back online to send them to the office.',
   },

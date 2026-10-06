@@ -392,8 +392,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
   cursor: pointer;
-  padding-bottom: var(--space-2);
+  padding: 0 0 var(--space-2) 0;
   border-bottom: 1px solid var(--overlay-border);
   user-select: none;
 }
@@ -581,12 +587,14 @@
   background: var(--overlay);
   border: 1px solid var(--overlay-border);
   box-shadow: var(--shadow-float);
+  font-family: inherit;
   font-size: var(--text-caption);
   line-height: var(--lh-caption);
   font-weight: var(--weight-semibold);
   color: var(--surface-text-muted);
   cursor: pointer;
   user-select: none;
+  text-align: left;
   transition: all var(--transition-fast);
 }
 
@@ -926,12 +934,13 @@
   cursor: not-allowed;
 }
 
-/* Tactile Fundstück touch chips */
+/* Tactile Fundstück: chips on mobile for touch; select dropdown on desktop. */
 .ff-chips-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  display: none;
+}
+
+.ff-fundstueck-select {
+  display: block;
 }
 
 .ff-chip {
@@ -1585,6 +1594,17 @@
 
   .ff-choice {
     min-height: 44px;
+  }
+
+  .ff-chips-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+
+  .ff-fundstueck-select {
+    display: none;
   }
 
   /* Sticky actions at sheet bottom */

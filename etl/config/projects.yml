@@ -30,7 +30,7 @@ projects:
       - table: picks
         instrument: georadar
         key: id
-        where: "field_3 not in (0, 4, 5, 6, 7, 8, 9)"
+        where: "field_3 not in (0, 4)"
         coord_round: 2
         id_decimals: 3
         columns:
@@ -76,7 +76,7 @@ projects:
       - table: Picks
         instrument: georadar
         key: id
-        where: "field_3 not in (0, 4, 5, 6, 7, 8, 9)"
+        where: "field_3 not in (0, 4)"
         coord_round: 2
         id_decimals: 3
         columns:
@@ -89,7 +89,7 @@ projects:
       - table: Picks_04_03
         instrument: georadar
         key: id
-        where: "field_3 not in (0, 4, 5, 6, 7, 8, 9)"
+        where: "field_3 not in (0, 4)"
         coord_round: 2
         id_decimals: 3
         columns:

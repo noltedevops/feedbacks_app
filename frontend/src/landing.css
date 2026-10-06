@@ -1156,22 +1156,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .landing-root,
-  .nav-menu,
-  .is-nav-open .landing-sheet,
-  .landing-hero,
-  .xp-section {
-    animation: none;
-  }
-
-  .nav-tab::after,
-  .nav-chevron,
-  .xp-indicator {
-    transition: none;
-  }
-}
-
 /* ============================================================================
    MONGODB DESIGN SYSTEM EXTENSIONS — Landing Page Enhancements
    ========================================================================== */
@@ -2013,3 +1997,26 @@ body.dark-theme .mdb-cta-banner .mdb-btn-secondary:hover {
   }
 }
 
+
+/* Last in the file on purpose: a media query adds no specificity, so this block only
+   wins over the animations above because it comes after them. */
+@media (prefers-reduced-motion: reduce) {
+  .landing-root,
+  .nav-menu,
+  .is-nav-open .landing-sheet,
+  .landing-hero,
+  .xp-section,
+  .mdb-badge-pulse,
+  .device-screen-img,
+  .device-phone,
+  .device-sync-dot {
+    animation: none;
+  }
+
+  .nav-tab::after,
+  .nav-chevron,
+  .xp-indicator,
+  .device-phone {
+    transition: none;
+  }
+}

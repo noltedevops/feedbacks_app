@@ -590,12 +590,10 @@ const MapToolbar: React.FC<{
       </div>
 
       {/* Flexible, interactive map legend */}
-      <div
+      <button
+        type="button"
         className={`map-legend${viewMode === 'dashboard' ? ' map-legend--dashboard' : ''}${legendCompact ? ' map-legend--compact' : ''}`}
         onClick={() => setLegendCompact(prev => !prev)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setLegendCompact(prev => !prev); }}
         title={t('Click to toggle compact view')}
         aria-label={t('Map Legend')}
       >
@@ -612,7 +610,7 @@ const MapToolbar: React.FC<{
             {legendCompact ? pendingCount : isMobile ? `${t('Pending')} (${pendingCount})` : t('Pending')}
           </span>
         </span>
-      </div>
+      </button>
     </>
   );
 };

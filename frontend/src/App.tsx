@@ -1252,21 +1252,12 @@ export default function App() {
     if (selectedPoint) setSubmission(null);
   }
 
-  // On mobile, selecting a target expands the bottom sheet to full so the form or details
-  // are immediately visible and workable.
-  useEffect(() => {
-    if (isMobile && selectedPoint) {
-      setMobileFieldSheet('full');
-    }
-  }, [isMobile, selectedPoint]);
-
   // On mobile, starting the field app tour automatically expands the sheet to half so
-  // the highlighted controls (area, filters, list) are immediately visible.
-  useEffect(() => {
-    if (isMobile && tour === 'field' && mobileFieldSheet === 'peek') {
-      setMobileFieldSheet('half');
-    }
-  }, [isMobile, tour, mobileFieldSheet]);
+  // the highlighted controls (area, filters, list) are immediately visible. Derived
+  // during render rather than stored in state.
+  const effectiveMobileFieldSheet: 'peek' | 'half' | 'full' =
+    isMobile && tour === 'field' && mobileFieldSheet === 'peek' ? 'half' : mobileFieldSheet;
+
 
   // The point handed to the form. "Open Field Application Form" asks for a blank sheet
   // on the target just filed, and hiding its feedback puts FeedbackForm on its own
@@ -1345,8 +1336,14 @@ export default function App() {
   }, [fieldFilters.projectId, projectOptions, t]);
 
   // Stable identities so the memoized FieldMap and Dashboard are not invalidated by a
-  // fresh inline closure on every render.
-  const handleSelectPoint = useCallback((point: LocalPoint | null) => setSelectedPoint(point), []);
+  // fresh inline closure on every render. On mobile, picking a target expands the bottom
+  // sheet to full so the form or details are immediately workable.
+  const handleSelectPoint = useCallback((point: LocalPoint | null) => {
+    setSelectedPoint(point);
+    if (isMobile && point) {
+      setMobileFieldSheet('full');
+    }
+  }, [isMobile]);
   const handleOpenDashboardReport = useCallback(() => setReportDialog('dashboard'), []);
 
   // The field app's target list is windowed for the same reason as the dashboard log:
@@ -1510,14 +1507,20 @@ export default function App() {
     try {
       const saved = localStorage.getItem('quick_summary_collapsed');
       if (saved !== null) return saved === 'true';
-    } catch {}
+    } catch {
+      /* storage unavailable */
+    }
     return isMobile; // Default to collapsed on mobile to maximize map space, expanded on desktop
   });
 
   const toggleSummary = (val?: boolean) => {
     setSummaryCollapsed(prev => {
       const next = typeof val === 'boolean' ? val : !prev;
-      try { localStorage.setItem('quick_summary_collapsed', String(next)); } catch {}
+      try {
+        localStorage.setItem('quick_summary_collapsed', String(next));
+      } catch {
+        /* storage unavailable */
+      }
       return next;
     });
   };
@@ -1596,7 +1599,7 @@ export default function App() {
                   className={`sidebar-item${view === 'field' ? ' active' : ''}${access.can_field ? '' : ' locked'}`}
                   onClick={() => openSurface('field')}
                   aria-current={view === 'field' ? 'page' : undefined}
-                  aria-label={t('Field App')}
+                  aria-label={access.can_field ? t('Field App') : t('Field App - permission required')}
                 >
                   <span className="rail-icon rail-icon--field" aria-hidden="true" />
                   <span className="sidebar-item-label">{t('Field App')}</span>
@@ -1608,7 +1611,7 @@ export default function App() {
                   className={`sidebar-item${view === 'dashboard' ? ' active' : ''}${access.can_dashboard ? '' : ' locked'}`}
                   onClick={() => openSurface('dashboard')}
                   aria-current={view === 'dashboard' ? 'page' : undefined}
-                  aria-label={t('Dashboard')}
+                  aria-label={access.can_dashboard ? t('Dashboard') : t('Dashboard - permission required')}
                 >
                   <span className="rail-icon rail-icon--dashboard" aria-hidden="true" />
                   <span className="sidebar-item-label">{t('Dashboard')}</span>
@@ -1620,6 +1623,7 @@ export default function App() {
                   className={`sidebar-item sidebar-item--more${showUserModal ? ' active' : ''}`}
                   onClick={() => setShowUserModal(!showUserModal)}
                   aria-label={t('More')}
+                  data-tour="nav.more"
                 >
                   <span className="sidebar-avatar sidebar-avatar--mobile">
                     {initialsFor(currentUserFullName || currentUser)}
@@ -1820,7 +1824,7 @@ export default function App() {
                   or the confirmation once it is filed. Acts as interactive bottom sheet on mobile. */}
               <section
                 className="glass-panel collector-sidebar"
-                data-sheet={formPoint ? (mobileFieldSheet === 'peek' ? 'peek' : 'full') : mobileFieldSheet}
+                data-sheet={formPoint ? (effectiveMobileFieldSheet === 'peek' ? 'peek' : 'full') : effectiveMobileFieldSheet}
               >
                 {isMobile && (
                   <div className="sheet-handle-bar">
@@ -1835,21 +1839,21 @@ export default function App() {
                     <div className="sheet-pills">
                       <button
                         type="button"
-                        className={`sheet-pill-btn${mobileFieldSheet === 'peek' ? ' active' : ''}`}
+                        className={`sheet-pill-btn${effectiveMobileFieldSheet === 'peek' ? ' active' : ''}`}
                         onClick={() => setMobileFieldSheet('peek')}
                       >
                         {t('Map')}
                       </button>
                       <button
                         type="button"
-                        className={`sheet-pill-btn${mobileFieldSheet === 'half' ? ' active' : ''}`}
+                        className={`sheet-pill-btn${effectiveMobileFieldSheet === 'half' ? ' active' : ''}`}
                         onClick={() => setMobileFieldSheet('half')}
                       >
                         {t('Split')}
                       </button>
                       <button
                         type="button"
-                        className={`sheet-pill-btn${mobileFieldSheet === 'full' ? ' active' : ''}`}
+                        className={`sheet-pill-btn${effectiveMobileFieldSheet === 'full' ? ' active' : ''}`}
                         onClick={() => setMobileFieldSheet('full')}
                       >
                         {formPoint ? t('Log Form') : t('List')}
@@ -1983,7 +1987,7 @@ export default function App() {
                               key={point.id}
                               className={`target-card${isSelected ? ' active' : ''}`}
                               aria-pressed={isSelected}
-                              onClick={() => setSelectedPoint(point)}
+                              onClick={() => handleSelectPoint(point)}
                             >
                               <span className="target-card-head">
                                 <span className="target-card-vm num">VM {point.vm_nr}</span>
@@ -2043,26 +2047,19 @@ export default function App() {
                     </button>
                   ) : (
                     <div className="quick-summary-panel">
-                      <div
+                      <button
+                        type="button"
                         className="quick-summary-header"
                         onClick={() => toggleSummary(true)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSummary(true); }}
+                        aria-expanded={true}
                         title={t('Minimize Quick Summary')}
+                        aria-label={t('Minimize Quick Summary')}
                       >
                         <span className="quick-summary-title">{t('Quick Summary')}</span>
-                        <button
-                          type="button"
-                          className="quick-summary-toggle-btn"
-                          onClick={(e) => { e.stopPropagation(); toggleSummary(true); }}
-                          aria-expanded={true}
-                          title={t('Minimize Quick Summary')}
-                          aria-label={t('Minimize Quick Summary')}
-                        >
-                          <ChevronUp size={16} aria-hidden="true" />
-                        </button>
-                      </div>
+                        <span className="quick-summary-toggle-btn" aria-hidden="true">
+                          <ChevronUp size={16} />
+                        </span>
+                      </button>
                       {quickSummaryRows.map(row => (
                         <div className="quick-summary-row" key={row.label}>
                           <div className="quick-summary-row-head">

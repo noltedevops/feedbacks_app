@@ -2,6 +2,7 @@
 // install below never completed. Renaming lets the activate handler drop it.
 // v4: the Google Fonts stylesheet left the precache when Montserrat moved into the
 // bundle, and the rename is what drops the copy v3 holds on installed devices.
+// v5: the tab icon became the sidebar logo; the rename drops the cached Vite placeholder.
 // v9: mobile quick summary minimize/expand, responsive basemap switcher, flexible legend.
 const CACHE_NAME = 'uxo-tracker-v9';
 const ASSETS_TO_CACHE = [

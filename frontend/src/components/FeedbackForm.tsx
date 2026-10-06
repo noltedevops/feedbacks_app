@@ -431,13 +431,15 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                 </button>
               ))}
             </div>
-            <Select
-              id="ff-fundstueck"
-              value={fundstueck}
-              onChange={setFundstueck}
-              ariaLabel="Fundstück"
-              options={FUNDSTUECK_OPTIONS.map(v => ({ value: v, label: v }))}
-            />
+            <div className="ff-fundstueck-select">
+              <Select
+                id="ff-fundstueck"
+                value={fundstueck}
+                onChange={setFundstueck}
+                ariaLabel="Fundstück"
+                options={FUNDSTUECK_OPTIONS.map(v => ({ value: v, label: v }))}
+              />
+            </div>
           </div>
 
           {/* Specify - only when Sonstige is chosen */}
