@@ -418,13 +418,16 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
 
           {/* Fundstück */}
           <div className="form-group">
-            <label className="form-label" htmlFor="ff-fundstueck">Fundstück *</label>
-            <div className="ff-chips-grid" role="group" aria-label="Fundstück options">
+            {/* The label points at the select (desktop); on a phone the select is hidden
+                and the chip group takes the same label by id instead. */}
+            <label className="form-label" id="ff-fundstueck-label" htmlFor="ff-fundstueck">Fundstück *</label>
+            <div className="ff-chips-grid" role="group" aria-labelledby="ff-fundstueck-label">
               {FUNDSTUECK_OPTIONS.map(opt => (
                 <button
                   type="button"
                   key={opt}
                   className={`ff-chip${fundstueck === opt ? ' is-active' : ''}`}
+                  aria-pressed={fundstueck === opt}
                   onClick={() => setFundstueck(opt)}
                 >
                   {opt}
